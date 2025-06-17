@@ -27,8 +27,7 @@ interface AuthContextType {
   user: User | null;
   userProfile: User | null; // userProfile 추가
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, nickname: string) => Promise<void>;
+  signUp: (nickname: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
 }
@@ -45,6 +44,7 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -169,54 +169,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signUp = async (nickname: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
       
-      if (error) throw error;
-      
-      if (data.session) {
-        await loadUserProfile(data.session.user);
-      }
-    } catch (error) {
-      console.error('로그인 실패:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signUp = async (email: string, password: string, nickname: string) => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      
-      if (error) throw error;
-      
-      // 회원가입 성공 시 users 테이블에 프로필 생성
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            username: email, // 이메일을 username으로 사용
-            email,
-            nickname,
-            points: 500, // 가입 보너스
-          });
-          
-        if (profileError) {
-          console.error('프로필 생성 실패:', profileError);
-          throw profileError;
+      // 카카오 로그인으로 회원가입
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.baedalking.com';
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'kakao',
+        options: {
+          redirectTo: `${appUrl}/auth/kakao/callback`,
+          queryParams: {
+            scope: 'profile_nickname account_email',
+            redirect_uri: `${appUrl}/auth/kakao/callback`
+          }
         }
-      }
+      });
+      
+      if (error) throw error;
+      
+      // OAuth 응답에는 user가 없으므로 여기서는 프로필 생성하지 않음
+      // 실제 프로필 생성은 콜백 페이지에서 처리됨
     } catch (error) {
       console.error('회원가입 실패:', error);
       throw error;
@@ -273,9 +246,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value: AuthContextType = {
     user,
-    userProfile: user, // userProfile도 user와 동일하게 설정
+    userProfile,
     loading,
-    signIn,
     signUp,
     signOut,
     updateProfile,

@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, memo } from 'react';
 import { getTodayRanking, RankingData } from '@/services/rankingService';
 import { UserProfile } from '@/components/home/UserProfile';
 import Link from 'next/link';
-import { FaCrown, FaTrophy, FaUpload, FaUsers, FaStar, FaMedal, FaChartLine, FaFireAlt, FaBell, FaGift, FaCamera, FaSignInAlt, FaRocket, FaShieldAlt, FaCoins, FaArrowRight, FaPlay, FaHeart, FaBolt, FaStore, FaUserFriends, FaShare } from 'react-icons/fa';
+import { FaCrown, FaTrophy, FaUpload, FaUsers, FaStar, FaMedal, FaChartLine, FaFireAlt, FaBell, FaGift, FaCamera, FaSignInAlt, FaRocket, FaShieldAlt, FaCoins, FaArrowRight, FaPlay, FaHeart, FaBolt, FaStore, FaUserFriends, FaShare, FaComment } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { initKakaoShare, inviteFriends } from '@/services/kakaoShare';
 import KakaoAd from '@/components/KakaoAd';
@@ -212,22 +212,12 @@ export default function Home() {
                 </div>
                 <div className="space-y-2">
                   <Link 
-                    href="/profile-setup" 
-                    className="block w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:scale-105 transition-all"
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <FaUsers size={16} />
-                      <span>회원가입하고 시작하기</span>
-                      <FaArrowRight size={14} />
-                    </div>
-                  </Link>
-                  <Link 
                     href="/login" 
-                    className="block w-full bg-white/20 backdrop-blur-lg text-white border border-white/30 hover:bg-white/30 py-3 px-4 rounded-xl font-bold text-sm transition-all"
+                    className="block w-full bg-[#FEE500] text-[#000000D9] py-3 px-4 rounded-xl font-bold hover:bg-[#FDD835] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#FEE500]/50 transition-all"
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <FaSignInAlt size={14} />
-                      이미 회원이라면 로그인
+                      <FaComment size={16} />
+                      <span>카카오로 시작하기</span>
                     </div>
                   </Link>
                 </div>
