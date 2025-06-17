@@ -122,12 +122,15 @@ export default function RankingPage() {
       return;
     }
 
-    try {
+    if (
+      myRank.rank !== undefined &&
+      myRank.totalAmount !== undefined &&
+      myRank.totalOrders !== undefined
+    ) {
       // 동적 공유 메시지 생성
       const periodText = period === 'today' ? '오늘' : period === 'week' ? '이번 주' : '이번 달';
       const regionText = region === 'all' ? '전국' : region;
       const platformText = platform === 'all' ? '전체 플랫폼' : platform;
-      
       shareRanking({
         rank: myRank.rank,
         totalAmount: myRank.totalAmount,
@@ -136,9 +139,8 @@ export default function RankingPage() {
         period: periodText,
         region: regionText
       });
-    } catch (error) {
-      console.error('순위 공유 오류:', error);
-      toast.error('순위 공유 중 오류가 발생했습니다.');
+    } else {
+      toast.error('순위 정보가 없습니다.');
     }
   };
 
