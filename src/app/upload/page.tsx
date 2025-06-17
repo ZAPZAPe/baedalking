@@ -47,7 +47,7 @@ export default function UploadPage() {
   }, [user, loading, router]);
 
   if (loading) {
-    return <Loading text="로딩 중..." />;
+    return <Loading />;
   }
 
   if (!user) {

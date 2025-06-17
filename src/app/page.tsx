@@ -95,7 +95,7 @@ export default function Home() {
   }, []);
 
   if (loading) {
-    return <Loading text="로딩 중..." />;
+    return <Loading />;
   }
 
   return (

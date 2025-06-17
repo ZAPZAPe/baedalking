@@ -302,8 +302,8 @@ export default function SettingsPage() {
     return null;
   }
 
-  if (!userProfile) {
-    return <Loading text="프로필 정보를 불러오는 중..." />;
+  if (loading || !userProfile) {
+    return <Loading />;
   }
 
   return (

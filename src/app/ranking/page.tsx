@@ -184,8 +184,8 @@ export default function RankingPage() {
     }
   };
 
-  if (loading || rankingLoading) {
-    return <Loading text="랭킹 로딩 중..." />;
+  if (loading) {
+    return <Loading />;
   }
 
   return (

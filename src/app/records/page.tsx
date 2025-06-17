@@ -92,8 +92,8 @@ export default function RecordsPage() {
     }
   };
 
-  if (loading || recordsLoading) {
-    return <Loading text="기록을 불러오는 중..." />;
+  if (loading) {
+    return <Loading />;
   }
 
   if (!user) {

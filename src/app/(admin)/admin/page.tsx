@@ -101,8 +101,8 @@ export default function AdminPage() {
     fetchStats();
   }, []);
 
-  if (loading || isCheckingAuth) {
-    return <Loading text="인증 확인 중..." />;
+  if (loading) {
+    return <Loading />;
   }
 
   // 관리자 권한이 없으면 아무것도 렌더링하지 않음

@@ -29,7 +29,7 @@ const ProtectedRoute = ({ children, requireProfile = true }: ProtectedRouteProps
   }, [user, userProfile, loading, requireProfile, router]);
 
   if (loading) {
-    return <Loading text="인증 확인 중..." />;
+    return <Loading />;
   }
 
   if (!user) {

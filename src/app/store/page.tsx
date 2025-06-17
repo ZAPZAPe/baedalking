@@ -34,7 +34,7 @@ export default function StorePage() {
   }, [user]);
 
   if (loading) {
-    return <Loading text="로딩 중..." />;
+    return <Loading />;
   }
 
   if (!user || !userProfile) {

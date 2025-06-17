@@ -61,8 +61,8 @@ export default function NotificationsPage() {
     }
   }, [userProfile]);
 
-  if (authLoading) {
-    return <Loading text="로딩 중..." />;
+  if (loading || !userProfile) {
+    return <Loading />;
   }
 
   if (!user) {
