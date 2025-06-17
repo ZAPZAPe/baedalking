@@ -45,15 +45,9 @@ export const shareToKakao = () => {
           },
         },
       ],
-      installTalk: true,
-      callback: function(result: any) {
-        console.log('카카오 공유 결과:', result);
-      },
-      serverCallbackUrl: 'https://baedalking.com'
     });
   } catch (error) {
     console.error('카카오 공유 중 오류 발생:', error);
-    // 오류 발생 시 대체 공유 방법
     fallbackShare('배달킹 - 실시간 배달 랭킹', 'https://baedalking.com');
   }
 };
@@ -62,7 +56,6 @@ export const shareToKakao = () => {
 export const inviteFriends = () => {
   if (!window.Kakao) {
     console.error('카카오 SDK가 로드되지 않았습니다.');
-    // 카카오톡이 없는 경우 대체 공유 방법 실행
     fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', 'https://baedalking.com');
     return;
   }
@@ -72,7 +65,7 @@ export const inviteFriends = () => {
       objectType: 'feed',
       content: {
         title: '배달킹에서 진짜 배달왕에 도전하세요! 🚀',
-        description: '지금 가입하면 500P 즉시 지급! 친구와 함께 실시간 랭킹 경쟁하고, 전국 배달왕에 도전해보세요. 나의 순위는 어디일까? 👑',
+        description: '지금 가입하면 500P 즉시 지급! 친구와 함께 실시간 랭킹 경쟁하고, 전국 배달왕에 도전해보세요.',
         imageUrl: 'https://k.kakaocdn.net/14/dn/btsOCCP8KCJ/uPlo3tMwq4eHi8USTFrLkk/o.jpg',
         link: {
           mobileWebUrl: 'https://baedalking.com',
@@ -88,83 +81,28 @@ export const inviteFriends = () => {
           },
         },
       ],
-      installTalk: true,
-      callback: function(result: any) {
-        console.log('친구 초대 공유 결과:', result);
-        if (result.warningMsg) {
-          console.warn('카카오 공유 경고:', result.warningMsg);
-        }
-        if (result.clickEvent) {
-          console.log('카카오 공유 성공');
-        }
-      }
     });
   } catch (error) {
     console.error('친구 초대 공유 중 오류 발생:', error);
-    // 오류 발생 시 대체 공유 방법
     fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', 'https://baedalking.com');
-  }
-};
-
-// 포인트 선물하기
-export const giftPoints = (points: number) => {
-  if (!window.Kakao) {
-    console.error('카카오 SDK가 로드되지 않았습니다.');
-    fallbackShare(`배달킹 포인트 선물 - ${points}P`, 'https://baedalking.com');
-    return;
-  }
-
-  try {
-    window.Kakao.Share.sendDefault({
-      objectType: 'feed',
-      content: {
-        title: '배달킹 포인트 선물',
-        description: `${points}P를 선물해드려요! 지금 가입하고 포인트를 받아가세요.`,
-        imageUrl: 'https://k.kakaocdn.net/14/dn/btsOCCP8KCJ/uPlo3tMwq4eHi8USTFrLkk/o.jpg',
-        link: {
-          mobileWebUrl: 'https://baedalking.com',
-          webUrl: 'https://baedalking.com',
-        },
-      },
-      buttons: [
-        {
-          title: '포인트 받기',
-          link: {
-            mobileWebUrl: 'https://baedalking.com',
-            webUrl: 'https://baedalking.com',
-          },
-        },
-      ],
-      installTalk: true,
-      callback: function(result: any) {
-        console.log('포인트 선물 공유 결과:', result);
-      }
-    });
-  } catch (error) {
-    console.error('포인트 선물 공유 중 오류 발생:', error);
-    fallbackShare(`배달킹 포인트 선물 - ${points}P`, 'https://baedalking.com');
   }
 };
 
 // 대체 공유 방법 (Web Share API 또는 클립보드 복사)
 const fallbackShare = async (title: string, url: string) => {
   try {
-    // Web Share API 지원 여부 확인
     if (navigator.share) {
       await navigator.share({
         title: title,
         text: '배달킹에서 친구들과 함께 배달 실적을 경쟁해보세요!',
         url: url,
       });
-      console.log('Web Share API로 공유 완료');
     } else {
-      // 클립보드에 URL 복사
       await navigator.clipboard.writeText(url);
       alert('링크가 클립보드에 복사되었습니다!\n친구들에게 공유해보세요.');
     }
   } catch (error) {
     console.error('대체 공유 방법 실행 중 오류:', error);
-    // 마지막 대안: 링크를 프롬프트로 표시
     const shareText = `${title}\n\n${url}`;
     prompt('아래 링크를 복사해서 친구들에게 공유해보세요:', shareText);
   }
