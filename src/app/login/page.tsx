@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaCrown, FaComment } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
-import { initKakao, loginWithKakao } from '@/services/kakaoAuth';
+import { supabase } from '../../lib/supabase';
 
 const Login = () => {
   const router = useRouter();
@@ -20,8 +20,26 @@ const Login = () => {
 
   // 카카오 SDK 초기화
   useEffect(() => {
-    initKakao();
-  }, []);
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // 사용자 프로필 확인
+        const { data: profile } = await supabase
+          .from('users')
+          .select('nickname, region, bike_type')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.nickname && profile?.region && profile?.bike_type) {
+          router.push('/');
+        } else {
+          router.push('/profile-setup');
+        }
+      }
+    };
+
+    checkUser();
+  }, [router]);
 
   // 이미 로그인된 경우 홈으로 리다이렉션
   useEffect(() => {
@@ -77,18 +95,22 @@ const Login = () => {
     setError('');
 
     try {
-      const result = await loginWithKakao() as any;
-      
-      if (result.isNewUser) {
-        // 신규 사용자는 추가 정보 입력 페이지로
-        router.push('/profile-setup/kakao');
-      } else {
-        // 기존 사용자는 홈으로
-        router.push('/');
-      }
-    } catch (error: any) {
-      console.error('카카오 로그인 오류:', error);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'kakao',
+        options: {
+          redirectTo: `${window.location.origin}/profile-setup`,
+          queryParams: {
+            scope: 'profile_nickname account_email',
+            redirect_uri: 'https://gxaqqznkcuzqbacgqvzg.supabase.co/auth/v1/callback'
+          }
+        }
+      });
+
+      if (error) throw error;
+    } catch (err) {
+      console.error('카카오 로그인 오류:', err);
       setError('카카오 로그인에 실패했습니다. 다시 시도해주세요.');
+    } finally {
       setLoading(false);
     }
   };

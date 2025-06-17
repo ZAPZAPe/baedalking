@@ -25,20 +25,14 @@ interface DeliveryRecordWithUser {
 // 오늘 랭킹 조회
 export const getTodayRanking = async (region?: string): Promise<RankingData[]> => {
   try {
-    // 인증 상태 확인
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    console.log('🔐 현재 세션 상태:', {
-      hasSession: !!sessionData.session,
-      user: sessionData.session?.user?.email || 'No user',
-      userId: sessionData.session?.user?.id || 'No ID',
-      accessToken: sessionData.session?.access_token ? '토큰 있음' : '토큰 없음',
-      tokenLength: sessionData.session?.access_token?.length || 0,
-      sessionError: sessionError?.message || 'No error',
-      fullSessionData: sessionData
-    });
+    
+    if (sessionError) {
+      console.error('세션 오류:', sessionError);
+      return [];
+    }
 
     const today = new Date().toISOString().split('T')[0];
-    console.log('📅 조회 날짜:', today);
     
     let query = supabase
       .from('delivery_records')
@@ -54,23 +48,12 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
     
     if (region && region !== 'all') {
       query = query.eq('users.region', region);
-      console.log('🌍 지역 필터:', region);
     }
 
-    console.log('🔍 API 요청 시작...');
     const { data, error } = await query;
-    
-    console.log('📊 API 응답:', {
-      dataLength: data?.length || 0,
-      error: error?.message || 'No error',
-      errorDetails: error,
-      errorCode: error?.code
-    });
 
     if (error) {
-      // 401 인증 오류인 경우 빈 배열 반환 (로그인 필요 상태)
       if (error.message?.includes('401') || error.code === '401') {
-        console.log('⚠️ 인증이 필요합니다. 로그인 후 다시 시도하세요.');
         return [];
       }
       throw error;
@@ -301,5 +284,27 @@ export const getUserRankingInfo = async (userId: string): Promise<{
       weeklyRank: null,
       monthlyRank: null
     };
+  }
+};
+
+const getCurrentSession = () => {
+  const session = supabase.auth.getSession();
+  return {
+    hasSession: !!session.data.session,
+    user: session.data.session?.user?.name || 'No user',
+    userId: session.data.session?.user?.id || 'No ID',
+    accessToken: session.data.session?.accessToken ? '토큰 있음' : '토큰 없음',
+    tokenLength: session.data.session?.accessToken?.length || 0,
+  };
+};
+
+const fetchRankings = async (date: string) => {
+  try {
+    const response = await fetch(`/api/rankings?date=${date}`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('랭킹 데이터 조회 중 오류:', error);
+    return { dataLength: 0, error: 'Error', errorDetails: error };
   }
 }; 

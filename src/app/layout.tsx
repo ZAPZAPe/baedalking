@@ -57,13 +57,17 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <meta name="theme-color" content="#1e3a8a" />
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="description" content="배달킹 - 배달의민족 랭킹 시스템" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/logo192.png" />
+        <link rel="manifest" href="/manifest.json" />
         <script
-          async
-          src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+          src="https://t1.kakaocdn.net/kakao_js_sdk/2.6.0/kakao.min.js"
           crossOrigin="anonymous"
+          defer
         ></script>
       </head>
       <body className={inter.className}>
