@@ -50,7 +50,11 @@ export default function UploadPage() {
     return <Loading text="로딩 중..." />;
   }
 
-  if (!user || !userProfile) {
+  if (!user) {
+    return null;
+  }
+
+  if (!userProfile) {
     return null;
   }
 

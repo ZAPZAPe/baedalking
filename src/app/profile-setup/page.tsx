@@ -187,7 +187,7 @@ export default function ProfileSetupPage() {
 
       if (updateError) throw updateError;
 
-      router.push('/');
+    router.push('/');
     } catch (err: any) {
       console.error('프로필 저장 오류:', err);
       setError(err.message || '프로필 저장 중 오류가 발생했습니다.');

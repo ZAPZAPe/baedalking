@@ -101,21 +101,21 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* 배경 오버레이 */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
       
       {/* 팝업 컨테이너 */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-blue-900 to-purple-900 rounded-2xl p-6 w-full max-w-md max-h-[calc(100vh-12rem)] overflow-y-auto shadow-2xl border border-white/20">
+      <div className="relative bg-gradient-to-br from-blue-900/95 via-purple-900/95 to-indigo-900/95 backdrop-blur-lg rounded-2xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto shadow-2xl border border-white/20">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-black text-white">수기 입력</h2>
+          <h2 className="text-xl font-bold text-white">수기 입력</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
           >
             <FaTimes className="text-white" size={16} />
           </button>
@@ -123,14 +123,14 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
 
         <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl">
           <p className="text-yellow-200 text-sm text-center">
-            수기 입력 기록은 포인트, 랭킹 반영되지 않습니다.<br />
+            수기 입력 기록은 포인트, 랭킹에 반영되지 않습니다.<br />
             중복 기록은 덮어쓰기됩니다.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="platform" className="block text-sm font-bold text-blue-200 mb-2">
+            <label htmlFor="platform" className="block text-sm font-medium text-white mb-2">
               플랫폼
             </label>
             <select
@@ -138,7 +138,7 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
               name="platform"
               value={formData.platform}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-white/10 border border-blue-400/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent backdrop-blur-sm tracking-[0.2em] appearance-none"
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent backdrop-blur-sm appearance-none"
               required
             >
               <option value="배민커넥트" className="bg-gray-800">배민커넥트</option>
@@ -147,7 +147,7 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
           </div>
 
           <div>
-            <label htmlFor="date" className="block text-sm font-bold text-blue-200 mb-2">
+            <label htmlFor="date" className="block text-sm font-medium text-white mb-2">
               날짜
             </label>
             <input
@@ -156,13 +156,13 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
               name="date"
               value={formData.date}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-white/10 border border-blue-400/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent backdrop-blur-sm tracking-[0.2em] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-datetime-edit]:text-white [&::-webkit-datetime-edit-fields-wrapper]:text-white [&::-webkit-datetime-edit-text]:text-white [&::-webkit-datetime-edit-month-field]:text-white [&::-webkit-datetime-edit-day-field]:text-white [&::-webkit-datetime-edit-year-field]:text-white"
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent backdrop-blur-sm [&::-webkit-calendar-picker-indicator]:invert"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="orderCount" className="block text-sm font-bold text-blue-200 mb-2">
+            <label htmlFor="orderCount" className="block text-sm font-medium text-white mb-2">
               건수
             </label>
             <input
@@ -171,7 +171,7 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
               name="orderCount"
               value={formData.orderCount}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-white/10 border border-blue-400/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent backdrop-blur-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none tracking-[0.2em]"
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent backdrop-blur-sm"
               required
               min="1"
               placeholder="배달 건수를 입력하세요"
@@ -179,7 +179,7 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
           </div>
 
           <div>
-            <label htmlFor="totalAmount" className="block text-sm font-bold text-blue-200 mb-2">
+            <label htmlFor="totalAmount" className="block text-sm font-medium text-white mb-2">
               금액 (원)
             </label>
             <input
@@ -188,7 +188,7 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
               name="totalAmount"
               value={formData.totalAmount}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-white/10 border border-blue-400/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent backdrop-blur-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none tracking-[0.2em]"
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent backdrop-blur-sm"
               required
               min="0"
               placeholder="총 금액을 입력하세요"
@@ -206,7 +206,7 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg"
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl transition-all hover:scale-[1.02] shadow-lg"
               disabled={loading}
             >
               {loading ? '처리중...' : '저장'}

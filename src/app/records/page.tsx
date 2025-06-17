@@ -93,16 +93,10 @@ export default function RecordsPage() {
   };
 
   if (loading || recordsLoading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin text-blue-500">
-          <FaSpinner size={40} />
-        </div>
-      </div>
-    );
+    return <Loading text="기록을 불러오는 중..." />;
   }
 
-  if (!user || !userProfile) {
+  if (!user) {
     router.push('/login');
     return null;
   }
@@ -518,88 +512,98 @@ export default function RecordsPage() {
 
       {/* 달력 보기일 때 선택된 날짜의 상세 정보 */}
       {selectedDate && (
-        <div className="max-w-3xl mx-auto px-4 mt-4">
-          <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-            <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold">
-              {new Date(selectedDate).toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'long'
-              })}
-            </h3>
-            <button
-              onClick={() => setSelectedDate(null)}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              <FaTimes className="text-white" size={16} />
-            </button>
-          </div>
-          <div className="space-y-2">
-            {getRecordsByDateStr(selectedDate).map((record) => (
-              <div
-                key={record.id}
-                className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-blue-900/95 via-purple-900/95 to-indigo-900/95 backdrop-blur-lg rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto shadow-2xl border border-white/20">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">
+                {new Date(selectedDate).toLocaleDateString('ko-KR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  weekday: 'long'
+                })}
+              </h3>
+              <button
+                onClick={() => setSelectedDate(null)}
+                className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
-                    {record.platform === '배민커넥트' ? (
-                      <Image
-                        src="/images/baemin-logo.svg"
-                        alt="배민커넥트"
-                        width={40}
-                        height={40}
-                        className="object-contain"
-                      />
-                    ) : (
-                      <Image
-                        src="/images/coupang-logo.svg"
-                        alt="쿠팡"
-                        width={40}
-                        height={40}
-                        className="object-contain"
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-bold">{record.platform}</div>
-                    <div className="text-sm text-gray-400">
-                      {record.deliveryCount}건
-                    </div>
-                  </div>
+                <FaTimes className="text-white" size={16} />
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {getRecordsByDateStr(selectedDate).length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-white/60">이 날짜에 기록이 없습니다.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="font-bold">
-                      {record.amount.toLocaleString()}원
+              ) : (
+                <>
+                  {getRecordsByDateStr(selectedDate).map((record) => (
+                    <div
+                      key={record.id}
+                      className="flex items-center justify-between p-4 bg-white/10 rounded-xl border border-white/20"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                          {record.platform === '배민커넥트' ? (
+                            <Image
+                              src="/images/baemin-logo.svg"
+                              alt="배민커넥트"
+                              width={24}
+                              height={24}
+                              className="object-contain"
+                            />
+                          ) : (
+                            <Image
+                              src="/images/coupang-logo.svg"
+                              alt="쿠팡"
+                              width={24}
+                              height={24}
+                              className="object-contain"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-bold text-white">{record.platform}</div>
+                          <div className="text-sm text-blue-200">
+                            {record.deliveryCount}건
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="font-bold text-white">
+                            {record.amount.toLocaleString()}원
+                          </div>
+                          <div className="text-sm">
+                            {record.verified ? (
+                              <span className="text-green-400">✓ 인증됨</span>
+                            ) : (
+                              <span className="text-yellow-400">⚠ 미인증</span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteRecord(record.id)}
+                          className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500/20 hover:bg-red-500/30 transition-colors"
+                        >
+                          <FaTrash className="text-red-400" size={14} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-sm">
-                      {record.verified ? (
-                        <span className="text-green-400">✓</span>
-                      ) : (
-                        <span className="text-yellow-400">⚠</span>
-                      )}
+                  ))}
+                  
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl border border-amber-400/30">
+                    <div className="font-bold text-white">총계</div>
+                    <div className="font-bold text-white text-lg">
+                      {getDayTotal(selectedDate).toLocaleString()}원
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDeleteRecord(record.id)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500/20 hover:bg-red-500/30 transition-colors"
-                  >
-                    <FaTrash className="text-red-400" size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-lg border border-amber-400/30">
-              <div className="font-bold">총계</div>
-              <div className="font-bold">
-                {getDayTotal(selectedDate).toLocaleString()}원
-              </div>
+                </>
+              )}
             </div>
           </div>
         </div>
-      </div>
       )}
     </div>
   );

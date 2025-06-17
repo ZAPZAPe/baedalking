@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import KakaoAd from '@/components/KakaoAd';
+import Loading from '@/components/Loading';
 
 export default function SettingsPage() {
   const { user, userProfile, signOut, updateProfile } = useAuth();
@@ -296,12 +297,13 @@ export default function SettingsPage() {
     }
   };
 
-  if (!user || !userProfile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center">
-        <p className="text-white">로그인이 필요합니다.</p>
-      </div>
-    );
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
+
+  if (!userProfile) {
+    return <Loading text="프로필 정보를 불러오는 중..." />;
   }
 
   return (
@@ -716,10 +718,10 @@ export default function SettingsPage() {
 
       {/* 모달 */}
       {modalType && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#2a2a2a] rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-blue-900/95 via-purple-900/95 to-indigo-900/95 backdrop-blur-lg rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto shadow-2xl border border-white/20">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">
+              <h2 className="text-xl font-bold text-white">
                 {modalType === 'notice' && '공지사항'}
                 {modalType === 'faq' && '자주 묻는 질문'}
                 {modalType === 'terms' && '이용약관'}
@@ -727,12 +729,14 @@ export default function SettingsPage() {
               </h2>
               <button
                 onClick={() => setModalType(null)}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
               >
-                <FaClose size={20} />
+                <FaClose size={16} className="text-white" />
               </button>
             </div>
-            <ModalContent />
+            <div className="text-white">
+              <ModalContent />
+            </div>
           </div>
         </div>
       )}

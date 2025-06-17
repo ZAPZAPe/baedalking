@@ -40,18 +40,9 @@ function CallbackContent() {
         if (code && state) {
           console.log('카카오 인증 코드 처리 중...');
           
-          // Supabase의 OAuth 코드 교환 엔드포인트 호출
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          
-          if (exchangeError) {
-            console.error('코드 교환 에러:', exchangeError);
-            // 대안: 직접 카카오 API 호출
-            await handleKakaoCodeExchange(code);
-          } else if (data.session) {
-            console.log('Supabase 세션 생성 성공');
-            router.push('/profile-setup');
-            return;
-          }
+          // PKCE 에러를 피하기 위해 바로 카카오 API 호출
+          await handleKakaoCodeExchange(code);
+          return;
         }
 
         // 기존 세션 확인
