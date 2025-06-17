@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FaComment, FaCrown } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import KakaoAd from '@/components/KakaoAd';
 
 const Login = () => {
   const router = useRouter();
@@ -124,8 +125,10 @@ const Login = () => {
           </div>
         </section>
 
-        {/* 하단 여백 */}
-        <section className="mb-8"></section>
+        {/* 하단 광고 */}
+        <section className="mb-8">
+          <KakaoAd page="login" index={0} />
+        </section>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ const AD_COUNTS = {
   ranking: 2, // 랭킹페이지: 상단, 하단
   upload: 2,  // 업로드페이지: 상단, 하단
   shop: 2,    // 상점페이지: 상단, 하단
+  login: 1,   // 로그인페이지: 하단
 } as const;
 
 type PageType = keyof typeof AD_COUNTS;

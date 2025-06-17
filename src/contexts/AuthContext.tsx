@@ -24,12 +24,13 @@ export interface User {
 }
 
 interface AuthContextType {
-  user: User | null;
-  userProfile: User | null; // userProfile 추가
+  user: SupabaseUser | null;
+  userProfile: User | null;
   loading: boolean;
   signUp: (nickname: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
+  refreshUserProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,7 +44,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -81,12 +82,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = async (authUser: SupabaseUser) => {
     try {
+      setUser(authUser);
+      
       // Supabase users 테이블에서 프로필 정보 가져오기
       const { data: profile, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', authUser.id)
-        .maybeSingle(); // single() 대신 maybeSingle() 사용
+        .maybeSingle();
 
       if (error) {
         console.error('프로필 로드 에러:', error);
@@ -138,7 +141,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: newProfile?.role || 'user',
         };
 
-        return setUser(userData);
+        setUserProfile(userData);
+        return;
       }
 
       // 프로필이 존재하는 경우
@@ -158,11 +162,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: profile?.role || 'user',
       };
 
-      setUser(userData);
+      setUserProfile(userData);
     } catch (error) {
       console.error('프로필 로드 실패:', error);
       // 프로필 로드 실패해도 기본 사용자 정보는 설정
-      setUser({
+      setUserProfile({
         id: authUser.id,
         email: authUser.email || '',
       });
@@ -209,6 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       setUser(null);
+      setUserProfile(null);
     } catch (error) {
       console.error('로그아웃 실패:', error);
       throw error;
@@ -237,10 +242,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       // 로컬 상태 업데이트
-      setUser(prev => prev ? { ...prev, ...updates } : null);
+      setUserProfile(prev => prev ? { ...prev, ...updates } : null);
     } catch (error) {
       console.error('프로필 업데이트 실패:', error);
       throw error;
+    }
+  };
+
+  const refreshUserProfile = async () => {
+    if (user) {
+      await loadUserProfile(user);
     }
   };
 
@@ -251,6 +262,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signOut,
     updateProfile,
+    refreshUserProfile,
   };
 
   return (
