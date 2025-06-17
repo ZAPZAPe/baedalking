@@ -62,13 +62,8 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
         <meta name="description" content="배달킹 - 배달의민족 랭킹 시스템" />
         <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/logo192.png" />
+        <link rel="apple-touch-icon" href="/baedalking-logo.png" />
         <link rel="manifest" href="/manifest.json" />
-        <script
-          src="https://t1.kakaocdn.net/kakao_js_sdk/2.6.0/kakao.min.js"
-          crossOrigin="anonymous"
-          defer
-        ></script>
       </head>
       <body className={inter.className}>
         {/* 카카오 SDK */}

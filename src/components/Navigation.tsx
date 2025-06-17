@@ -39,7 +39,7 @@ export default function Navigation({ title }: NavigationProps) {
     <>
       {/* 상단 네비게이션 바 */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-900 to-purple-900 border-b border-white/10">
-        <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between relative">
+        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between relative">
           {/* 좌측: 홈 메뉴 */}
           <Link 
             href="/" 
@@ -79,7 +79,7 @@ export default function Navigation({ title }: NavigationProps) {
       {/* 하단 네비게이션 바 - 로그인한 사용자만 표시 */}
       {user && (
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-900 to-purple-900 border-t border-white/10">
-          <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-around">
+          <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-around">
           {/* 랭킹 */}
           <Link 
             href="/ranking" 

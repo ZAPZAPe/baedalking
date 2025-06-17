@@ -59,8 +59,8 @@ export default function InquiryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white py-8">
-      <div className="max-w-md mx-auto px-4">
+    <div className="relative z-10">
+      <div className="max-w-3xl mx-auto px-4">
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => router.back()}

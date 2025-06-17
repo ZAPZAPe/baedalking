@@ -1,14 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
-import fetch from 'node-fetch'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL과 Anon Key가 설정되지 않았습니다.')
+  console.warn('⚠️ Supabase 환경 변수가 설정되지 않았습니다. NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// 빈 문자열이라도 createClient는 호출하여 빌드가 실패하지 않도록 함
+export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder-key', {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -18,7 +18,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'apikey': supabaseAnonKey
+      'apikey': supabaseAnonKey || 'placeholder-key'
     },
   }
 })

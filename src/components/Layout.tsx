@@ -18,7 +18,7 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* 메인 콘텐츠 */}
       <main className={`${hideNavigation ? 'pb-0' : 'pb-24'} min-h-screen`}>
-        <div className="max-w-md mx-auto relative">
+        <div className="max-w-3xl mx-auto relative">
           {children}
         </div>
       </main>

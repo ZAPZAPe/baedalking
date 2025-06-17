@@ -64,7 +64,7 @@ export default function SupportPage() {
 
   return (
     <div className="relative z-10">
-      <div className="max-w-md mx-auto px-4">
+      <div className="max-w-3xl mx-auto px-4">
         {/* 헤더 */}
         <header className="pt-4 pb-2 mb-4">
           <div className="flex items-center justify-between">

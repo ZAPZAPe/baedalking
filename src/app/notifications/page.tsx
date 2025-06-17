@@ -72,7 +72,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="relative z-10">
-      <div className="max-w-md mx-auto px-4">
+      <div className="max-w-3xl mx-auto px-4">
         {/* 상단 광고 */}
         <section className="mt-2 mb-4">
           <div className="bg-white/5 rounded-lg h-[100px] flex items-center justify-center border border-white/10">

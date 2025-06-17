@@ -94,8 +94,8 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white py-8">
-      <div className="max-w-md mx-auto px-4">
+    <div className="relative z-10">
+      <div className="max-w-3xl mx-auto px-4">
         <h1 className="text-2xl font-bold mb-6">알림 설정</h1>
 
         {error && (

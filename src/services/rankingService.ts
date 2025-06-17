@@ -287,14 +287,14 @@ export const getUserRankingInfo = async (userId: string): Promise<{
   }
 };
 
-const getCurrentSession = () => {
-  const session = supabase.auth.getSession();
+const getCurrentSession = async () => {
+  const { data: session } = await supabase.auth.getSession();
   return {
-    hasSession: !!session.data.session,
-    user: session.data.session?.user?.name || 'No user',
-    userId: session.data.session?.user?.id || 'No ID',
-    accessToken: session.data.session?.accessToken ? '토큰 있음' : '토큰 없음',
-    tokenLength: session.data.session?.accessToken?.length || 0,
+    hasSession: !!session?.session,
+    user: session?.session?.user?.email || 'No user',
+    userId: session?.session?.user?.id || 'No ID',
+    accessToken: session?.session?.access_token ? '토큰 있음' : '토큰 없음',
+    tokenLength: session?.session?.access_token?.length || 0,
   };
 };
 

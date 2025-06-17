@@ -230,7 +230,7 @@ export default function RecordsPage() {
 
   return (
     <div className="relative z-10">
-      <div className="max-w-md mx-auto px-4">
+      <div className="max-w-3xl mx-auto px-4">
         {/* 상단 광고 */}
         <section className="mt-2 mb-4">
           <KakaoAd page="shop" index={1} />
@@ -518,8 +518,9 @@ export default function RecordsPage() {
 
       {/* 달력 보기일 때 선택된 날짜의 상세 정보 */}
       {selectedDate && (
-        <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10">
-          <div className="flex items-center justify-between mb-3">
+        <div className="max-w-3xl mx-auto px-4 mt-4">
+          <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+            <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-bold">
               {new Date(selectedDate).toLocaleDateString('ko-KR', {
                 year: 'numeric',
@@ -598,6 +599,7 @@ export default function RecordsPage() {
             </div>
           </div>
         </div>
+      </div>
       )}
     </div>
   );

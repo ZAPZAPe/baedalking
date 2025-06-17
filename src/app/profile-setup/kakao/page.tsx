@@ -87,7 +87,7 @@ const KakaoProfileSetup = () => {
 
   return (
     <div className="relative z-10">
-      <div className="max-w-md mx-auto px-4">
+      <div className="max-w-3xl mx-auto px-4">
         {/* 상단 여백 */}
         <section className="mt-8 mb-4"></section>
 

@@ -43,7 +43,7 @@ const BottomNavigation = () => {
       py-2 px-4
       transition-all duration-200
     ">
-      <div className="max-w-md mx-auto">
+      <div className="max-w-3xl mx-auto">
         <ul className="flex items-center justify-between">
           {navItems.map((item) => (
             <li key={item.href} className="flex-1">

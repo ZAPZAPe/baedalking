@@ -22,8 +22,7 @@
     "date-fns": "^3.3.1",
     "dotenv": "^16.4.1",
     "lucide-react": "^0.330.0",
-    "next": "14.1.0",
-    "node-fetch": "^2.7.0",
+    "next": "14.2.30",
     "react": "^18",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^18",
@@ -37,7 +36,6 @@
   },
   "devDependencies": {
     "@types/node": "^20",
-    "@types/node-fetch": "^2.6.12",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.17",
