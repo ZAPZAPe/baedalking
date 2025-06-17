@@ -309,7 +309,7 @@ export default function SettingsPage() {
       <div className="max-w-md mx-auto px-4">
         {/* 상단 광고 */}
         <section className="mt-2 mb-4">
-          <KakaoAd />
+          <KakaoAd page="home" index={2} />
         </section>
 
         {/* 내 정보 섹션 */}
@@ -710,7 +710,7 @@ export default function SettingsPage() {
 
         {/* 하단 광고 */}
         <section className="mb-2">
-          <KakaoAd />
+          <KakaoAd page="home" index={2} />
         </section>
       </div>
 
