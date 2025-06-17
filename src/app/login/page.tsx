@@ -102,7 +102,8 @@ const Login = () => {
         options: {
           redirectTo: `${appUrl}/auth/kakao/callback`,
           queryParams: {
-            scope: 'profile_nickname account_email'
+            scope: 'profile_nickname account_email',
+            redirect_uri: `${appUrl}/auth/kakao/callback`
           }
         }
       });
