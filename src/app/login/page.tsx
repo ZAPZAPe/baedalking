@@ -95,13 +95,14 @@ const Login = () => {
     setError('');
 
     try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.baedalking.com';
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: {
-          redirectTo: `${window.location.origin}/profile-setup`,
+          redirectTo: `${appUrl}/auth/kakao/callback`,
           queryParams: {
-            scope: 'profile_nickname account_email',
-            redirect_uri: 'https://gxaqqznkcuzqbacgqvzg.supabase.co/auth/v1/callback'
+            scope: 'profile_nickname account_email'
           }
         }
       });
