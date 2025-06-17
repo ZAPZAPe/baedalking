@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { FaBell, FaChartLine, FaGift, FaTrophy, FaUserFriends } from 'react-icons/fa';
+import { useRouter } from 'next/navigation';
+import Loading from '@/components/Loading';
 
 interface NotificationSetting {
   id: string;
@@ -14,7 +16,8 @@ interface NotificationSetting {
 }
 
 export default function NotificationsPage() {
-  const { user } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -50,13 +53,22 @@ export default function NotificationsPage() {
   ]);
 
   useEffect(() => {
-    if (user?.notificationSettings) {
+    if (userProfile?.notificationSettings) {
       setSettings(prev => prev.map(setting => ({
         ...setting,
-        enabled: user.notificationSettings?.[setting.id] ?? true
+        enabled: userProfile.notificationSettings?.[setting.id] ?? true
       })));
     }
-  }, [user]);
+  }, [userProfile]);
+
+  if (authLoading) {
+    return <Loading text="로딩 중..." />;
+  }
+
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
 
   const toggleSetting = async (settingId: string) => {
     if (!user) return;

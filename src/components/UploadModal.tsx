@@ -12,7 +12,7 @@ interface UploadModalProps {
 }
 
 export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -75,8 +75,8 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
       // 업로드 처리
       const uploadResult = await uploadDeliveryRecord(selectedFile, {
         userId: user.id,
-        userNickname: user.nickname || '익명',
-        userRegion: user.region || '미지정',
+        userNickname: userProfile?.nickname || '익명',
+        userRegion: userProfile?.region || '미지정',
         platform: result.platform === 'baemin' ? '배민커넥트' : '쿠팡이츠',
         amount: result.amount,
         deliveryCount: result.deliveryCount,
