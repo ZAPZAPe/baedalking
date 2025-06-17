@@ -113,32 +113,24 @@ export default function ProfileSetupPage() {
     setError('');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/login');
-        return;
+      const formData = new FormData();
+      formData.append('image', file);
+
+      // 기존 API 엔드포인트 사용
+      const response = await fetch('/api/upload/profile', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('이미지 업로드 실패');
       }
 
-      // 파일명 생성
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
-
-      // Supabase Storage에 업로드
-      const { error: uploadError } = await supabase.storage
-        .from('user-profiles')
-        .upload(filePath, file, {
-          upsert: true
-        });
-
-      if (uploadError) throw uploadError;
-
-      // 공개 URL 가져오기
-      const { data: { publicUrl } } = supabase.storage
-        .from('user-profiles')
-        .getPublicUrl(filePath);
-
-      setFormData(prev => ({ ...prev, profile_image: publicUrl }));
+      const data = await response.json();
+      
+      if (data.imageUrl) {
+        setFormData(prev => ({ ...prev, profile_image: data.imageUrl }));
+      }
     } catch (err: any) {
       console.error('이미지 업로드 오류:', err);
       setError('이미지 업로드 중 오류가 발생했습니다.');
