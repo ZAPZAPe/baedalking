@@ -118,66 +118,143 @@ function CallbackContent() {
         }
 
         const userData = await userResponse.json();
-        console.log('카카오 사용자 정보 획득 성공');
+        console.log('카카오 사용자 정보 획득 성공:', {
+          id: userData.id,
+          nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname,
+          email: userData.kakao_account?.email
+        });
 
         // Supabase에 사용자 생성 또는 로그인
         const email = userData.kakao_account?.email || `kakao_${userData.id}@baedalking.com`;
         const password = `kakao_${userData.id}_secret`;
 
-        // 기존 사용자 확인
-        const { data: existingUser } = await supabase
-          .from('users')
-          .select('*')
-          .eq('kakao_id', userData.id.toString())
-          .single();
+        // 먼저 로그인 시도
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password,
+        });
 
-        if (existingUser) {
-          // 기존 사용자 로그인
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: existingUser.email,
-            password: password,
-          });
-
-          if (signInError) {
-            console.error('기존 사용자 로그인 에러:', signInError);
-            throw signInError;
-          }
-
-          console.log('기존 사용자 로그인 성공');
-          router.push('/profile-setup');
-        } else {
-          // 신규 사용자 생성
+        if (signInError) {
+          console.log('기존 사용자 없음, 새 사용자 생성 시도');
+          
+          // 신규 사용자 생성 (이메일 인증 건너뛰기)
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: email,
             password: password,
+            options: {
+              emailRedirectTo: `${window.location.origin}/profile-setup`,
+              data: {
+                kakao_id: userData.id.toString(),
+                nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
+                profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
+              }
+            }
           });
 
           if (signUpError) {
             console.error('신규 사용자 생성 에러:', signUpError);
+            
+            // 이메일 인증 에러인 경우 무시하고 바로 로그인 시도
+            if (signUpError.message.includes('Error sending confirmation email')) {
+              console.log('이메일 인증 에러 무시, 바로 로그인 시도');
+              
+              // 잠시 대기 후 다시 로그인 시도
+              setTimeout(async () => {
+                const { data: retrySignInData, error: retrySignInError } = await supabase.auth.signInWithPassword({
+                  email: email,
+                  password: password,
+                });
+
+                if (!retrySignInError && retrySignInData.session) {
+                  console.log('로그인 성공 (재시도)');
+                  
+                  // users 테이블에 프로필 생성
+                  const { error: profileError } = await supabase
+                    .from('users')
+                    .upsert({
+                      id: retrySignInData.user.id,
+                      email: email,
+                      nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
+                      kakao_id: userData.id.toString(),
+                      profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
+                      points: 500,
+                      created_at: new Date().toISOString(),
+                    }, {
+                      onConflict: 'id'
+                    });
+
+                  if (profileError) {
+                    console.error('프로필 생성 에러:', profileError);
+                  }
+
+                  router.push('/profile-setup');
+                } else {
+                  console.error('재시도 로그인 실패:', retrySignInError);
+                  router.push('/login?error=retry_signin_failed');
+                }
+              }, 1000);
+              return;
+            }
+            
             throw signUpError;
           }
 
           if (signUpData.user) {
-            // users 테이블에 프로필 생성
-            const { error: profileError } = await supabase
-              .from('users')
-              .insert({
-                id: signUpData.user.id,
-                email: email,
-                nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
-                kakao_id: userData.id.toString(),
-                profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-                points: 500,
-                created_at: new Date().toISOString(),
-              });
+            console.log('신규 사용자 생성 성공');
+            
+            // 바로 로그인 시도
+            const { data: newSignInData, error: newSignInError } = await supabase.auth.signInWithPassword({
+              email: email,
+              password: password,
+            });
 
-            if (profileError) {
-              console.error('프로필 생성 에러:', profileError);
+            if (!newSignInError && newSignInData.session) {
+              console.log('신규 사용자 로그인 성공');
+              
+              // users 테이블에 프로필 생성
+              const { error: profileError } = await supabase
+                .from('users')
+                .upsert({
+                  id: newSignInData.user.id,
+                  email: email,
+                  nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
+                  kakao_id: userData.id.toString(),
+                  profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
+                  points: 500,
+                  created_at: new Date().toISOString(),
+                }, {
+                  onConflict: 'id'
+                });
+
+              if (profileError) {
+                console.error('프로필 생성 에러:', profileError);
+              }
+
+              router.push('/profile-setup');
             }
-
-            console.log('신규 사용자 생성 및 로그인 성공');
-            router.push('/profile-setup');
           }
+        } else if (signInData.session) {
+          console.log('기존 사용자 로그인 성공');
+          
+          // users 테이블 업데이트 (있는 경우에만)
+          const { error: updateError } = await supabase
+            .from('users')
+            .upsert({
+              id: signInData.user.id,
+              email: email,
+              nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
+              kakao_id: userData.id.toString(),
+              profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
+              updated_at: new Date().toISOString(),
+            }, {
+              onConflict: 'id'
+            });
+
+          if (updateError) {
+            console.error('프로필 업데이트 에러:', updateError);
+          }
+
+          router.push('/profile-setup');
         }
       } catch (error) {
         console.error('카카오 코드 교환 에러:', error);
