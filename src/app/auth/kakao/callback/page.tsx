@@ -173,6 +173,7 @@ function CallbackContent() {
                     .from('users')
                     .upsert({
                       id: retrySignInData.user.id,
+                      username: `kakao_${userData.id}`,
                       email: email,
                       nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
                       kakao_id: userData.id.toString(),
@@ -216,6 +217,7 @@ function CallbackContent() {
                 .from('users')
                 .upsert({
                   id: newSignInData.user.id,
+                  username: `kakao_${userData.id}`,
                   email: email,
                   nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
                   kakao_id: userData.id.toString(),
@@ -241,6 +243,7 @@ function CallbackContent() {
             .from('users')
             .upsert({
               id: signInData.user.id,
+              username: `kakao_${userData.id}`,
               email: email,
               nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
               kakao_id: userData.id.toString(),
