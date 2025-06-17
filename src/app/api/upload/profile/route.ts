@@ -1,7 +1,4 @@
 import { NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: Request) {
   try {
@@ -31,27 +28,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // 파일을 Base64로 변환
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    // 파일명 생성 (UUID + 원본 확장자)
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExtension}`;
+    const base64 = buffer.toString('base64');
+    const mimeType = file.type;
     
-    // public/profiles 디렉토리에 저장
-    const uploadDir = join(process.cwd(), 'public', 'profiles');
-    const filePath = join(uploadDir, fileName);
-    
-    await writeFile(filePath, buffer);
-
-    // 이미지 URL 반환
-    const imageUrl = `/profiles/${fileName}`;
+    // Data URL 형식으로 반환
+    const imageUrl = `data:${mimeType};base64,${base64}`;
     
     return NextResponse.json({ imageUrl });
   } catch (error) {
     console.error('이미지 업로드 에러:', error);
     return NextResponse.json(
-      { error: '이미지 업로드에 실패했습니다.' },
+      { error: '이미지 업로드에 실패했습니다.', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
