@@ -233,7 +233,7 @@ export default function RecordsPage() {
       <div className="max-w-md mx-auto px-4">
         {/* 상단 광고 */}
         <section className="mt-2 mb-4">
-          <KakaoAd />
+          <KakaoAd page="shop" index={1} />
         </section>
 
         {/* 오늘의 실적 */}
@@ -502,7 +502,7 @@ export default function RecordsPage() {
 
         {/* 하단 광고 */}
         <section className="mb-2">
-          <KakaoAd />
+          <KakaoAd page="shop" index={2} />
         </section>
       </div>
 

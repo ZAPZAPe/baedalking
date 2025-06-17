@@ -126,19 +126,23 @@ export default function PointsManagement() {
     if (!window.confirm('모든 사용자에게 100 포인트를 지급하시겠습니까?')) return;
 
     try {
-      // 모든 사용자 포인트 업데이트
-      const { error: updateError } = await supabase
+      // 모든 사용자 포인트 조회
+      const { data: allUsers, error: fetchError } = await supabase
         .from('users')
-        .update({ 
-          points: supabase.sql`points + 100`,
-          updated_at: new Date().toISOString()
-        })
-        .neq('id', '');
+        .select('id, points');
 
-      if (updateError) throw updateError;
+      if (fetchError) throw fetchError;
+
+      // 각 사용자별로 포인트 업데이트
+      for (const user of allUsers) {
+        await supabase
+          .from('users')
+          .update({ points: user.points + 100, updated_at: new Date().toISOString() })
+          .eq('id', user.id);
+      }
 
       // 포인트 내역 기록
-      const historyInserts = users.map(user => ({
+      const historyInserts = allUsers.map(user => ({
         user_id: user.id,
         amount: 100,
         type: 'reward',
