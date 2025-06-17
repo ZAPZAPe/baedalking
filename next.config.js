@@ -7,9 +7,26 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'k.kakaocdn.net',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'gxaqqznkcuzqbacgqvzg.supabase.co',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'k.kakaocdn.net',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ssl.pstatic.net',
+        pathname: '/**',
       },
     ],
+    formats: ['image/avif', 'image/webp'],
   },
   // Vercel 배포를 위한 설정
   output: process.env.VERCEL ? undefined : 'standalone',
@@ -31,6 +48,14 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+  },
+  // 성능 최적화 설정
+  compress: true,
+  poweredByHeader: false,
+  // 실험적 기능들
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['react-icons'],
   },
 }
 

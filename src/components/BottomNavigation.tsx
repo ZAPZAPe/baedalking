@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FaHome, FaTrophy, FaUpload, FaUser } from 'react-icons/fa';
+import { useAuth } from '@/contexts/AuthContext';
 
 const BottomNavigation = () => {
   const pathname = usePathname();
+  const { user } = useAuth();
 
   const navItems = [
     { 
@@ -27,10 +29,10 @@ const BottomNavigation = () => {
       isActive: pathname === '/upload'
     },
     { 
-      href: '/login', 
+      href: user ? '/settings' : '/login', 
       icon: <FaUser size={20} />, 
-      label: '로그인',
-      isActive: pathname === '/login'
+      label: user ? '설정' : '로그인',
+      isActive: pathname === '/settings' || pathname === '/login'
     }
   ];
 
@@ -49,6 +51,7 @@ const BottomNavigation = () => {
             <li key={item.href} className="flex-1">
               <Link
                 href={item.href}
+                prefetch={true}
                 className={`
                   group relative flex flex-col items-center justify-center
                   py-2 px-3 rounded-lg

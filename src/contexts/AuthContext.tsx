@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { logoutKakao } from '@/services/kakaoAuth';
@@ -35,6 +35,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// 프로필 캐시
+const profileCache = new Map<string, { data: User; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5분
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -48,41 +52,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuthState();
-
-    // Supabase auth 상태 변화 감지
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await loadUserProfile(session.user);
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkAuthState = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        await loadUserProfile(session.user);
-      } else {
-        setUser(null);
-      }
-    } catch (error: any) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadUserProfile = async (authUser: SupabaseUser) => {
+  const loadUserProfile = useCallback(async (authUser: SupabaseUser) => {
     try {
       setUser(authUser);
+      
+      // 캐시 확인
+      const cached = profileCache.get(authUser.id);
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        setUserProfile(cached.data);
+        return;
+      }
       
       // Supabase users 테이블에서 프로필 정보 가져오기
       const { data: profile, error } = await supabase
@@ -114,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             total_deliveries: 0,
             total_earnings: 0
           }, {
-            onConflict: 'id', // id 충돌 시 업데이트
+            onConflict: 'id',
             ignoreDuplicates: false
           })
           .select()
@@ -142,6 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         setUserProfile(userData);
+        // 캐시에 저장
+        profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
         return;
       }
 
@@ -163,17 +144,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       setUserProfile(userData);
+      // 캐시에 저장
+      profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
     } catch (error) {
       console.error('프로필 로드 실패:', error);
       // 프로필 로드 실패해도 기본 사용자 정보는 설정
-      setUserProfile({
+      const basicUser = {
         id: authUser.id,
         email: authUser.email || '',
-      });
+      };
+      setUserProfile(basicUser);
     }
-  };
+  }, []);
 
-  const signUp = async (nickname: string) => {
+  useEffect(() => {
+    let mounted = true;
+
+    const checkAuthState = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (mounted && session?.user) {
+          await loadUserProfile(session.user);
+        } else if (mounted) {
+          setUser(null);
+          setUserProfile(null);
+        }
+      } catch (error: any) {
+        if (mounted) {
+          setUser(null);
+          setUserProfile(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    checkAuthState();
+
+    // Supabase auth 상태 변화 감지
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
+      if (session?.user) {
+        await loadUserProfile(session.user);
+      } else {
+        setUser(null);
+        setUserProfile(null);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [loadUserProfile]);
+
+  const signUp = useCallback(async (nickname: string) => {
     try {
       setLoading(true);
       
@@ -191,18 +221,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) throw error;
-      
-      // OAuth 응답에는 user가 없으므로 여기서는 프로필 생성하지 않음
-      // 실제 프로필 생성은 콜백 페이지에서 처리됨
     } catch (error) {
       console.error('회원가입 실패:', error);
       throw error;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -214,15 +241,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setUser(null);
       setUserProfile(null);
+      // 캐시 클리어
+      profileCache.clear();
     } catch (error) {
       console.error('로그아웃 실패:', error);
       throw error;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const updateProfile = async (updates: Partial<User>) => {
+  const updateProfile = useCallback(async (updates: Partial<User>) => {
     try {
       if (!user) throw new Error('사용자가 로그인되어 있지 않습니다.');
       
@@ -242,20 +271,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       // 로컬 상태 업데이트
-      setUserProfile(prev => prev ? { ...prev, ...updates } : null);
+      setUserProfile(prev => {
+        if (!prev) return null;
+        const updated = { ...prev, ...updates };
+        // 캐시 업데이트
+        profileCache.set(user.id, { data: updated, timestamp: Date.now() });
+        return updated;
+      });
     } catch (error) {
       console.error('프로필 업데이트 실패:', error);
       throw error;
     }
-  };
+  }, [user]);
 
-  const refreshUserProfile = async () => {
+  const refreshUserProfile = useCallback(async () => {
     if (user) {
+      // 캐시 무효화
+      profileCache.delete(user.id);
       await loadUserProfile(user);
     }
-  };
+  }, [user, loadUserProfile]);
 
-  const value: AuthContextType = {
+  const value = useMemo(() => ({
     user,
     userProfile,
     loading,
@@ -263,7 +300,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut,
     updateProfile,
     refreshUserProfile,
-  };
+  }), [user, userProfile, loading, signUp, signOut, updateProfile, refreshUserProfile]);
 
   return (
     <AuthContext.Provider value={value}>

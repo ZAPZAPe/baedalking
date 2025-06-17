@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // 회원가입
 export const signUp = async (email: string, password: string, nickname: string) => {
@@ -6,7 +6,9 @@ export const signUp = async (email: string, password: string, nickname: string) 
     email,
     password,
     options: {
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      emailRedirectTo: typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/callback`
+        : 'https://www.baedalking.com/auth/callback',
       data: {
         nickname,
       }

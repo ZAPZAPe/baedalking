@@ -127,7 +127,7 @@ export default function Home() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Link href="/upload" className="bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl p-4 border border-amber-400/30 hover:scale-105 transition-all">
+                  <Link href="/upload" prefetch={true} className="bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl p-4 border border-amber-400/30 hover:scale-105 transition-all">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
                         <FaCamera className="text-white" size={18} />
@@ -139,7 +139,7 @@ export default function Home() {
                     </div>
                   </Link>
 
-                  <Link href="/ranking" className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-400/30 hover:scale-105 transition-all">
+                  <Link href="/ranking" prefetch={true} className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-400/30 hover:scale-105 transition-all">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center">
                         <FaTrophy className="text-white" size={18} />
@@ -151,7 +151,7 @@ export default function Home() {
                     </div>
                   </Link>
 
-                  <Link href="/store" className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl p-4 border border-green-400/30 hover:scale-105 transition-all">
+                  <Link href="/store" prefetch={true} className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl p-4 border border-green-400/30 hover:scale-105 transition-all">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center">
                         <FaStore className="text-white" size={18} />
@@ -250,6 +250,7 @@ export default function Home() {
                 <div className="space-y-2">
                   <Link 
                     href="/login" 
+                    prefetch={true}
                     className="block w-full bg-[#FEE500] text-[#000000D9] py-3 px-4 rounded-xl font-bold hover:bg-[#FDD835] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#FEE500]/50 transition-all"
                   >
                     <div className="flex items-center justify-center gap-2">

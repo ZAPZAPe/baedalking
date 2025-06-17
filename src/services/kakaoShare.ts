@@ -118,7 +118,7 @@ interface KakaoShareParams {
 }
 
 export const shareRanking = ({ rank, totalAmount, deliveryCount, platform, period, region }: KakaoShareParams) => {
-  if (!window.Kakao) {
+  if (typeof window === 'undefined' || !window.Kakao) {
     console.error('Kakao SDK가 로드되지 않았습니다.');
     return;
   }
@@ -136,6 +136,8 @@ ${region} ${platform} 기준
 📦 ${deliveryCount}건
   `.trim();
 
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://www.baedalking.com';
+
   try {
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
@@ -144,16 +146,16 @@ ${region} ${platform} 기준
         description: description,
         imageUrl: 'https://baedalking.com/images/share-ranking.png',
         link: {
-          mobileWebUrl: window.location.href,
-          webUrl: window.location.href,
+          mobileWebUrl: currentUrl,
+          webUrl: currentUrl,
         },
       },
       buttons: [
         {
           title: '배달킹 순위보기',
           link: {
-            mobileWebUrl: window.location.href,
-            webUrl: window.location.href,
+            mobileWebUrl: currentUrl,
+            webUrl: currentUrl,
           },
         },
       ],

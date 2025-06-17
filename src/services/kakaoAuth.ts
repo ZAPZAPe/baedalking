@@ -45,6 +45,11 @@ export const initKakao = () => {
 // 카카오 로그인
 export const loginWithKakao = async () => {
   return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      reject(new Error('브라우저 환경에서만 실행 가능합니다.'));
+      return;
+    }
+    
     if (!window.Kakao) {
       reject(new Error('카카오 SDK가 로드되지 않았습니다.'));
       return;
@@ -121,8 +126,8 @@ export const loginWithKakao = async () => {
         reject(err);
       },
       // 리다이렉트 URI 추가
-      redirectUri: typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/kakao/callback`
+      redirectUri: process.env.NEXT_PUBLIC_APP_URL 
+        ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/kakao/callback`
         : 'https://www.baedalking.com/auth/kakao/callback'
     });
   });
@@ -130,7 +135,7 @@ export const loginWithKakao = async () => {
 
 // 카카오 로그아웃
 export const logoutKakao = () => {
-  if (window.Kakao && window.Kakao.Auth.getAccessToken()) {
+  if (typeof window !== 'undefined' && window.Kakao && window.Kakao.Auth.getAccessToken()) {
     window.Kakao.Auth.logout();
   }
 }; 
