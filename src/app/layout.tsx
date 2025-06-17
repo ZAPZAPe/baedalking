@@ -27,19 +27,22 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  userScalable: 'no',
+  userScalable: false,
   viewportFit: 'cover',
   themeColor: '#1e3a8a',
 };
 
 export const metadata: Metadata = {
-  title: "배달킹 - 실시간 배달 랭킹",
-  description: "배달 라이더들의 실시간 랭킹을 확인하세요",
+  title: '배달킹 - 배달대행 라이더 수입 관리',
+  description: '배달킹과 함께 더 스마트한 배달 라이프를 시작하세요.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: '배달킹',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
   formatDetection: {
     telephone: true,
@@ -58,9 +61,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <meta name="theme-color" content="#1e3a8a" />
         <script
-          defer
-          src="https://t1.kakaocdn.net/kakao_js_sdk/2.6.0/kakao.min.js"
-          integrity="sha384-6MFdIr0zOira1DhCDX6+0W8e2gYbFU/L85v3UV1Q5pE9fHXcJ0YoUnzwVRJ2Wgc"
+          async
+          src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
           crossOrigin="anonymous"
         ></script>
       </head>

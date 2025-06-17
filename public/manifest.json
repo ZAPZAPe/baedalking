@@ -1,0 +1,20 @@
+{
+  "name": "배달킹 - 배달대행 라이더 수입 관리",
+  "short_name": "배달킹",
+  "description": "배달킹과 함께 더 스마트한 배달 라이프를 시작하세요",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "ko",
+  "dir": "ltr"
+} 
