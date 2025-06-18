@@ -6,6 +6,11 @@ declare global {
 
 // 카카오 SDK 초기화
 export const initKakaoShare = () => {
+  if (typeof window === 'undefined') {
+    console.log('서버 사이드에서 실행 중입니다.');
+    return;
+  }
+
   if (!window.Kakao) {
     console.error('Kakao SDK가 로드되지 않았습니다.');
     return;
@@ -13,7 +18,17 @@ export const initKakaoShare = () => {
 
   // JavaScript 키로 초기화
   if (!window.Kakao.isInitialized()) {
-    window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
+    const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
+    console.log('Kakao SDK 초기화 시도:', kakaoKey ? '키 있음' : '키 없음');
+    
+    if (kakaoKey) {
+      window.Kakao.init(kakaoKey);
+      console.log('Kakao SDK 초기화 완료');
+    } else {
+      console.error('NEXT_PUBLIC_KAKAO_JS_KEY가 설정되지 않았습니다.');
+    }
+  } else {
+    console.log('Kakao SDK는 이미 초기화되었습니다.');
   }
 };
 
@@ -118,14 +133,24 @@ interface KakaoShareParams {
 }
 
 export const shareRanking = ({ rank, totalAmount, deliveryCount, platform, period, region }: KakaoShareParams) => {
+  console.log('shareRanking 함수 호출됨:', { rank, totalAmount, deliveryCount, platform, period, region });
+  
   if (typeof window === 'undefined' || !window.Kakao) {
     console.error('Kakao SDK가 로드되지 않았습니다.');
+    alert('카카오톡 공유 기능을 사용할 수 없습니다. 페이지를 새로고침 해주세요.');
     return;
   }
 
   if (!window.Kakao.isInitialized()) {
-    console.error('Kakao SDK가 초기화되지 않았습니다.');
-    return;
+    console.error('Kakao SDK가 초기화되지 않았습니다. 초기화 시도...');
+    initKakaoShare();
+    
+    // 초기화 후 다시 확인
+    if (!window.Kakao.isInitialized()) {
+      console.error('Kakao SDK 초기화 실패');
+      alert('카카오톡 공유 기능을 사용할 수 없습니다.');
+      return;
+    }
   }
 
   const title = `${period} 배달킹 ${rank}위 달성! 🏆`;
@@ -138,13 +163,15 @@ ${region} ${platform} 기준
 
   const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://www.baedalking.com';
 
+  console.log('카카오톡 공유 시도:', { title, description });
+
   try {
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
       content: {
         title: title,
         description: description,
-        imageUrl: 'https://baedalking.com/images/share-ranking.png',
+        imageUrl: 'https://www.baedalking.com/baedalking-logo.png',
         link: {
           mobileWebUrl: currentUrl,
           webUrl: currentUrl,
@@ -165,6 +192,7 @@ ${region} ${platform} 기준
         sharedCount: rank <= 3 ? 99 : Math.floor(Math.random() * 20) + 5,
       },
     });
+    console.log('카카오톡 공유 요청 완료');
   } catch (error) {
     console.error('카카오톡 공유 중 오류 발생:', error);
     alert('카카오톡 공유 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');

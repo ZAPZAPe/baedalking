@@ -82,7 +82,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       read: false,
       createdAt: new Date()
     };
-    setNotifications(prev => [newNotification, ...prev]);
+    setNotifications(prev => {
+      // 최대 10개까지만 유지
+      const updated = [newNotification, ...prev];
+      return updated.slice(0, 10);
+    });
   }, []);
 
   const markAsRead = useCallback((id: string) => {

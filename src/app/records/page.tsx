@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { FaClipboardList, FaCalendarAlt, FaMoneyBillWave, FaPlus, FaImage, FaCheck, FaTimes, FaChartLine, FaUsers, FaTrophy, FaFire, FaList, FaCalendar, FaTrash, FaFilter, FaCamera, FaSpinner } from 'react-icons/fa';
+import { FaClipboardList, FaCalendarAlt, FaMoneyBillWave, FaPlus, FaImage, FaCheck, FaTimes, FaChartLine, FaUsers, FaTrophy, FaFire, FaList, FaCalendar, FaTrash, FaFilter, FaCamera, FaSpinner, FaMotorcycle, FaBicycle } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getUserDeliveryRecords, deleteDeliveryRecord } from '@/services/deliveryService';
@@ -288,8 +288,8 @@ export default function RecordsPage() {
               {/* 기간 선택 */}
               <div className="flex gap-2">
                 {[
-                  { value: 'week' as const, label: '주간', icon: FaCalendarAlt },
-                  { value: 'month' as const, label: '월간', icon: FaCalendar }
+                  { value: 'week' as const, label: '주간', Icon: FaCalendarAlt },
+                  { value: 'month' as const, label: '월간', Icon: FaCalendar }
                 ].map((v) => (
                   <button
                     key={v.value}
@@ -301,7 +301,7 @@ export default function RecordsPage() {
                         : 'bg-white/5 text-blue-200 hover:text-white hover:bg-white/10'}
                     `}
                   >
-                    <v.icon size={14} />
+                    <v.Icon size={14} />
                     {v.label}
                   </button>
                 ))}
@@ -310,9 +310,9 @@ export default function RecordsPage() {
               {/* 플랫폼 선택 */}
               <div className="flex gap-2">
                 {[
-                  { value: 'all' as const, label: '전체', icon: FaList },
-                  { value: '배민커넥트' as const, label: '배민커넥트', icon: FaClipboardList },
-                  { value: '쿠팡이츠' as const, label: '쿠팡이츠', icon: FaMoneyBillWave }
+                  { value: 'all' as const, label: '전체', Icon: FaList },
+                  { value: '배민커넥트' as const, label: '배민커넥트' },
+                  { value: '쿠팡이츠' as const, label: '쿠팡이츠' }
                 ].map((v) => (
                   <button
                     key={v.value}
@@ -324,7 +324,7 @@ export default function RecordsPage() {
                         : 'bg-white/5 text-blue-200 hover:text-white hover:bg-white/10'}
                     `}
                   >
-                    <v.icon size={14} />
+                    {v.Icon && <v.Icon size={14} />}
                     {v.label}
                   </button>
                 ))}

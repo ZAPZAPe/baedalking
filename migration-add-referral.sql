@@ -18,10 +18,12 @@ CREATE INDEX IF NOT EXISTS idx_point_history_created_at ON point_history(created
 -- RLS 정책 설정
 ALTER TABLE point_history ENABLE ROW LEVEL SECURITY;
 
--- 사용자는 자신의 포인트 내역만 볼 수 있음
+-- 기존 정책 삭제 후 재생성
+DROP POLICY IF EXISTS "Users can view own point history" ON point_history;
 CREATE POLICY "Users can view own point history" ON point_history
   FOR SELECT USING (auth.uid() = user_id);
 
--- 시스템만 포인트 내역을 추가할 수 있음 (서비스 역할)
+-- 기존 정책 삭제 후 재생성
+DROP POLICY IF EXISTS "Service role can insert point history" ON point_history;
 CREATE POLICY "Service role can insert point history" ON point_history
   FOR INSERT WITH CHECK (true); 

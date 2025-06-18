@@ -25,6 +25,7 @@ export default function RankingPage() {
   const [rankingLoading, setRankingLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<RankingData | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [displayCount, setDisplayCount] = useState(10); // 표시할 랭킹 개수
 
   // 랭킹 데이터 가져오기
   useEffect(() => {
@@ -80,6 +81,7 @@ export default function RankingPage() {
         }, []);
 
         setRankings(filtered);
+        setDisplayCount(10); // 필터 변경 시 표시 개수 초기화
       } catch (error) {
         console.error('랭킹 데이터 가져오기 오류:', error);
         setRankings([]);
@@ -93,10 +95,32 @@ export default function RankingPage() {
 
   // 카카오톡 SDK 초기화
   useEffect(() => {
-    initKakaoShare();
+    // 카카오 SDK 스크립트 로드
+    const script = document.createElement('script');
+    script.src = 'https://t1.daumcdn.net/kakao_js_sdk/2.5.0/kakao.min.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      console.log('카카오 SDK 스크립트 로드 완료');
+      // SDK 로드 후 초기화
+      setTimeout(() => {
+        initKakaoShare();
+      }, 100);
+    };
+
+    script.onerror = () => {
+      console.error('카카오 SDK 스크립트 로드 실패');
+    };
+
+    return () => {
+      // 클린업 시 스크립트 제거하지 않음 (다른 페이지에서도 사용할 수 있으므로)
+    };
   }, []);
 
   const handleShareMyRank = () => {
+    console.log('내 순위 자랑하기 버튼 클릭됨');
+    
     if (!userProfile) {
       toast.error('로그인이 필요한 기능입니다.');
       return;
@@ -266,9 +290,9 @@ export default function RankingPage() {
               {/* 기간 선택 */}
               <div className="flex gap-2">
                 {[
-                  { value: 'today', label: '일간', icon: FaStar },
-                  { value: 'week', label: '주간', icon: FaFireAlt },
-                  { value: 'month', label: '월간', icon: FaCrown }
+                  { value: 'today', label: '일간', Icon: FaStar },
+                  { value: 'week', label: '주간', Icon: FaFireAlt },
+                  { value: 'month', label: '월간', Icon: FaCrown }
                 ].map((p) => (
                   <button
                     key={p.value}
@@ -281,7 +305,7 @@ export default function RankingPage() {
                         : 'bg-white/5 text-blue-200 hover:text-white hover:bg-white/10'}
                     `}
                   >
-                    <p.icon size={14} />
+                    <p.Icon size={14} />
                     {p.label}
                   </button>
                 ))}
@@ -290,8 +314,8 @@ export default function RankingPage() {
               {/* 정렬 기준 선택 */}
               <div className="flex gap-2">
                 {[
-                  { value: 'amount', label: '금액순', icon: FaCoins },
-                  { value: 'count', label: '건수순', icon: FaList }
+                  { value: 'amount', label: '금액순', Icon: FaCoins },
+                  { value: 'count', label: '건수순', Icon: FaList }
                 ].map((s) => (
                   <button
                     key={s.value}
@@ -304,13 +328,37 @@ export default function RankingPage() {
                         : 'bg-white/5 text-blue-200 hover:text-white hover:bg-white/10'}
                     `}
                   >
-                    <s.icon size={14} />
+                    <s.Icon size={14} />
                     {s.label}
                   </button>
                 ))}
               </div>
 
-              {/* 지역 선택 */}
+              {/* 플랫폼 선택 */}
+              <div className="flex gap-2">
+                {[
+                  { value: 'all', label: '전체', Icon: FaUsers },
+                  { value: '배민커넥트', label: '배민커넥트' },
+                  { value: '쿠팡이츠', label: '쿠팡이츠' }
+                ].map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => setPlatform(p.value)}
+                    className={`
+                      flex-1 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2
+                      ${platform === p.value
+                        ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg'
+                        : 'bg-white/5 text-blue-200 hover:text-white hover:bg-white/10'}
+                    `}
+                  >
+                    {p.Icon && <p.Icon size={14} />}
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* 지역 선택 - 필터 제일 하단으로 이동 */}
               <div className="relative">
                 <select
                   value={region}
@@ -340,30 +388,6 @@ export default function RankingPage() {
                   <FaChevronDown className="w-3 h-3 text-blue-200" />
                 </div>
               </div>
-
-              {/* 플랫폼 선택 */}
-              <div className="flex gap-2">
-                {[
-                  { value: 'all', label: '전체', icon: FaUsers },
-                  { value: '배민커넥트', label: '배민커넥트', icon: FaMotorcycle },
-                  { value: '쿠팡이츠', label: '쿠팡이츠', icon: FaBicycle }
-                ].map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => setPlatform(p.value)}
-                    className={`
-                      flex-1 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2
-                      ${platform === p.value
-                        ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg'
-                        : 'bg-white/5 text-blue-200 hover:text-white hover:bg-white/10'}
-                    `}
-                  >
-                    <p.icon size={14} />
-                    {p.label}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* 구분선 */}
@@ -372,7 +396,7 @@ export default function RankingPage() {
             {/* 랭킹 목록 */}
             <div>
               <div className="grid grid-cols-1 gap-2">
-                {rankings.map((ranker, index) => (
+                {rankings.slice(0, displayCount).map((ranker, index) => (
                   <button
                     key={ranker.rank}
                     onClick={() => handleUserClick(ranker)}
@@ -433,6 +457,18 @@ export default function RankingPage() {
                   </button>
                 ))}
               </div>
+              
+              {/* 더보기 버튼 */}
+              {rankings.length > displayCount && displayCount < 50 && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => setDisplayCount(Math.min(displayCount + 10, 50))}
+                    className="px-6 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl font-bold text-sm hover:from-amber-500 hover:to-orange-600 transition-all shadow-lg"
+                  >
+                    더보기 ({displayCount}/{Math.min(rankings.length, 50)})
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </section>

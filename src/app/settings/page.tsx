@@ -6,9 +6,15 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import KakaoAd from '@/components/KakaoAd';
 import Loading from '@/components/Loading';
+
+declare global {
+  interface Window {
+    Kakao: any;
+  }
+}
 
 export default function SettingsPage() {
   const { user, userProfile, loading: authLoading, signOut, updateProfile, refreshUserProfile } = useAuth();
@@ -34,6 +40,25 @@ export default function SettingsPage() {
       setProfileImage(userProfile.profileImage || '');
     }
   }, [userProfile]);
+
+  // 카카오 SDK 초기화
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://t1.daumcdn.net/kakao_js_sdk/2.5.0/kakao.min.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (window.Kakao && !window.Kakao.isInitialized()) {
+        window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
+        console.log('Kakao SDK initialized in settings');
+      }
+    };
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -526,7 +551,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* 포인트 내역 */}
+              {/* 출석체크 */}
               <Link href="/settings/points" className="block">
                 <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-3 border border-blue-400/30">
                   <div className="flex items-center justify-between">
@@ -534,7 +559,7 @@ export default function SettingsPage() {
                       <div className="w-8 h-8 bg-blue-400/20 rounded-full flex items-center justify-center">
                         <FaList className="text-blue-400" size={14} />
                       </div>
-                      <span className="text-white font-bold text-sm">포인트 내역</span>
+                      <span className="text-white font-bold text-sm">출석체크</span>
                     </div>
                     <span className="text-blue-200 text-sm">›</span>
                   </div>
@@ -578,13 +603,51 @@ export default function SettingsPage() {
 
               {/* 친구 초대 */}
               <button
-                onClick={() => {
-                  if (userProfile?.referral_code) {
-                    navigator.clipboard.writeText(`https://baedalking.com/invite/${userProfile.referral_code}`);
+                onClick={async () => {
+                  if (!userProfile?.referral_code) return;
+                  
+                  try {
+                    // 카카오 SDK 초기화
+                    if (typeof window !== 'undefined' && window.Kakao) {
+                      if (!window.Kakao.isInitialized()) {
+                        window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
+                      }
+                      
+                      // 카카오톡 공유
+                      window.Kakao.Share.sendDefault({
+                        objectType: 'feed',
+                        content: {
+                          title: '🚀 배달킹에서 함께 배달왕에 도전해요!',
+                          description: `${userProfile.nickname}님이 초대했어요! 지금 가입하면 500P 즉시 지급! 추천 코드: ${userProfile.referral_code}`,
+                          imageUrl: 'https://www.baedalking.com/baedalking-logo.png',
+                          link: {
+                            mobileWebUrl: `https://www.baedalking.com/invite/${userProfile.referral_code}`,
+                            webUrl: `https://www.baedalking.com/invite/${userProfile.referral_code}`,
+                          },
+                        },
+                        buttons: [
+                          {
+                            title: '지금 가입하기',
+                            link: {
+                              mobileWebUrl: `https://www.baedalking.com/invite/${userProfile.referral_code}`,
+                              webUrl: `https://www.baedalking.com/invite/${userProfile.referral_code}`,
+                            },
+                          },
+                        ],
+                      });
+                    } else {
+                      // 카카오 SDK가 없으면 클립보드에 복사
+                      await navigator.clipboard.writeText(`https://www.baedalking.com/invite/${userProfile.referral_code}`);
+                      toast.success('초대 링크가 복사되었습니다.');
+                    }
+                  } catch (error) {
+                    console.error('공유 실패:', error);
+                    // 실패 시 클립보드에 복사
+                    await navigator.clipboard.writeText(`https://www.baedalking.com/invite/${userProfile.referral_code}`);
                     toast.success('초대 링크가 복사되었습니다.');
                   }
                 }}
-                className="w-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-3 border border-purple-400/30"
+                className="w-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-3 border border-purple-400/30 hover:scale-105 transition-all"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
