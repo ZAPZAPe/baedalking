@@ -159,26 +159,32 @@ function CallbackContent() {
                 if (!retrySignInError && retrySignInData.session) {
                   console.log('로그인 성공 (재시도)');
                   
-                  // users 테이블에 프로필 생성
-                  const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
-                  const { error: profileError } = await supabase
+                  // users 테이블에 프로필 생성 (신규 사용자만)
+                  const { data: existingProfile } = await supabase
                     .from('users')
-                    .upsert({
-                      id: retrySignInData.user.id,
-                      username: `kakao_${userData.id}`,
-                      email: email,
-                      nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
-                      kakao_id: userData.id.toString(),
-                      profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-                      points: 500,
-                      referral_code: referralCode,
-                      created_at: new Date().toISOString(),
-                    }, {
-                      onConflict: 'id'
-                    });
+                    .select('id')
+                    .eq('id', retrySignInData.user.id)
+                    .single();
+                  
+                  if (!existingProfile) {
+                    const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
+                    const { error: profileError } = await supabase
+                      .from('users')
+                      .insert({
+                        id: retrySignInData.user.id,
+                        username: `kakao_${userData.id}`,
+                        email: email,
+                        nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
+                        kakao_id: userData.id.toString(),
+                        profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
+                        points: 500,
+                        referral_code: referralCode,
+                        created_at: new Date().toISOString(),
+                      });
 
-                  if (profileError) {
-                    console.error('프로필 생성 에러:', profileError);
+                    if (profileError) {
+                      console.error('프로필 생성 에러:', profileError);
+                    }
                   }
 
                   router.push('/profile-setup');
@@ -205,26 +211,32 @@ function CallbackContent() {
             if (!newSignInError && newSignInData.session) {
               console.log('신규 사용자 로그인 성공');
               
-              // users 테이블에 프로필 생성
-              const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
-              const { error: profileError } = await supabase
+              // users 테이블에 프로필 생성 (신규 사용자만)
+              const { data: existingProfile } = await supabase
                 .from('users')
-                .upsert({
-                  id: newSignInData.user.id,
-                  username: `kakao_${userData.id}`,
-                  email: email,
-                  nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
-                  kakao_id: userData.id.toString(),
-                  profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-                  points: 500,
-                  referral_code: referralCode,
-                  created_at: new Date().toISOString(),
-                }, {
-                  onConflict: 'id'
-                });
+                .select('id')
+                .eq('id', newSignInData.user.id)
+                .single();
+              
+              if (!existingProfile) {
+                const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
+                const { error: profileError } = await supabase
+                  .from('users')
+                  .insert({
+                    id: newSignInData.user.id,
+                    username: `kakao_${userData.id}`,
+                    email: email,
+                    nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
+                    kakao_id: userData.id.toString(),
+                    profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
+                    points: 500,
+                    referral_code: referralCode,
+                    created_at: new Date().toISOString(),
+                  });
 
-              if (profileError) {
-                console.error('프로필 생성 에러:', profileError);
+                if (profileError) {
+                  console.error('프로필 생성 에러:', profileError);
+                }
               }
 
               router.push('/profile-setup');
@@ -236,31 +248,51 @@ function CallbackContent() {
           // 기존 사용자 정보 확인
           const { data: existingUser } = await supabase
             .from('users')
-            .select('referral_code')
+            .select('id, referral_code, nickname')
             .eq('id', signInData.user.id)
             .single();
           
-          // 추천 코드가 없으면 생성
-          const referralCode = existingUser?.referral_code || `BK${Date.now().toString(36).toUpperCase()}`;
-          
-          // users 테이블 업데이트 (있는 경우에만)
-          const { error: updateError } = await supabase
-            .from('users')
-            .upsert({
-              id: signInData.user.id,
-              username: `kakao_${userData.id}`,
-              email: email,
-              nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
+          if (existingUser) {
+            // 기존 사용자 - 닉네임은 업데이트하지 않음
+            const updateData: any = {
               kakao_id: userData.id.toString(),
               profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-              referral_code: referralCode,
               updated_at: new Date().toISOString(),
-            }, {
-              onConflict: 'id'
-            });
+            };
+            
+            // 추천 코드가 없으면 추가
+            if (!existingUser.referral_code) {
+              updateData.referral_code = `BK${Date.now().toString(36).toUpperCase()}`;
+            }
+            
+            const { error: updateError } = await supabase
+              .from('users')
+              .update(updateData)
+              .eq('id', signInData.user.id);
 
-          if (updateError) {
-            console.error('프로필 업데이트 에러:', updateError);
+            if (updateError) {
+              console.error('프로필 업데이트 에러:', updateError);
+            }
+          } else {
+            // 신규 사용자 프로필 생성 (처음 가입하는 경우)
+            const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
+            const { error: createError } = await supabase
+              .from('users')
+              .insert({
+                id: signInData.user.id,
+                username: `kakao_${userData.id}`,
+                email: email,
+                nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
+                kakao_id: userData.id.toString(),
+                profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
+                points: 500,
+                referral_code: referralCode,
+                created_at: new Date().toISOString(),
+              });
+
+            if (createError) {
+              console.error('프로필 생성 에러:', createError);
+            }
           }
 
           router.push('/profile-setup');
