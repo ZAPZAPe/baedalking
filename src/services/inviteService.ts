@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { addPoints } from './pointService';
 
 // 초대 코드 생성
 export const generateInviteCode = async (userId: string) => {
@@ -73,27 +74,29 @@ export const validateInviteCode = async (code: string, newUserId: string) => {
 
     if (recordError) throw recordError;
 
-    // 초대자에게 포인트 지급
-    const { error: pointsError } = await supabase.rpc('add_points', {
-      user_id: inviteCode.user_id,
-      points: 100, // 초대 보상 포인트
-      reason: '친구 초대 보상'
-    });
+    // 초대자에게 포인트 지급 (500P)
+    const inviterSuccess = await addPoints(
+      inviteCode.user_id, 
+      500, 
+      'friend_invite', 
+      '친구 초대 보상'
+    );
 
-    if (pointsError) throw pointsError;
+    if (!inviterSuccess) throw new Error('초대자 포인트 지급 실패');
 
-    // 초대받은 사용자에게 포인트 지급
-    const { error: newUserPointsError } = await supabase.rpc('add_points', {
-      user_id: newUserId,
-      points: 50, // 초대받은 사용자 보상 포인트
-      reason: '초대 코드 사용 보상'
-    });
+    // 초대받은 사용자에게 포인트 지급 (300P)
+    const invitedSuccess = await addPoints(
+      newUserId,
+      300,
+      'invite_used',
+      '초대 코드 사용 보상'
+    );
 
-    if (newUserPointsError) throw newUserPointsError;
+    if (!invitedSuccess) throw new Error('초대받은 사용자 포인트 지급 실패');
 
     return {
-      inviterPoints: 100,
-      invitedPoints: 50
+      inviterPoints: 500,
+      invitedPoints: 300
     };
   } catch (error) {
     console.error('초대 코드 검증 실패:', error);

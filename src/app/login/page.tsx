@@ -17,6 +17,20 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const checkingSession = useRef(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+
+  // URL에서 초대 코드 확인 및 저장
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const invite = searchParams.get('invite');
+    
+    if (invite) {
+      setInviteCode(invite);
+      // 세션 스토리지에 저장 (카카오 로그인 후에도 사용할 수 있도록)
+      sessionStorage.setItem('inviteCode', invite);
+      console.log('초대 코드 저장:', invite);
+    }
+  }, []);
 
   // 카카오 SDK 초기화
   useEffect(() => {
@@ -158,6 +172,15 @@ const Login = () => {
         <section className="mb-4">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-white/20">
             <h2 className="text-2xl font-bold text-white mb-6 text-center">로그인</h2>
+            
+            {/* 초대 코드 안내 */}
+            {inviteCode && (
+              <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-3 mb-4">
+                <p className="text-green-200 text-sm text-center">
+                  친구 초대로 가입하면 300P를 즉시 받을 수 있어요! 🎁
+                </p>
+              </div>
+            )}
             
             {/* 이메일/비밀번호 로그인 폼 */}
             <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">

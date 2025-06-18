@@ -68,38 +68,41 @@ export const shareToKakao = () => {
 };
 
 // 친구 초대하기
-export const inviteFriends = () => {
+export const inviteFriends = async (inviteCode?: string) => {
   if (!window.Kakao) {
     console.error('카카오 SDK가 로드되지 않았습니다.');
-    fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', 'https://baedalrank.com');
+    const inviteUrl = inviteCode ? `https://baedalrank.com?invite=${inviteCode}` : 'https://baedalrank.com';
+    fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', inviteUrl);
     return;
   }
+
+  const inviteUrl = inviteCode ? `https://baedalrank.com?invite=${inviteCode}` : 'https://baedalrank.com';
 
   try {
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
       content: {
         title: '배달킹에서 진짜 배달왕에 도전하세요! 🚀',
-        description: '지금 가입하면 500P 즉시 지급! 친구와 함께 실시간 랭킹 경쟁하고, 전국 배달왕에 도전해보세요.',
+        description: '친구 초대로 가입하면 300P 즉시 지급! 나도 500P 받고 함께 실시간 랭킹 경쟁해요.',
         imageUrl: 'https://k.kakaocdn.net/14/dn/btsOCCP8KCJ/uPlo3tMwq4eHi8USTFrLkk/o.jpg',
         link: {
-          mobileWebUrl: 'https://baedalrank.com',
-          webUrl: 'https://baedalrank.com',
+          mobileWebUrl: inviteUrl,
+          webUrl: inviteUrl,
         },
       },
       buttons: [
         {
-          title: '내 순위 확인하기',
+          title: '지금 가입하고 300P 받기',
           link: {
-            mobileWebUrl: 'https://baedalrank.com',
-            webUrl: 'https://baedalrank.com',
+            mobileWebUrl: inviteUrl,
+            webUrl: inviteUrl,
           },
         },
       ],
     });
   } catch (error) {
     console.error('친구 초대 공유 중 오류 발생:', error);
-    fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', 'https://baedalrank.com');
+    fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', inviteUrl);
   }
 };
 

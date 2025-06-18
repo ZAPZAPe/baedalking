@@ -123,8 +123,8 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
 
         <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl">
           <p className="text-yellow-200 text-sm text-center">
-            수기 입력 기록은 포인트, 랭킹에 반영되지 않습니다.<br />
-            중복 기록은 덮어쓰기됩니다.
+            수기 입력은 포인트 랭킹에 반영 ❌<br />
+            중복 입력은 최신 데이터로 덮어쓰기 됩니다.
           </p>
         </div>
 

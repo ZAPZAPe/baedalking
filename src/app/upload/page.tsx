@@ -582,8 +582,8 @@ export default function UploadPage() {
             </div>
             <p className="text-white/60 text-sm text-center mt-2">
               {selectedExampleApp === '배민커넥트'
-                ? '위와 같이 중앙에 로고와 실제 캡처화면을 참고해서 업로드 해주세요.'
-                : '위와 같이 중앙에 로고와 실제 캡처화면을 참고해서 업로드 해주세요.'}
+                ? '마이페이지 - 오늘 배달 내역 <br> </br> 화면을 참고해서 업로드 해주세요.'
+                : '내 수입 - 오늘 날짜 [ ex) 06/06 금 ] <br> </br> 화면을 참고해서 업로드 해주세요.'}
             </p>
           </div>
         </div>

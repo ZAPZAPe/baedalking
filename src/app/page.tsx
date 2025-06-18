@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { FaCrown, FaTrophy, FaUpload, FaUsers, FaStar, FaMedal, FaChartLine, FaFireAlt, FaBell, FaGift, FaCamera, FaSignInAlt, FaRocket, FaShieldAlt, FaCoins, FaArrowRight, FaPlay, FaHeart, FaBolt, FaStore, FaUserFriends, FaShare, FaComment, FaCalendarCheck, FaMapMarker } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { initKakaoShare, inviteFriends } from '@/services/kakaoShare';
+import { generateInviteCode } from '@/services/inviteService';
 import KakaoAd from '@/components/KakaoAd';
 import Loading from '@/components/Loading';
 
@@ -203,6 +204,24 @@ export default function Home() {
     router.push('/login');
   };
 
+  // 친구 초대 함수
+  const handleInviteFriends = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      // 초대 코드 생성
+      const inviteCode = await generateInviteCode(user.id);
+      // 카카오톡 공유
+      await inviteFriends(inviteCode);
+    } catch (error) {
+      console.error('친구 초대 실패:', error);
+      alert('친구 초대 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  };
+
   if (authLoading) {
     return <Loading />;
   }
@@ -291,7 +310,6 @@ export default function Home() {
                         </div>
                         <div>
                           <h3 className="text-white font-bold text-xs sm:text-sm">실적 업로드</h3>
-                          <p className="text-amber-200 text-xs">AI 자동 분석</p>
                         </div>
                       </div>
                     </Link>
@@ -303,19 +321,17 @@ export default function Home() {
                         </div>
                         <div>
                           <h3 className="text-white font-bold text-xs sm:text-sm">실시간 랭킹</h3>
-                          <p className="text-purple-200 text-xs">전국 라이더 순위</p>
                         </div>
                       </div>
                     </Link>
 
-                    <Link href="/settings/points" prefetch={true} className="bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-xl p-3 sm:p-4 border border-yellow-400/30 hover:scale-105 transition-all group hover:from-yellow-400/30 hover:to-orange-500/30">
+                    <Link href="/settings/points" prefetch={true} className="bg-gradient-to-r from-red-500/20 to-rose-500/20 rounded-xl p-3 sm:p-4 border border-red-400/30 hover:scale-105 transition-all group hover:from-red-500/30 hover:to-rose-500/30">
                       <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center group-hover:animate-pulse">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-red-400 to-rose-500 rounded-xl flex items-center justify-center group-hover:animate-pulse">
                           <FaCalendarCheck className="text-white w-4 h-4 sm:w-5 sm:h-5" />
                         </div>
                         <div>
                           <h3 className="text-white font-bold text-xs sm:text-sm">출근도장</h3>
-                          <p className="text-yellow-200 text-xs">매일 10P 지급</p>
                         </div>
                       </div>
                     </Link>
@@ -327,19 +343,17 @@ export default function Home() {
                         </div>
                         <div>
                           <h3 className="text-white font-bold text-xs sm:text-sm">포인트 상점</h3>
-                          <p className="text-green-200 text-xs">리워드 교환</p>
                         </div>
                       </div>
                     </Link>
 
-                    <button onClick={inviteFriends} className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-3 sm:p-4 border border-blue-400/30 hover:scale-105 transition-all col-span-2 group hover:from-blue-500/30 hover:to-cyan-500/30">
+                    <button onClick={handleInviteFriends} className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-3 sm:p-4 border border-blue-400/30 hover:scale-105 transition-all col-span-2 group hover:from-blue-500/30 hover:to-cyan-500/30">
                       <div className="flex items-center gap-2 sm:gap-3 justify-center">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-xl flex items-center justify-center group-hover:animate-pulse">
                           <FaShare className="text-white w-4 h-4 sm:w-5 sm:h-5" />
                         </div>
                         <div>
                           <h3 className="text-white font-bold text-xs sm:text-sm">친구 초대하기</h3>
-                          <p className="text-blue-200 text-xs">카카오톡으로 공유</p>
                         </div>
                       </div>
                     </button>

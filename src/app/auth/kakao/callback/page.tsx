@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { validateInviteCode } from '@/services/inviteService';
 
 function CallbackContent() {
   const router = useRouter();
@@ -173,26 +174,38 @@ function CallbackContent() {
                     .eq('id', retrySignInData.user.id)
                     .single();
                   
-                  if (!existingProfile) {
-                    const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
-                    const { error: profileError } = await supabase
-                      .from('users')
-                      .insert({
-                        id: retrySignInData.user.id,
-                        username: `kakao_${userData.id}`,
-                        email: email,
-                        nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
-                        kakao_id: userData.id.toString(),
-                        profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-                        points: 300,
-                        referral_code: referralCode,
-                        created_at: new Date().toISOString(),
-                      });
+                                if (!existingProfile) {
+                const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
+                const { error: profileError } = await supabase
+                  .from('users')
+                  .insert({
+                    id: retrySignInData.user.id,
+                    username: `kakao_${userData.id}`,
+                    email: email,
+                    nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
+                    kakao_id: userData.id.toString(),
+                    profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
+                    points: 300,
+                    referral_code: referralCode,
+                    created_at: new Date().toISOString(),
+                  });
 
-                    if (profileError) {
-                      console.error('프로필 생성 에러:', profileError);
-                    }
+                if (profileError) {
+                  console.error('프로필 생성 에러:', profileError);
+                }
+
+                // 초대 코드 확인 및 처리
+                const inviteCode = sessionStorage.getItem('inviteCode');
+                if (inviteCode) {
+                  try {
+                    await validateInviteCode(inviteCode, retrySignInData.user.id);
+                    console.log('초대 코드 처리 성공');
+                    sessionStorage.removeItem('inviteCode'); // 사용 후 삭제
+                  } catch (error) {
+                    console.error('초대 코드 처리 실패:', error);
                   }
+                }
+              }
 
                   // AuthContext가 세션을 인식할 때까지 추가 대기
                   await new Promise(resolve => setTimeout(resolve, 500));
@@ -248,6 +261,18 @@ function CallbackContent() {
 
                 if (profileError) {
                   console.error('프로필 생성 에러:', profileError);
+                }
+
+                // 초대 코드 확인 및 처리
+                const inviteCode = sessionStorage.getItem('inviteCode');
+                if (inviteCode) {
+                  try {
+                    await validateInviteCode(inviteCode, newSignInData.user.id);
+                    console.log('초대 코드 처리 성공');
+                    sessionStorage.removeItem('inviteCode'); // 사용 후 삭제
+                  } catch (error) {
+                    console.error('초대 코드 처리 실패:', error);
+                  }
                 }
               }
 
@@ -309,6 +334,18 @@ function CallbackContent() {
 
             if (createError) {
               console.error('프로필 생성 에러:', createError);
+            }
+
+            // 초대 코드 확인 및 처리
+            const inviteCode = sessionStorage.getItem('inviteCode');
+            if (inviteCode) {
+              try {
+                await validateInviteCode(inviteCode, signInData.user.id);
+                console.log('초대 코드 처리 성공');
+                sessionStorage.removeItem('inviteCode'); // 사용 후 삭제
+              } catch (error) {
+                console.error('초대 코드 처리 실패:', error);
+              }
             }
           }
 

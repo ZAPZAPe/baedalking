@@ -150,37 +150,43 @@ export default function StorePage() {
               <div className="space-y-2">
                 <div className="bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all">
                   <div className="flex justify-between items-center">
-                    <span className="text-purple-200 text-sm">일일 로그인</span>
-                    <span className="text-yellow-300 font-bold text-sm">+10P</span>
+                    <span className="text-purple-200 text-sm">실적 업로드</span>
+                    <span className="text-yellow-300 font-bold text-sm">+50P</span>
                   </div>
                 </div>
                 <div className="bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all">
                   <div className="flex justify-between items-center">
-                    <span className="text-purple-200 text-sm">배달 실적 업로드</span>
-                    <span className="text-yellow-300 font-bold text-sm">+100P</span>
+                    <span className="text-purple-200 text-sm">출근도장</span>
+                    <span className="text-yellow-300 font-bold text-sm">+50P</span>
                   </div>
                 </div>
                 <div className="bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all">
                   <div className="flex justify-between items-center">
-                    <span className="text-purple-200 text-sm">첫 업로드 보너스</span>
+                    <span className="text-purple-200 text-sm">일간 1등</span>
                     <span className="text-yellow-300 font-bold text-sm">+500P</span>
                   </div>
                 </div>
                 <div className="bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all">
                   <div className="flex justify-between items-center">
-                    <span className="text-purple-200 text-sm">실적 인증 완료</span>
-                    <span className="text-yellow-300 font-bold text-sm">+200P</span>
+                    <span className="text-purple-200 text-sm">일간 2등</span>
+                    <span className="text-yellow-300 font-bold text-sm">+400P</span>
                   </div>
                 </div>
                 <div className="bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all">
                   <div className="flex justify-between items-center">
-                    <span className="text-purple-200 text-sm">TOP 3 랭킹 달성</span>
-                    <span className="text-yellow-300 font-bold text-sm">+1000P</span>
+                    <span className="text-purple-200 text-sm">일간 3등</span>
+                    <span className="text-yellow-300 font-bold text-sm">+300P</span>
                   </div>
                 </div>
                 <div className="bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all">
                   <div className="flex justify-between items-center">
-                    <span className="text-purple-200 text-sm">TOP 10 랭킹 달성</span>
+                    <span className="text-purple-200 text-sm">일간 4등~10등</span>
+                    <span className="text-yellow-300 font-bold text-sm">+100P</span>
+                  </div>
+                </div>
+                <div className="bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all">
+                  <div className="flex justify-between items-center">
+                    <span className="text-purple-200 text-sm">친구 초대</span>
                     <span className="text-yellow-300 font-bold text-sm">+500P</span>
                   </div>
                 </div>
