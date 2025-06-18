@@ -45,13 +45,8 @@ export default function StorePage() {
   return (
     <div className="relative z-10">
       <div className="max-w-3xl mx-auto px-4">
-        {/* 상단 광고 */}
-        <section className="mt-2 mb-4">
-          <KakaoAd page="shop" index={0} />
-        </section>
-
         {/* 내 포인트 */}
-        <section className="mb-4">
+        <section className="mb-4 mt-2">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
             {/* 상단 타이틀 */}
             <div className="flex items-center justify-between mb-4">
@@ -83,6 +78,11 @@ export default function StorePage() {
               포인트 내역 확인
             </button>
           </div>
+        </section>
+
+        {/* 광고 - 내 포인트 하단으로 이동 */}
+        <section className="mb-4">
+          <KakaoAd page="shop" index={0} />
         </section>
 
         {/* 상점 곧 오픈 */}
@@ -172,11 +172,6 @@ export default function StorePage() {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* 하단 광고 */}
-        <section className="mb-2">
-          <KakaoAd page="shop" index={1} />
         </section>
       </div>
 

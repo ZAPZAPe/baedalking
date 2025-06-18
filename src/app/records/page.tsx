@@ -225,13 +225,8 @@ export default function RecordsPage() {
   return (
     <div className="relative z-10">
       <div className="max-w-3xl mx-auto px-4">
-        {/* 상단 광고 */}
-        <section className="mt-2 mb-4">
-          <KakaoAd page="shop" index={1} />
-        </section>
-
         {/* 오늘의 실적 */}
-        <section className="mb-4">
+        <section className="mb-4 mt-2">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
             {/* 상단 타이틀 */}
             <div className="flex items-center justify-between mb-4">
@@ -280,8 +275,13 @@ export default function RecordsPage() {
           </div>
         </section>
 
-        {/* 통합된 필터 및 기록 섹션 */}
+        {/* 광고 - 오늘의 실적 하단으로 이동 */}
         <section className="mb-4">
+          <KakaoAd page="shop" index={1} />
+        </section>
+
+        {/* 통합된 필터 및 기록 섹션 */}
+        <section className="mb-2">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
             {/* 필터 섹션 */}
             <div className="space-y-3 mb-4">
@@ -494,10 +494,6 @@ export default function RecordsPage() {
           </div>
         </section>
 
-        {/* 하단 광고 */}
-        <section className="mb-2">
-          <KakaoAd page="shop" index={2} />
-        </section>
       </div>
 
       {/* 수기 입력 모달 */}

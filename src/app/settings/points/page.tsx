@@ -221,11 +221,6 @@ export default function AttendancePage() {
           <div className="w-6" />
         </header>
 
-        {/* 상단 광고 */}
-        <section className="mb-4">
-          <KakaoAd page="attendance" index={0} />
-        </section>
-
         {/* 출근 현황 */}
         <section className="mb-4">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">

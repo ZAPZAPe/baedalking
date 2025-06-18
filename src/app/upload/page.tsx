@@ -224,11 +224,6 @@ export default function UploadPage() {
   return (
     <div className="relative z-10">
       <div className="max-w-3xl mx-auto px-4">
-        {/* 상단 광고 */}
-        <section className="mt-2 mb-4">
-          <KakaoAd page="upload" index={0} />
-        </section>
-
         {/* 에러 메시지 */}
         {error && (
           <div className="mb-4 bg-red-500/20 border border-red-500/50 rounded-xl p-3">
@@ -244,7 +239,7 @@ export default function UploadPage() {
         {!uploadSuccess ? (
           <>
             {/* 업로드 안내 */}
-            <section className="mb-4">
+            <section className="mb-4 mt-2">
               <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
                 <div className="flex items-center justify-between mb-4">
                   <div>

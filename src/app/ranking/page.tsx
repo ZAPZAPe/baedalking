@@ -215,13 +215,8 @@ export default function RankingPage() {
   return (
     <div className="relative z-10">
       <div className="max-w-3xl mx-auto px-4">
-        {/* 상단 광고 */}
-        <section className="mt-2 mb-4">
-          <KakaoAd page="ranking" index={0} />
-        </section>
-
         {/* 통합된 랭킹 섹션 */}
-        <section className="mb-4">
+        <section className="mb-4 mt-2">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
             {/* 상단 타이틀 */}
             <div className="flex items-center justify-between mb-4">
@@ -279,8 +274,13 @@ export default function RankingPage() {
           </div>
         </section>
 
-        {/* 통합된 필터 및 랭킹 섹션 */}
+        {/* 광고 - 실시간 랭킹 하단으로 이동 */}
         <section className="mb-4">
+          <KakaoAd page="ranking" index={0} />
+        </section>
+
+        {/* 통합된 필터 및 랭킹 섹션 */}
+        <section className="mb-2">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
             {/* 필터 섹션 */}
             <div className="space-y-3 mb-4">
@@ -471,11 +471,6 @@ export default function RankingPage() {
               )}
             </div>
           </div>
-        </section>
-
-        {/* 하단 광고 */}
-        <section className="mb-2">
-          <KakaoAd page="ranking" index={1} />
         </section>
       </div>
 

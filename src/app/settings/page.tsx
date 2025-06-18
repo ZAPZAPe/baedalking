@@ -345,13 +345,8 @@ export default function SettingsPage() {
   return (
     <div className="relative z-10">
       <div className="max-w-3xl mx-auto px-4">
-        {/* 상단 광고 */}
-        <section className="mt-2 mb-4">
-          <KakaoAd page="home" index={2} />
-        </section>
-
         {/* 내 정보 섹션 */}
-        <section className="mb-4">
+        <section className="mb-4 mt-2">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -524,6 +519,11 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* 광고 - 내 정보 하단으로 이동 */}
+        <section className="mb-4">
+          <KakaoAd page="home" index={2} />
+        </section>
+
         {/* 포인트 섹션 */}
         <section className="mb-4">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
@@ -567,6 +567,11 @@ export default function SettingsPage() {
               </Link>
             </div>
           </div>
+        </section>
+
+        {/* 광고 - 포인트 하단으로 이동 */}
+        <section className="mb-4">
+          <KakaoAd page="home" index={1} />
         </section>
 
         {/* 친구 초대 섹션 */}
@@ -782,11 +787,6 @@ export default function SettingsPage() {
               <span className="text-white font-bold text-sm">로그아웃</span>
             </div>
           </button>
-        </section>
-
-        {/* 하단 광고 */}
-        <section className="mb-2">
-          <KakaoAd page="home" index={2} />
         </section>
       </div>
 
