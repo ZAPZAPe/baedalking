@@ -167,6 +167,11 @@ export default function Home() {
               </Suspense>
             </section>
 
+            {/* 중간 광고 - 실시간 TOP3 바로 아래로 이동 */}
+            <section className="mb-4">
+              <KakaoAd page="home" index={1} />
+            </section>
+
             {/* 플랫폼별 실시간 통계 */}
             <section className="mb-4">
               <Suspense fallback={
@@ -260,11 +265,6 @@ export default function Home() {
               </div>
             </section>
 
-            {/* 중간 광고 */}
-            <section className="mb-4">
-              <KakaoAd page="home" index={1} />
-            </section>
-
             {/* 서비스 특징 */}
             <section className="mb-4">
               <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
@@ -356,14 +356,14 @@ export default function Home() {
               <TopRankers topRankers={topRankers} />
             </section>
 
+            {/* 비 로그인 상태 광고 - 실시간 TOP3 바로 아래로 이동 */}
+            <section className="mb-4">
+              <KakaoAd page="home" index={1} />
+            </section>
+
             {/* 플랫폼별 실시간 통계 */}
             <section className="mb-4">
               <PlatformStatistics />
-            </section>
-
-            {/* 비 로그인 상태 광고 */}
-            <section className="mb-4">
-              <KakaoAd page="home" index={1} />
             </section>
 
             {/* 서비스 특징 */}

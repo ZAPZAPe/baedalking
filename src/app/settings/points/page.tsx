@@ -242,7 +242,6 @@ export default function AttendancePage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-white">출근 현황</h2>
-                <p className="text-blue-200 text-sm">매일 출근하고 포인트 받기</p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
                 <FaCalendarCheck className="text-white" size={20} />
@@ -341,7 +340,7 @@ export default function AttendancePage() {
                                 {/* 도장 중앙 디자인 */}
                                 <div className="absolute inset-0 flex items-center justify-center transform rotate-6">
                                   <div className="w-3/4 h-3/4 border-2 border-red-300/50 rounded-full flex items-center justify-center">
-                                    <div className="text-white font-bold text-[10px]">출근</div>
+                                    <FaCheck className="text-white/80" size={12} />
                                   </div>
                                 </div>
                                 
@@ -373,7 +372,7 @@ export default function AttendancePage() {
                 <div className="w-6 h-6 relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-red-700 rounded transform rotate-6"></div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-white text-[8px] font-bold transform rotate-6">출근</span>
+                    <FaCheck className="text-white text-[8px] transform rotate-6" />
                   </div>
                 </div>
                 <span className="text-white/80">출근 완료</span>

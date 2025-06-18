@@ -89,7 +89,6 @@ export default function SupportPage() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h2 className="text-2xl font-bold text-white">자주 묻는 질문</h2>
-                <p className="text-blue-200 text-sm">궁금한 점을 빠르게 해결하세요</p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
                 <FaBook className="text-white" size={20} />
@@ -130,7 +129,6 @@ export default function SupportPage() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h2 className="text-2xl font-bold text-white">1:1 문의</h2>
-                <p className="text-blue-200 text-sm">직접 문의해주세요</p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg">
                 <FaComments className="text-white" size={20} />

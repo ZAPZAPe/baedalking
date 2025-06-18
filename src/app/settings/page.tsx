@@ -254,7 +254,6 @@ export default function SettingsPage() {
       case 'notice':
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold mb-4">공지사항</h3>
             <div className="space-y-6">
               <div className="border-b border-white/10 pb-4">
                 <p className="text-sm text-gray-400">2024.03.20</p>
@@ -272,7 +271,6 @@ export default function SettingsPage() {
       case 'faq':
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold mb-4">자주 묻는 질문</h3>
             <div className="space-y-6">
               <div className="border-b border-white/10 pb-4">
                 <h4 className="font-bold mb-2">Q. 포인트는 어떻게 적립되나요?</h4>
@@ -288,7 +286,6 @@ export default function SettingsPage() {
       case 'terms':
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold mb-4">이용약관</h3>
             <div className="space-y-4 text-sm text-gray-300">
               <p>제1조 (목적)</p>
               <p>이 약관은 배달킹(이하 "회사")이 제공하는 서비스의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
@@ -302,7 +299,6 @@ export default function SettingsPage() {
       case 'privacy':
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold mb-4">개인정보 처리방침</h3>
             <div className="space-y-4 text-sm text-gray-300">
               <p>1. 수집하는 개인정보 항목</p>
               <p>- 필수항목: 이메일, 닉네임, 프로필 이미지</p>
