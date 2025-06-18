@@ -389,4 +389,117 @@ export const updateDeliveryStatus = async (
     console.error('배달 기록 상태 업데이트 오류:', error);
     throw error;
   }
+};
+
+// 사용자 정보 업데이트
+export const updateUserData = async (
+  userId: string,
+  data: {
+    todayDeliveries?: number;
+    todayEarnings?: number;
+    verified?: boolean;
+    points?: number;
+  }
+): Promise<void> => {
+  try {
+    const updates: any = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (data.points !== undefined) {
+      updates.points = data.points;
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', userId);
+
+    if (error) throw error;
+
+    // 오늘의 배달 기록이 있다면 업데이트
+    if (data.todayDeliveries !== undefined || data.todayEarnings !== undefined || data.verified !== undefined) {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // 오늘의 배달 기록 찾기
+      const { data: existingRecords, error: fetchError } = await supabase
+        .from('delivery_records')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', today);
+
+      if (fetchError) throw fetchError;
+
+      if (existingRecords && existingRecords.length > 0) {
+        // 기존 기록 업데이트
+        const recordUpdates: any = {
+          updated_at: new Date().toISOString()
+        };
+
+        if (data.todayDeliveries !== undefined) {
+          recordUpdates.delivery_count = data.todayDeliveries;
+        }
+        if (data.todayEarnings !== undefined) {
+          recordUpdates.amount = data.todayEarnings;
+        }
+        if (data.verified !== undefined) {
+          recordUpdates.verified = data.verified;
+        }
+
+        const { error: updateError } = await supabase
+          .from('delivery_records')
+          .update(recordUpdates)
+          .eq('id', existingRecords[0].id);
+
+        if (updateError) throw updateError;
+      } else if (data.todayDeliveries !== undefined || data.todayEarnings !== undefined) {
+        // 새 기록 생성
+        const { error: insertError } = await supabase
+          .from('delivery_records')
+          .insert({
+            user_id: userId,
+            date: today,
+            delivery_count: data.todayDeliveries || 0,
+            amount: data.todayEarnings || 0,
+            platform: 'baemin', // 기본값
+            verified: data.verified || false,
+            created_at: new Date().toISOString()
+          });
+
+        if (insertError) throw insertError;
+      }
+    }
+  } catch (error) {
+    console.error('사용자 데이터 업데이트 오류:', error);
+    throw error;
+  }
+};
+
+// 오늘의 배달 데이터 가져오기
+export const getTodayDeliveryData = async (): Promise<Map<string, { deliveryCount: number; earnings: number; verified: boolean }>> => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data: records, error } = await supabase
+      .from('delivery_records')
+      .select('*')
+      .eq('date', today);
+
+    if (error) throw error;
+
+    const dataMap = new Map<string, { deliveryCount: number; earnings: number; verified: boolean }>();
+    
+    records?.forEach(record => {
+      dataMap.set(record.user_id, {
+        deliveryCount: record.delivery_count || 0,
+        earnings: record.amount || 0,
+        verified: record.verified || false
+      });
+    });
+
+    return dataMap;
+  } catch (error) {
+    console.error('오늘의 배달 데이터 가져오기 오류:', error);
+    throw error;
+  }
 }; 

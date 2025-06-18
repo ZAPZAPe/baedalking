@@ -1,13 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getUsers, updateUserRole, createUser, deleteUser } from '@/services/adminService';
+import { getUsers, updateUserRole, createUser, deleteUser, updateUserData, getTodayDeliveryData } from '@/services/adminService';
 import { UserProfile } from '@/types';
-import { FaUserShield, FaUser, FaPlus, FaTimes, FaTrash, FaEdit, FaSearch } from 'react-icons/fa';
+import { FaUserShield, FaUser, FaPlus, FaTimes, FaTrash, FaEdit, FaSearch, FaSave } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 
+interface UserWithTodayData extends UserProfile {
+  todayDeliveries: number;
+  todayEarnings: number;
+  verified: boolean;
+  editedDeliveries?: number;
+  editedEarnings?: number;
+  editedVerified?: boolean;
+  editedPoints?: number;
+  saving?: boolean;
+}
+
 export default function UserManagement() {
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [users, setUsers] = useState<UserWithTodayData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -28,8 +39,22 @@ export default function UserManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const data = await getUsers();
-      setUsers(data);
+      const [userData, todayData] = await Promise.all([
+        getUsers(),
+        getTodayDeliveryData()
+      ]);
+      
+      const usersWithTodayData = userData.map(user => {
+        const today = todayData.get(user.id) || { deliveryCount: 0, earnings: 0, verified: false };
+        return {
+          ...user,
+          todayDeliveries: today.deliveryCount,
+          todayEarnings: today.earnings,
+          verified: today.verified
+        };
+      });
+      
+      setUsers(usersWithTodayData);
     } catch (error) {
       console.error('사용자 목록 가져오기 오류:', error);
       toast.error('사용자 목록을 불러오는데 실패했습니다.');
@@ -87,11 +112,74 @@ export default function UserManagement() {
     }
   };
 
+  const handleFieldEdit = (userId: string, field: string, value: any) => {
+    setUsers(users.map(user => 
+      user.id === userId ? { ...user, [field]: value } : user
+    ));
+  };
+
+  const handleSaveUser = async (user: UserWithTodayData) => {
+    setUsers(users.map(u => 
+      u.id === user.id ? { ...u, saving: true } : u
+    ));
+
+    try {
+      const updateData: any = {};
+      
+      if (user.editedDeliveries !== undefined) {
+        updateData.todayDeliveries = user.editedDeliveries;
+      }
+      if (user.editedEarnings !== undefined) {
+        updateData.todayEarnings = user.editedEarnings;
+      }
+      if (user.editedVerified !== undefined) {
+        updateData.verified = user.editedVerified;
+      }
+      if (user.editedPoints !== undefined) {
+        updateData.points = user.editedPoints;
+      }
+      
+      // 실제 API 호출
+      await updateUserData(user.id, updateData);
+      
+      // 성공 시 편집 값들을 실제 값으로 반영
+      setUsers(users.map(u => 
+        u.id === user.id ? {
+          ...u,
+          todayDeliveries: user.editedDeliveries ?? u.todayDeliveries,
+          todayEarnings: user.editedEarnings ?? u.todayEarnings,
+          verified: user.editedVerified ?? u.verified,
+          points: user.editedPoints ?? u.points,
+          editedDeliveries: undefined,
+          editedEarnings: undefined,
+          editedVerified: undefined,
+          editedPoints: undefined,
+          saving: false
+        } : u
+      ));
+      
+      toast.success('사용자 정보가 저장되었습니다.');
+    } catch (error) {
+      console.error('사용자 정보 저장 오류:', error);
+      toast.error('저장에 실패했습니다.');
+      setUsers(users.map(u => 
+        u.id === user.id ? { ...u, saving: false } : u
+      ));
+    }
+  };
+
   const filteredUsers = users.filter(user => 
     user.nickname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.region?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const hasChanges = (user: UserWithTodayData) => {
+    return user.editedDeliveries !== undefined ||
+           user.editedEarnings !== undefined ||
+           user.editedVerified !== undefined ||
+           user.editedPoints !== undefined;
+  };
 
   if (loading) {
     return (
@@ -137,17 +225,13 @@ export default function UserManagement() {
           <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.role === 'admin').length}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-600">일반 사용자</p>
-          <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.role === 'user').length}</p>
+          <p className="text-sm text-gray-600">오늘 활동</p>
+          <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.todayDeliveries > 0).length}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-600">이번 달 가입</p>
+          <p className="text-sm text-gray-600">오늘 수익</p>
           <p className="text-2xl font-bold text-gray-900">
-            {users.filter(u => {
-              const createdDate = new Date(u.createdAt);
-              const now = new Date();
-              return createdDate.getMonth() === now.getMonth() && createdDate.getFullYear() === now.getFullYear();
-            }).length}
+            {users.reduce((sum, u) => sum + (u.todayEarnings || 0), 0).toLocaleString()}원
           </p>
         </div>
       </div>
@@ -158,25 +242,22 @@ export default function UserManagement() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                사용자
+                사용자 이름
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 이메일
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                지역
+                오늘 배달 건수
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                차량
+                오늘 수익
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                인증 여부
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 포인트
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                권한
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                가입일
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 작업
@@ -200,35 +281,65 @@ export default function UserManagement() {
                   <div className="text-sm text-gray-900">{user.email}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{user.region || '-'}</div>
+                  <input
+                    type="number"
+                    value={user.editedDeliveries ?? user.todayDeliveries}
+                    onChange={(e) => handleFieldEdit(user.id, 'editedDeliveries', parseInt(e.target.value) || 0)}
+                    className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{user.vehicle || '-'}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{user.points?.toLocaleString() || 0}P</div>
+                  <input
+                    type="number"
+                    value={user.editedEarnings ?? user.todayEarnings}
+                    onChange={(e) => handleFieldEdit(user.id, 'editedEarnings', parseInt(e.target.value) || 0)}
+                    className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <select
-                    value={user.role}
-                    onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin')}
-                    className="text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    value={user.editedVerified !== undefined ? user.editedVerified.toString() : user.verified.toString()}
+                    onChange={(e) => handleFieldEdit(user.id, 'editedVerified', e.target.value === 'true')}
+                    className="text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 px-2 py-1"
                   >
-                    <option value="user">일반 사용자</option>
-                    <option value="admin">관리자</option>
+                    <option value="true">인증</option>
+                    <option value="false">미인증</option>
                   </select>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(user.createdAt).toLocaleDateString()}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <input
+                      type="number"
+                      value={user.editedPoints ?? user.points}
+                      onChange={(e) => handleFieldEdit(user.id, 'editedPoints', parseInt(e.target.value) || 0)}
+                      className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <span className="ml-1 text-sm text-gray-500">P</span>
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleDeleteUser(user.id)}
-                    className="text-red-600 hover:text-red-900 ml-2"
-                    title="삭제"
-                  >
-                    <FaTrash />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleSaveUser(user)}
+                      disabled={!hasChanges(user) || user.saving}
+                      className={`px-3 py-1 rounded text-white flex items-center gap-1 ${
+                        hasChanges(user) && !user.saving
+                          ? 'bg-green-600 hover:bg-green-700' 
+                          : 'bg-gray-300 cursor-not-allowed'
+                      }`}
+                      title="저장"
+                    >
+                      <FaSave size={14} />
+                      {user.saving ? '저장 중...' : '저장'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(user.id)}
+                      className="text-red-600 hover:text-red-900"
+                      title="삭제"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
