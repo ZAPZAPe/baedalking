@@ -9,11 +9,16 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import Loading from '@/components/Loading';
+import NoSSR from '@/components/NoSSR';
 
-// KakaoAd를 동적으로 import
+// 동적 import
 const KakaoAd = dynamic(() => import('@/components/KakaoAd'), {
   ssr: false,
   loading: () => <div className="w-full h-[100px] bg-white/5 rounded-lg animate-pulse" />
+});
+
+const KakaoInit = dynamic(() => import('@/components/KakaoInit'), {
+  ssr: false
 });
 
 declare global {
@@ -47,24 +52,7 @@ export default function SettingsPage() {
     }
   }, [userProfile]);
 
-  // 카카오 SDK 초기화
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://t1.daumcdn.net/kakao_js_sdk/2.5.0/kakao.min.js';
-    script.async = true;
-    document.body.appendChild(script);
 
-    script.onload = () => {
-      if (window.Kakao && !window.Kakao.isInitialized()) {
-        window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
-        console.log('Kakao SDK initialized in settings');
-      }
-    };
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -346,6 +334,7 @@ export default function SettingsPage() {
 
   return (
     <div className="relative z-10">
+      <KakaoInit />
       <div className="max-w-3xl mx-auto px-4">
         {/* 내 정보 섹션 */}
         <section className="mb-4 mt-2">
