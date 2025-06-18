@@ -177,7 +177,7 @@ function CallbackContent() {
                         nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
                         kakao_id: userData.id.toString(),
                         profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-                        points: 500,
+                        points: 300,
                         referral_code: referralCode,
                         created_at: new Date().toISOString(),
                       });
@@ -229,7 +229,7 @@ function CallbackContent() {
                     nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
                     kakao_id: userData.id.toString(),
                     profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-                    points: 500,
+                    points: 300,
                     referral_code: referralCode,
                     created_at: new Date().toISOString(),
                   });
@@ -285,7 +285,7 @@ function CallbackContent() {
                 nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
                 kakao_id: userData.id.toString(),
                 profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-                points: 500,
+                points: 300,
                 referral_code: referralCode,
                 created_at: new Date().toISOString(),
               });

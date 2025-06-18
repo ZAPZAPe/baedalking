@@ -146,55 +146,18 @@ export async function updateUserProfile(userId: string, data: any) {
   }
 }
 
-// 포인트 지급 함수들
-export async function rewardLoginPoints(userId: string) {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    
-    // 오늘 이미 로그인 포인트를 받았는지 확인
-    const { data, error } = await supabase
-      .from('point_history')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('reason', '일일 로그인 보너스')
-      .gte('created_at', today)
-      .limit(1);
 
-    if (error) throw error;
-
-    if (data.length === 0) {
-      return await addPoints(userId, 10, 'daily_login', '일일 로그인 보너스');
-    }
-
-    return false;
-  } catch (error) {
-    console.error('로그인 포인트 지급 오류:', error);
-    return false;
-  }
-}
 
 export async function rewardUploadPointsLegacy(userId: string) {
   try {
-    const firstUpload = await isFirstUpload(userId);
-    return await rewardUploadPoints(userId, firstUpload);
+    return await rewardUploadPoints(userId);
   } catch (error) {
     console.error('업로드 포인트 지급 오류:', error);
     return false;
   }
 }
 
-export async function rewardFirstUploadBonus(userId: string) {
-  try {
-    const firstUpload = await isFirstUpload(userId);
-    if (firstUpload) {
-      return await addPoints(userId, 500, 'first_upload', '첫 업로드 보너스');
-    }
-    return false;
-  } catch (error) {
-    console.error('첫 업로드 보너스 지급 오류:', error);
-    return false;
-  }
-}
+
 
 // 이미지 업로드
 export const uploadImage = async (file: File, userId: string): Promise<string> => {
@@ -266,13 +229,12 @@ export const addManualDeliveryRecord = async (
     if (error) throw error;
 
     // 포인트 지급
-    const firstUpload = await isFirstUpload(recordData.userId);
-    const pointsAwarded = await rewardUploadPoints(recordData.userId, firstUpload);
+    const pointsAwarded = await rewardUploadPoints(recordData.userId);
 
     return {
       success: true,
       recordId: data.id,
-      points: pointsAwarded ? (firstUpload ? 600 : 100) : 0
+      points: pointsAwarded ? 50 : 0
     };
   } catch (error) {
     console.error('수동 배달 기록 추가 오류:', error);
@@ -446,9 +408,8 @@ export const uploadDeliveryRecord = async (
     // 포인트 지급 (중복이 아닌 경우에만)
     let pointsAwarded = 0;
     if (shouldAwardPoints) {
-      const firstUpload = await isFirstUpload(recordData.userId);
-      const awarded = await rewardUploadPoints(recordData.userId, firstUpload);
-      pointsAwarded = awarded ? (firstUpload ? 600 : 100) : 0;
+      const awarded = await rewardUploadPoints(recordData.userId);
+      pointsAwarded = awarded ? 50 : 0;
     }
 
     return {

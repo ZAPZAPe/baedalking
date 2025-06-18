@@ -7,8 +7,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Loading from '@/components/Loading';
-import KakaoAd from '@/components/KakaoAd';
+import dynamic from 'next/dynamic';
 import { toast } from 'react-hot-toast';
+
+// KakaoAd를 동적으로 import
+const KakaoAd = dynamic(() => import('@/components/KakaoAd'), {
+  ssr: false,
+  loading: () => <div className="w-full h-[100px] bg-white/5 rounded-lg animate-pulse" />
+});
 
 interface AttendanceRecord {
   date: string;

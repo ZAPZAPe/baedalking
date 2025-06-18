@@ -3,7 +3,7 @@ import { X, Upload, Camera, Image as ImageIcon, CheckCircle, AlertCircle } from 
 import { useAuth } from '../contexts/AuthContext';
 import { analyzeDeliveryImage } from '../services/imageAnalysisService';
 import { uploadDeliveryRecord } from '../services/uploadService';
-import { rewardUploadPoints, rewardFirstUploadBonus } from '../services/pointService';
+import { rewardUploadPoints } from '../services/pointService';
 
 interface UploadModalProps {
   isOpen: boolean;

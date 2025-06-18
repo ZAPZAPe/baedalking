@@ -105,7 +105,7 @@ export const loginWithKakao = async () => {
                       nickname: kakaoUser.nickname,
                       kakao_id: kakaoUser.id,
                       profile_image: kakaoUser.profileImage,
-                      points: 500, // 가입 보너스
+                      points: 300, // 가입 보너스 (추천코드 없음)
                       referral_code: referralCode,
                       created_at: new Date().toISOString(),
                     });

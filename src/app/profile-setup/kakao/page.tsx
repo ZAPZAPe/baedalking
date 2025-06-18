@@ -108,11 +108,11 @@ const KakaoProfileSetup = () => {
           .single();
 
         if (!referrerError && referrer) {
-          // 추천인에게 300포인트 지급
+          // 추천인에게 500포인트 지급
           const { error: updatePointsError } = await supabase
             .from('users')
             .update({
-              points: (referrer.points || 0) + 300
+              points: (referrer.points || 0) + 500
             })
             .eq('id', referrer.id);
 
@@ -122,7 +122,7 @@ const KakaoProfileSetup = () => {
               .from('point_history')
               .insert({
                 user_id: referrer.id,
-                amount: 300,
+                amount: 500,
                 type: 'referral_reward',
                 description: '친구 추천 보상',
                 created_at: new Date().toISOString()
@@ -150,7 +150,7 @@ const KakaoProfileSetup = () => {
 
       // 성공 메시지
       if (formData.referralCode && referralValid) {
-        toast.success('추천인에게 300포인트가 지급되었습니다!');
+        toast.success('추천인에게 500포인트가 지급되었습니다!');
       }
       
       // 홈으로 이동
@@ -193,10 +193,10 @@ const KakaoProfileSetup = () => {
               <FaRocket size={20} className="text-yellow-400" />
               <h3 className="text-lg font-bold text-white">가입 보너스</h3>
             </div>
-            <p className="text-yellow-300 font-bold text-xl text-center">500P 지급 완료!</p>
-            <p className="text-yellow-200 text-sm text-center mt-2">
-              추천인 코드 입력 시 추천인에게 300P 추가 지급!
-            </p>
+            <p className="text-yellow-300 font-bold text-xl text-center">300P 지급 완료!</p>
+                          <p className="text-yellow-200 text-sm text-center mt-2">
+                추천인 코드 입력 시 추천인에게 500P 추가 지급!
+              </p>
           </div>
         </section>
 
@@ -306,7 +306,7 @@ const KakaoProfileSetup = () => {
                   )}
                 </div>
                 {referralValid === true && (
-                  <p className="text-green-400 text-xs mt-1">추천인에게 300P가 지급됩니다!</p>
+                  <p className="text-green-400 text-xs mt-1">추천인에게 500P가 지급됩니다!</p>
                 )}
               </div>
 

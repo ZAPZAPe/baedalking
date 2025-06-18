@@ -3,27 +3,10 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ['localhost'],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'k.kakaocdn.net',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'gxaqqznkcuzqbacgqvzg.supabase.co',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'k.kakaocdn.net',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'ssl.pstatic.net',
-        pathname: '/**',
+        hostname: '**',
       },
     ],
     formats: ['image/avif', 'image/webp'],
@@ -41,6 +24,10 @@ const nextConfig = {
         net: false,
         tls: false,
       };
+    }
+    if (isServer) {
+      // 서버사이드에서 tesseract.js 제외
+      config.externals.push('tesseract.js');
     }
     return config;
   },

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaCrown, FaEnvelope, FaLock, FaUser, FaMapMarkerAlt, FaMotorcycle, FaUserPlus, FaChevronLeft } from 'react-icons/fa';
+import { FaCrown, FaEnvelope, FaLock, FaUser, FaMapMarkerAlt, FaMotorcycle, FaUserPlus, FaChevronLeft, FaGift } from 'react-icons/fa';
 import { supabase } from '../../lib/supabase';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -18,14 +18,53 @@ const SignUp = () => {
     confirmPassword: '',
     nickname: '',
     region: '',
-    vehicle: 'motorcycle'
+    vehicle: 'motorcycle',
+    referralCode: ''
   });
+  const [referralValid, setReferralValid] = useState<boolean | null>(null);
+  const [checkingReferral, setCheckingReferral] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    
+    // 추천인 코드가 변경되면 유효성 상태 초기화
+    if (e.target.name === 'referralCode') {
+      setReferralValid(null);
+    }
+  };
+
+  // 추천인 코드 확인
+  const checkReferralCode = async () => {
+    if (!formData.referralCode) {
+      setReferralValid(null);
+      return;
+    }
+
+    setCheckingReferral(true);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, nickname')
+        .eq('referral_code', formData.referralCode)
+        .single();
+
+      if (error || !data) {
+        setReferralValid(false);
+        setError('유효하지 않은 추천인 코드입니다.');
+      } else {
+        setReferralValid(true);
+        setError('');
+        toast.success(`${data.nickname}님의 추천 코드가 확인되었습니다!`);
+      }
+    } catch (error) {
+      setReferralValid(false);
+      setError('추천인 코드 확인 중 오류가 발생했습니다.');
+    } finally {
+      setCheckingReferral(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -74,6 +113,8 @@ const SignUp = () => {
       if (authData.user) {
         // 3. users 테이블에 프로필 생성
         const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
+        const initialPoints = formData.referralCode && referralValid ? 500 : 300; // 추천코드 있으면 500P, 없으면 300P
+        
         const { error: profileError } = await supabase
           .from('users')
           .insert({
@@ -83,8 +124,9 @@ const SignUp = () => {
             nickname: formData.nickname,
             region: formData.region,
             vehicle: formData.vehicle,
-            points: 500, // 가입 보너스
+            points: initialPoints,
             referral_code: referralCode,
+            referred_by: formData.referralCode || null,
             created_at: new Date().toISOString(),
           });
 
@@ -93,6 +135,32 @@ const SignUp = () => {
           // Auth 사용자 삭제
           await supabase.auth.admin.deleteUser(authData.user.id);
           throw profileError;
+        }
+
+        // 추천인이 있는 경우 추천인에게 300P 지급
+        if (formData.referralCode && referralValid) {
+          const { data: referrer } = await supabase
+            .from('users')
+            .select('id, points')
+            .eq('referral_code', formData.referralCode)
+            .single();
+
+          if (referrer) {
+            await supabase
+              .from('users')
+              .update({ points: (referrer.points || 0) + 500 })
+              .eq('id', referrer.id);
+
+            await supabase
+              .from('point_history')
+              .insert({
+                user_id: referrer.id,
+                points: 500,
+                type: 'referral',
+                reason: '친구 추천 보상',
+                created_at: new Date().toISOString()
+              });
+          }
         }
 
         toast.success('회원가입이 완료되었습니다! 이메일을 확인해주세요.');
@@ -304,9 +372,47 @@ const SignUp = () => {
                 </div>
               </div>
 
+              {/* 추천인 코드 */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  추천인 코드 <span className="text-white/60">(선택사항)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaGift className={`${referralValid === true ? 'text-green-400' : referralValid === false ? 'text-red-400' : 'text-white/60'}`} />
+                  </div>
+                  <input
+                    type="text"
+                    name="referralCode"
+                    value={formData.referralCode}
+                    onChange={handleChange}
+                    onBlur={checkReferralCode}
+                    className={`w-full pl-10 pr-4 py-3 bg-white/20 border rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all ${
+                      referralValid === true ? 'border-green-400/50' : 
+                      referralValid === false ? 'border-red-400/50' : 'border-white/30'
+                    }`}
+                    placeholder="추천인 코드를 입력하세요"
+                    disabled={loading}
+                  />
+                  {checkingReferral && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                  {referralValid === true && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <span className="text-green-400 text-sm">✓</span>
+                    </div>
+                  )}
+                </div>
+                {referralValid === true && (
+                  <p className="text-green-400 text-xs mt-1">추천인에게 500P, 회원님께 500P가 지급됩니다!</p>
+                )}
+              </div>
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || checkingReferral}
                 className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 px-4 rounded-xl font-bold hover:from-yellow-500 hover:to-orange-600 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
                 <FaUserPlus size={18} />

@@ -7,8 +7,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
-import KakaoAd from '@/components/KakaoAd';
+import dynamic from 'next/dynamic';
 import Loading from '@/components/Loading';
+
+// KakaoAd를 동적으로 import
+const KakaoAd = dynamic(() => import('@/components/KakaoAd'), {
+  ssr: false,
+  loading: () => <div className="w-full h-[100px] bg-white/5 rounded-lg animate-pulse" />
+});
 
 declare global {
   interface Window {
@@ -775,8 +781,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
-
-
 
         {/* 로그아웃 버튼 */}
         <section className="mb-4">

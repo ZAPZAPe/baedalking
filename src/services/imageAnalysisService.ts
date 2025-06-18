@@ -1,4 +1,10 @@
-import { createWorker, Worker } from 'tesseract.js';
+// Tesseract.js는 클라이언트 사이드에서만 import
+let createWorker: any;
+if (typeof window !== 'undefined') {
+  import('tesseract.js').then(module => {
+    createWorker = module.createWorker;
+  });
+}
 
 export type Platform = 'baemin' | 'coupang' | 'yogiyo' | 'other';
 
@@ -36,7 +42,11 @@ export class ImageAnalysisService {
    * Tesseract 워커 초기화
    */
   private async initializeWorker() {
-    if (!this.worker) {
+    if (typeof window === 'undefined') {
+      throw new Error('Tesseract.js는 브라우저 환경에서만 사용할 수 있습니다.');
+    }
+    
+    if (!this.worker && createWorker) {
       this.worker = await createWorker();
     }
     return this.worker;
@@ -52,8 +62,8 @@ export class ImageAnalysisService {
       console.log('이미지 분석 시작:', file.name);
       
       // 개발 환경에서는 mock 데이터 사용
-      if (process.env.NODE_ENV === 'development') {
-        console.log('개발 모드: Mock 데이터 사용');
+      if (process.env.NODE_ENV === 'development' || typeof window === 'undefined') {
+        console.log('개발 모드 또는 서버 환경: Mock 데이터 사용');
         
         // 파일명이나 플랫폼으로 샘플 데이터 반환
         const mockData = this.getMockData(detectedPlatform);
@@ -71,8 +81,12 @@ export class ImageAnalysisService {
       const processedImage = await this.preprocessImage(file);
       
       // OCR 실행
-      if (!this.worker) {
+      if (!this.worker && createWorker) {
         this.worker = await createWorker();
+      }
+      
+      if (!this.worker) {
+        throw new Error('OCR 워커를 초기화할 수 없습니다.');
       }
       
       const result = await this.worker.recognize(processedImage);
@@ -714,15 +728,23 @@ export class ImageAnalysisService {
   }
 }
 
-// 싱글톤 인스턴스
-export const imageAnalysisService = new ImageAnalysisService();
+// 싱글톤 인스턴스 - 지연 초기화
+let _imageAnalysisService: ImageAnalysisService | null = null;
 
-// 편의 함수
+const getImageAnalysisService = () => {
+  if (!_imageAnalysisService) {
+    _imageAnalysisService = new ImageAnalysisService();
+  }
+  return _imageAnalysisService;
+};
+
+// 이미지 분석 함수
 export const analyzeDeliveryImage = (file: File, platform?: string) =>
-  imageAnalysisService.analyzeImage(file, platform as Platform);
+  getImageAnalysisService().analyzeImage(file, platform as Platform);
 
+// 검증 함수
 export const validateAnalysis = (result: AnalysisResult) =>
-  imageAnalysisService.validateAnalysisResult(result);
+  getImageAnalysisService().validateAnalysisResult(result);
 
-// 정리 함수 (앱 종료 시 호출)
-export const cleanupOCR = () => imageAnalysisService.cleanup(); 
+// 정리 함수
+export const cleanupOCR = () => getImageAnalysisService().cleanup(); 
