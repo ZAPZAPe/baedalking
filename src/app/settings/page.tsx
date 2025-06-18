@@ -10,7 +10,7 @@ import { toast } from 'react-hot-toast';
 import dynamicImport from 'next/dynamic';
 import Loading from '@/components/Loading';
 import NoSSR from '@/components/NoSSR';
-import { clearOldSession } from '@/lib/supabase';
+
 
 // 페이지를 동적으로 만들기
 export const dynamic = 'force-dynamic';
@@ -624,7 +624,7 @@ export default function SettingsPage() {
                         content: {
                           title: '🚀 배달킹에서 함께 배달왕에 도전해요!',
                           description: `${userProfile.nickname}님이 초대했어요! 지금 가입하면 500P 즉시 지급! 추천 코드: ${userProfile.referral_code}`,
-                          imageUrl: 'https://www.baedalrank.com/baedalrank-logo.png',
+                          imageUrl: 'https://www.baedalrank.com/baedalking-logo.png',
                           link: {
                                                             mobileWebUrl: `https://www.baedalrank.com/invite/${userProfile.referral_code}`,
                                 webUrl: `https://www.baedalrank.com/invite/${userProfile.referral_code}`,
@@ -682,35 +682,6 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-2">
-              {/* 캐시 정리 버튼 추가 */}
-              <button
-                onClick={() => {
-                  clearOldSession();
-                  // 모든 스토리지 정리
-                  ['supabase.auth.token', 'sb-auth-token', 'baedalking-auth'].forEach(key => {
-                    localStorage.removeItem(key);
-                    sessionStorage.removeItem(key);
-                  });
-                  toast.success('캐시가 정리되었습니다. 다시 로그인해주세요.');
-                  setTimeout(() => {
-                    handleLogout();
-                  }, 1000);
-                }}
-                className="w-full"
-              >
-                <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-xl p-3 border border-orange-400/30">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-orange-400/20 rounded-full flex items-center justify-center">
-                        <FaCog className="text-orange-400" size={14} />
-                      </div>
-                      <span className="text-white font-bold text-sm">캐시 정리</span>
-                    </div>
-                    <span className="text-orange-200 text-sm">›</span>
-                  </div>
-                </div>
-              </button>
-
               {/* 공지사항 */}
               <button
                 onClick={() => setModalType('notice')}

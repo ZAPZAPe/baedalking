@@ -45,7 +45,7 @@ export const shareToKakao = () => {
       content: {
         title: '배달킹 - 실시간 배달 랭킹',
         description: '배달 라이더들의 실시간 랭킹을 확인하고 경쟁해보세요!',
-        imageUrl: 'https://baedalrank.com/og-image.png',
+        imageUrl: 'https://www.baedalrank.com/baedalking-logo.png',
         link: {
           mobileWebUrl: 'https://baedalrank.com',
           webUrl: 'https://baedalrank.com',
@@ -174,7 +174,7 @@ ${region} ${platform} 기준
       content: {
         title: title,
         description: description,
-        imageUrl: 'https://www.baedalrank.com/baedalrank-logo.png',
+        imageUrl: 'https://www.baedalrank.com/baedalking-logo.png',
         link: {
           mobileWebUrl: currentUrl,
           webUrl: currentUrl,

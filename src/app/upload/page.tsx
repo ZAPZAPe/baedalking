@@ -580,11 +580,19 @@ export default function UploadPage() {
                 </div>
               )}
             </div>
-            <p className="text-white/60 text-sm text-center mt-2">
-              {selectedExampleApp === '배민커넥트'
-                ? '마이페이지 - 오늘 배달 내역 <br> </br> 화면을 참고해서 업로드 해주세요.'
-                : '내 수입 - 오늘 날짜 [ ex) 06/06 금 ] <br> </br> 화면을 참고해서 업로드 해주세요.'}
-            </p>
+            <div className="text-white/60 text-sm text-center mt-2">
+              {selectedExampleApp === '배민커넥트' ? (
+                <>
+                  <p>마이페이지 - 오늘 배달 내역</p>
+                  <p>화면을 참고해서 업로드 해주세요.</p>
+                </>
+              ) : (
+                <>
+                  <p>내 수입 - 오늘 날짜 [ ex) 06/06 금 ]</p>
+                  <p>화면을 참고해서 업로드 해주세요.</p>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
