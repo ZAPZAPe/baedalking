@@ -96,6 +96,7 @@ export const loginWithKakao = async () => {
 
                 // users 테이블에 프로필 생성
                 if (authData.user) {
+                  const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
                   const { error: profileError } = await supabase
                     .from('users')
                     .insert({
@@ -105,6 +106,7 @@ export const loginWithKakao = async () => {
                       kakao_id: kakaoUser.id,
                       profile_image: kakaoUser.profileImage,
                       points: 500, // 가입 보너스
+                      referral_code: referralCode,
                       created_at: new Date().toISOString(),
                     });
 
