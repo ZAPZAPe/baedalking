@@ -25,13 +25,6 @@ interface DeliveryRecordWithUser {
 // 오늘 랭킹 조회
 export const getTodayRanking = async (region?: string): Promise<RankingData[]> => {
   try {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError) {
-      console.error('세션 오류:', sessionError);
-      return [];
-    }
-
     const today = new Date().toISOString().split('T')[0];
     
     let query = supabase
@@ -53,10 +46,12 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
     const { data, error } = await query;
 
     if (error) {
-      if (error.message?.includes('401') || error.code === '401') {
-        return [];
-      }
-      throw error;
+      console.error('랭킹 조회 오류:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
     }
 
     const userStats = new Map<string, RankingData>();
@@ -74,6 +69,7 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
       existing.totalOrders += record.delivery_count;
       userStats.set(userId, existing);
     });
+    
     const rankings = Array.from(userStats.values())
       .sort((a, b) => {
         // 금액이 다른 경우 금액순
@@ -102,6 +98,7 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
         }
         return [...acc, curr];
       }, []);
+      
     return rankings;
   } catch (error) {
     console.error('오늘 랭킹 조회 오류:', error);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo, Suspense } from 'react';
 import { getTodayRanking, RankingData } from '@/services/rankingService';
 import { UserProfile } from '@/components/home/UserProfile';
 import { TopRankers } from '@/components/home/TopRankers';
@@ -68,8 +68,37 @@ const TopRankersSection = memo(({ rankers }: { rankers: RankingData[] }) => (
 
 TopRankersSection.displayName = 'TopRankersSection';
 
+// 스켈레톤 UI 컴포넌트
+const SkeletonLoader = () => (
+  <div className="animate-pulse">
+    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-white/20">
+      <div className="h-8 bg-white/20 rounded-lg w-48 mx-auto mb-4"></div>
+      <div className="space-y-3">
+        <div className="h-20 bg-white/20 rounded-xl"></div>
+        <div className="h-20 bg-white/20 rounded-xl"></div>
+        <div className="h-20 bg-white/20 rounded-xl"></div>
+      </div>
+    </div>
+  </div>
+);
+
+// 사용자 프로필 스켈레톤
+const UserProfileSkeleton = () => (
+  <div className="animate-pulse">
+    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-white/20">
+      <div className="flex items-center gap-4">
+        <div className="w-16 h-16 bg-white/20 rounded-full"></div>
+        <div className="flex-1">
+          <div className="h-6 bg-white/20 rounded w-32 mb-2"></div>
+          <div className="h-4 bg-white/20 rounded w-24"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function Home() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   const [topRankers, setTopRankers] = useState<RankingData[]>(DEFAULT_RANKERS);
   const [loadingRanking, setLoadingRanking] = useState(true);
@@ -87,6 +116,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // AuthContext 로딩과 독립적으로 랭킹 데이터 로드
     fetchRanking();
   }, [fetchRanking]);
 
@@ -95,19 +125,35 @@ export default function Home() {
     initKakaoShare();
   }, []);
 
-  if (loading) {
-    return <Loading />;
-  }
-
   return (
     <div className="relative z-10">
       <div className="max-w-3xl mx-auto px-4">
-        {/* 상단 광고 */}
+        {/* 상단 광고 - 항상 표시 */}
         <section className="mt-2 mb-4">
           <KakaoAd page="home" index={0} />
         </section>
 
-        {user && userProfile ? (
+        {authLoading ? (
+          // Auth 로딩 중에도 스켈레톤 UI 표시
+          <>
+            <section className="mb-4">
+              <UserProfileSkeleton />
+            </section>
+            <section className="mb-4">
+              <SkeletonLoader />
+            </section>
+            <section className="mb-4">
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
+                <div className="animate-pulse">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="h-20 bg-white/20 rounded-xl"></div>
+                    <div className="h-20 bg-white/20 rounded-xl"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </>
+        ) : user && userProfile ? (
           <>
             {/* 사용자 프로필 */}
             <section className="mb-4">
@@ -116,12 +162,25 @@ export default function Home() {
 
             {/* 실시간 TOP3 */}
             <section className="mb-4">
-              <TopRankers topRankers={topRankers} />
+              <Suspense fallback={<SkeletonLoader />}>
+                <TopRankers topRankers={topRankers} />
+              </Suspense>
             </section>
 
             {/* 플랫폼별 실시간 통계 */}
             <section className="mb-4">
-              <PlatformStatistics />
+              <Suspense fallback={
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
+                  <div className="animate-pulse">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="h-20 bg-white/20 rounded-xl"></div>
+                      <div className="h-20 bg-white/20 rounded-xl"></div>
+                    </div>
+                  </div>
+                </div>
+              }>
+                <PlatformStatistics />
+              </Suspense>
             </section>
 
             {/* 주요 기능 섹션 */}
