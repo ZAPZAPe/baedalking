@@ -8,7 +8,7 @@ export interface RankingData {
   totalOrders: number;
   rank?: number;
   platform?: string;
-  bikeType?: string;
+  vehicle?: string;
 }
 
 interface DeliveryRecordWithUser {

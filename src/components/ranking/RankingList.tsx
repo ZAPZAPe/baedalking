@@ -19,7 +19,7 @@ export default function RankingList({ period }: RankingListProps) {
       nickname: '라이더1',
       count: 15,
       amount: 150000,
-      region: '서울시 강남구',
+      region: '서울',
       platform: '배민',
       profileImage: null,
     },
@@ -29,7 +29,7 @@ export default function RankingList({ period }: RankingListProps) {
       nickname: '라이더2',
       count: 12,
       amount: 120000,
-      region: '서울시 서초구',
+      region: '경기',
       platform: '쿠팡이츠',
       profileImage: null,
     },
@@ -39,7 +39,7 @@ export default function RankingList({ period }: RankingListProps) {
       nickname: '라이더3',
       count: 10,
       amount: 100000,
-      region: '서울시 송파구',
+      region: '인천',
       platform: '배민',
       profileImage: null,
     },
@@ -153,7 +153,7 @@ export default function RankingList({ period }: RankingListProps) {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-500">서울시 강남구</div>
+            <div className="text-sm text-gray-500">서울</div>
             <div className="text-xs text-gray-400">배민</div>
           </div>
         </div>

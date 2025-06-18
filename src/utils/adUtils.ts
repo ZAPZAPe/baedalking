@@ -13,6 +13,7 @@ const AD_COUNTS = {
   shop: 2,    // 상점페이지: 상단, 하단
   login: 1,   // 로그인페이지: 하단
   attendance: 2, // 출석체크페이지: 상단, 하단
+  signup: 1,  // 회원가입페이지: 하단
 } as const;
 
 type PageType = keyof typeof AD_COUNTS;

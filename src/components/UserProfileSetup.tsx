@@ -13,17 +13,17 @@ const UserProfileSetup = ({ userId, onComplete }: UserProfileSetupProps) => {
   const router = useRouter();
   const [nickname, setNickname] = useState('');
   const [region, setRegion] = useState('');
-  const [bikeType, setBikeType] = useState('');
+  const [vehicle, setVehicle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const regions = [
-    '강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구',
-    '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구',
-    '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'
+    '서울', '부산', '대구', '인천', '광주', '대전',
+    '울산', '세종', '경기', '강원', '충북', '충남',
+    '전북', '전남', '경북', '경남', '제주'
   ];
 
-  const bikeTypes = [
+  const vehicleTypes = [
     '오토바이', '자전거', '전동킥보드', '기타'
   ];
 
@@ -53,7 +53,7 @@ const UserProfileSetup = ({ userId, onComplete }: UserProfileSetupProps) => {
           id: userId,
           nickname,
           region,
-          bike_type: bikeType,
+          vehicle: vehicle,
           updated_at: new Date().toISOString()
         });
 
@@ -125,20 +125,20 @@ const UserProfileSetup = ({ userId, onComplete }: UserProfileSetupProps) => {
             </div>
 
             <div>
-              <label htmlFor="bikeType" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="vehicle" className="block text-sm font-medium text-gray-700">
                 운송수단
               </label>
               <div className="mt-1">
                 <select
-                  id="bikeType"
-                  name="bikeType"
+                  id="vehicle"
+                  name="vehicle"
                   required
-                  value={bikeType}
-                  onChange={(e) => setBikeType(e.target.value)}
+                  value={vehicle}
+                  onChange={(e) => setVehicle(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">운송수단을 선택하세요</option>
-                  {bikeTypes.map((type) => (
+                  {vehicleTypes.map((type) => (
                     <option key={type} value={type}>
                       {type}
                     </option>

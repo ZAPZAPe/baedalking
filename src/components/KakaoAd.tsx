@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { getAdUnitsForPage, resetPageAdUnits } from '@/utils/adUtils';
 
 interface KakaoAdProps {
-  page: 'home' | 'ranking' | 'upload' | 'shop' | 'login' | 'attendance';
+  page: 'home' | 'ranking' | 'upload' | 'shop' | 'login' | 'attendance' | 'signup';
   index: number; // 페이지 내에서의 광고 위치 (0부터 시작)
 }
 
