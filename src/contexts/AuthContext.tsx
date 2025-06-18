@@ -199,8 +199,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('세션 체크 타임아웃 - 카카오 로그인 직후 여부 확인');
             
             // 카카오 로그인 직후인지 확인 (URL에 code 파라미터가 있는지)
-            const urlParams = new URLSearchParams(window.location.search);
-            const isKakaoCallback = window.location.pathname.includes('/auth/kakao/callback') || urlParams.has('code');
+            let isKakaoCallback = false;
+            if (typeof window !== 'undefined') {
+              const urlParams = new URLSearchParams(window.location.search);
+              isKakaoCallback = window.location.pathname.includes('/auth/kakao/callback') || urlParams.has('code');
+            }
             
             if (!isKakaoCallback) {
               console.log('카카오 로그인이 아님 - 로컬 스토리지 정리');

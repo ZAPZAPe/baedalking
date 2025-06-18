@@ -7,12 +7,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Loading from '@/components/Loading';
-import dynamicImport from 'next/dynamic';
 import { toast } from 'react-hot-toast';
 import Script from 'next/script';
-
-// 페이지를 동적으로 만들기
-export const dynamic = 'force-dynamic';
 import NoSSR from '@/components/NoSSR';
 import KakaoInit from '@/components/KakaoInit';
 
@@ -222,7 +218,9 @@ export default function AttendancePage() {
   };
 
   if (!user) {
-    router.push('/login');
+    if (typeof window !== 'undefined') {
+      router.push('/login');
+    }
     return null;
   }
 
