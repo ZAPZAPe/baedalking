@@ -85,55 +85,78 @@ export default function AttendancePage() {
         consecutive_days: consecutive
       })) || []);
     } catch (error) {
-      console.error('출석 데이터 로드 실패:', error);
-      toast.error('출석 데이터를 불러오는데 실패했습니다.');
+      console.error('출근 데이터 로드 실패:', error);
+      toast.error('출근 데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleAttendance = async () => {
-    if (!user || todayAttended || claiming) return;
+    console.log('출근도장 버튼 클릭됨');
+    console.log('user:', user);
+    console.log('userProfile:', userProfile);
+    console.log('todayAttended:', todayAttended);
+    console.log('claiming:', claiming);
+    
+    if (!user || todayAttended || claiming) {
+      console.log('조건 미충족으로 리턴');
+      return;
+    }
     
     setClaiming(true);
     try {
-      // 기본 포인트 + 연속 출석 보너스
-      const basePoints = 10;
-      const bonusPoints = Math.min(consecutiveDays * 5, 50); // 최대 50포인트 보너스
-      const totalPoints = basePoints + bonusPoints;
+      // 고정 포인트 10P
+      const totalPoints = 10;
 
+      console.log('포인트 지급 시도...');
       // 포인트 지급
-      const { error: pointError } = await supabase
+      const { data: pointData, error: pointError } = await supabase
         .from('point_history')
         .insert({
           user_id: user.id,
           type: 'attendance',
           amount: totalPoints,
-          description: `출석체크 (${consecutiveDays + 1}일 연속)`
-        });
+          description: `출근도장 (${consecutiveDays + 1}일 연속)`
+        })
+        .select()
+        .single();
 
-      if (pointError) throw pointError;
+      console.log('포인트 지급 결과:', { pointData, pointError });
 
+      if (pointError) {
+        console.error('포인트 지급 에러:', pointError);
+        throw pointError;
+      }
+
+      console.log('사용자 포인트 업데이트 시도...');
       // 사용자 포인트 업데이트
-      const { error: updateError } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from('users')
         .update({
           points: (userProfile?.points || 0) + totalPoints
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select()
+        .single();
 
-      if (updateError) throw updateError;
+      console.log('사용자 포인트 업데이트 결과:', { updateData, updateError });
+
+      if (updateError) {
+        console.error('사용자 포인트 업데이트 에러:', updateError);
+        throw updateError;
+      }
 
       // 상태 업데이트
       await refreshUserProfile();
       setTodayAttended(true);
       setConsecutiveDays(consecutiveDays + 1);
       
-      toast.success(`출석체크 완료! +${totalPoints} 포인트`);
+      toast.success(`출근도장 완료! +${totalPoints} 포인트`);
       await fetchAttendanceData();
     } catch (error) {
-      console.error('출석체크 실패:', error);
-      toast.error('출석체크에 실패했습니다.');
+      console.error('출근도장 실패 상세:', error);
+      toast.error('출근도장에 실패했습니다.');
     } finally {
       setClaiming(false);
     }
@@ -194,7 +217,7 @@ export default function AttendancePage() {
           <Link href="/settings" className="text-white">
             <FaChevronLeft size={24} />
           </Link>
-          <h1 className="text-xl font-bold text-white">출석체크</h1>
+          <h1 className="text-xl font-bold text-white">출근도장</h1>
           <div className="w-6" />
         </header>
 
@@ -203,13 +226,13 @@ export default function AttendancePage() {
           <KakaoAd page="attendance" index={0} />
         </section>
 
-        {/* 출석 현황 */}
+        {/* 출근 현황 */}
         <section className="mb-4">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-2xl font-bold text-white">출석 현황</h2>
-                <p className="text-blue-200 text-sm">매일 출석하고 포인트 받기</p>
+                <h2 className="text-2xl font-bold text-white">출근 현황</h2>
+                <p className="text-blue-200 text-sm">매일 출근하고 포인트 받기</p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
                 <FaCalendarCheck className="text-white" size={20} />
@@ -220,13 +243,13 @@ export default function AttendancePage() {
               <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-3 border border-blue-400/30 text-center">
                 <FaFireAlt className="text-blue-400 mx-auto mb-1" size={20} />
                 <p className="text-white font-bold text-lg">{consecutiveDays}일</p>
-                <p className="text-blue-200 text-xs">연속 출석</p>
+                <p className="text-blue-200 text-xs">연속 출근</p>
               </div>
               
               <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-3 border border-purple-400/30 text-center">
                 <FaStar className="text-purple-400 mx-auto mb-1" size={20} />
                 <p className="text-white font-bold text-lg">{monthlyAttendance}일</p>
-                <p className="text-purple-200 text-xs">이번 달 출석</p>
+                <p className="text-purple-200 text-xs">이번 달 출근</p>
               </div>
               
               <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl p-3 border border-amber-400/30 text-center">
@@ -236,7 +259,7 @@ export default function AttendancePage() {
               </div>
             </div>
 
-            {/* 출석체크 버튼 */}
+            {/* 출근도장 버튼 */}
             <button
               onClick={handleAttendance}
               disabled={todayAttended || claiming}
@@ -249,22 +272,22 @@ export default function AttendancePage() {
               {todayAttended ? (
                 <>
                   <FaCheck size={16} />
-                  오늘 출석 완료
+                  오늘 출근 완료
                 </>
               ) : (
                 <>
                   <FaGift size={16} />
-                  {claiming ? '처리 중...' : '출석체크 하기'}
+                  {claiming ? '처리 중...' : '출근도장 찍기 (+10P)'}
                 </>
               )}
             </button>
           </div>
         </section>
 
-        {/* 출석 캘린더 */}
+        {/* 출근 캘린더 */}
         <section className="mb-4">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
-            <h3 className="text-xl font-bold text-white mb-4">이번 달 출석 현황</h3>
+            <h3 className="text-xl font-bold text-white mb-4">이번 달 출근 현황</h3>
             
             <div className="grid grid-cols-7 gap-2">
               {['일', '월', '화', '수', '목', '금', '토'].map(day => (
@@ -293,54 +316,6 @@ export default function AttendancePage() {
                   )}
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* 보상 안내 */}
-        <section className="mb-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
-            <h3 className="text-xl font-bold text-white mb-4">출석 보상</h3>
-            
-            <div className="space-y-3">
-              <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-3 border border-blue-400/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FaCalendarCheck className="text-blue-400" size={20} />
-                    <div>
-                      <p className="text-white font-bold text-sm">일일 출석</p>
-                      <p className="text-blue-200 text-xs">매일 로그인하면</p>
-                    </div>
-                  </div>
-                  <span className="text-blue-200 font-bold">+10P</span>
-                </div>
-              </div>
-              
-              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-3 border border-purple-400/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FaFireAlt className="text-purple-400" size={20} />
-                    <div>
-                      <p className="text-white font-bold text-sm">연속 출석 보너스</p>
-                      <p className="text-purple-200 text-xs">연속 출석 시 추가</p>
-                    </div>
-                  </div>
-                  <span className="text-purple-200 font-bold">+5P/일</span>
-                </div>
-              </div>
-              
-              <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl p-3 border border-amber-400/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FaTrophy className="text-amber-400" size={20} />
-                    <div>
-                      <p className="text-white font-bold text-sm">최대 보너스</p>
-                      <p className="text-amber-200 text-xs">10일 이상 연속 출석</p>
-                    </div>
-                  </div>
-                  <span className="text-amber-200 font-bold">+60P</span>
-                </div>
-              </div>
             </div>
           </div>
         </section>

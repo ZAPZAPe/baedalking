@@ -551,7 +551,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* 출석체크 */}
+              {/* 출근도장 */}
               <Link href="/settings/points" className="block">
                 <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-3 border border-blue-400/30">
                   <div className="flex items-center justify-between">
@@ -559,7 +559,7 @@ export default function SettingsPage() {
                       <div className="w-8 h-8 bg-blue-400/20 rounded-full flex items-center justify-center">
                         <FaList className="text-blue-400" size={14} />
                       </div>
-                      <span className="text-white font-bold text-sm">출석체크</span>
+                      <span className="text-white font-bold text-sm">출근도장</span>
                     </div>
                     <span className="text-blue-200 text-sm">›</span>
                   </div>
