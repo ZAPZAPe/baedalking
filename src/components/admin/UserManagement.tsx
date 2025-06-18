@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { getUsers, updateUserRole, createUser, deleteUser, updateUserData, getTodayDeliveryData } from '@/services/adminService';
 import { UserProfile } from '@/types';
-import { FaUserShield, FaUser, FaPlus, FaTimes, FaTrash, FaEdit, FaSearch, FaSave } from 'react-icons/fa';
+import { FaUserShield, FaUser, FaPlus, FaTimes, FaTrash, FaEdit, FaSearch, FaSave, FaCalendar, FaCoins } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+import { supabase } from '@/lib/supabase';
 
 interface UserWithTodayData extends UserProfile {
   todayDeliveries: number;
@@ -14,6 +15,7 @@ interface UserWithTodayData extends UserProfile {
   editedEarnings?: number;
   editedVerified?: boolean;
   editedPoints?: number;
+  pointsAdjustment?: number;
   saving?: boolean;
 }
 
@@ -22,6 +24,14 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithTodayData | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dateData, setDateData] = useState({
+    deliveries: 0,
+    earnings: 0,
+    verified: false
+  });
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -135,7 +145,21 @@ export default function UserManagement() {
       if (user.editedVerified !== undefined) {
         updateData.verified = user.editedVerified;
       }
-      if (user.editedPoints !== undefined) {
+      
+      // 포인트 조정이 있는 경우
+      if (user.pointsAdjustment !== undefined && user.pointsAdjustment !== 0) {
+        const newPoints = user.points + user.pointsAdjustment;
+        updateData.points = newPoints;
+        
+        // 포인트 변경 기록
+        await supabase
+          .from('point_history')
+          .insert({
+            user_id: user.id,
+            points: user.pointsAdjustment,
+            reason: user.pointsAdjustment > 0 ? '관리자 포인트 추가' : '관리자 포인트 차감'
+          });
+      } else if (user.editedPoints !== undefined) {
         updateData.points = user.editedPoints;
       }
       
@@ -149,11 +173,12 @@ export default function UserManagement() {
           todayDeliveries: user.editedDeliveries ?? u.todayDeliveries,
           todayEarnings: user.editedEarnings ?? u.todayEarnings,
           verified: user.editedVerified ?? u.verified,
-          points: user.editedPoints ?? u.points,
+          points: updateData.points ?? u.points,
           editedDeliveries: undefined,
           editedEarnings: undefined,
           editedVerified: undefined,
           editedPoints: undefined,
+          pointsAdjustment: undefined,
           saving: false
         } : u
       ));
@@ -168,6 +193,53 @@ export default function UserManagement() {
     }
   };
 
+  const handleDateDataSubmit = async () => {
+    if (!selectedUser) return;
+
+    try {
+      // 선택한 날짜의 배달 기록 확인
+      const { data: existingRecords } = await supabase
+        .from('delivery_records')
+        .select('*')
+        .eq('user_id', selectedUser.id)
+        .eq('date', selectedDate);
+
+      if (existingRecords && existingRecords.length > 0) {
+        // 기존 기록 업데이트
+        await supabase
+          .from('delivery_records')
+          .update({
+            delivery_count: dateData.deliveries,
+            amount: dateData.earnings,
+            verified: dateData.verified,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingRecords[0].id);
+      } else {
+        // 새 기록 생성
+        await supabase
+          .from('delivery_records')
+          .insert({
+            user_id: selectedUser.id,
+            date: selectedDate,
+            delivery_count: dateData.deliveries,
+            amount: dateData.earnings,
+            platform: '배민커넥트', // 기본값
+            verified: dateData.verified,
+            created_at: new Date().toISOString()
+          });
+      }
+
+      toast.success('날짜별 실적이 저장되었습니다.');
+      setShowDateModal(false);
+      setSelectedUser(null);
+      setDateData({ deliveries: 0, earnings: 0, verified: false });
+    } catch (error) {
+      console.error('날짜별 실적 저장 오류:', error);
+      toast.error('저장에 실패했습니다.');
+    }
+  };
+
   const filteredUsers = users.filter(user => 
     user.nickname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -178,13 +250,14 @@ export default function UserManagement() {
     return user.editedDeliveries !== undefined ||
            user.editedEarnings !== undefined ||
            user.editedVerified !== undefined ||
-           user.editedPoints !== undefined;
+           user.editedPoints !== undefined ||
+           (user.pointsAdjustment !== undefined && user.pointsAdjustment !== 0);
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
       </div>
     );
   }
@@ -200,9 +273,9 @@ export default function UserManagement() {
               placeholder="이름, 이메일, 지역으로 검색..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400" />
           </div>
         </div>
         <button
@@ -216,106 +289,134 @@ export default function UserManagement() {
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-600">전체 사용자</p>
-          <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+        <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
+          <p className="text-sm text-zinc-400">전체 사용자</p>
+          <p className="text-2xl font-bold text-white">{users.length}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-600">관리자</p>
-          <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.role === 'admin').length}</p>
+        <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
+          <p className="text-sm text-zinc-400">관리자</p>
+          <p className="text-2xl font-bold text-white">{users.filter(u => u.role === 'admin').length}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-600">오늘 활동</p>
-          <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.todayDeliveries > 0).length}</p>
+        <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
+          <p className="text-sm text-zinc-400">오늘 활동</p>
+          <p className="text-2xl font-bold text-white">{users.filter(u => u.todayDeliveries > 0).length}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-600">오늘 수익</p>
-          <p className="text-2xl font-bold text-gray-900">
+        <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
+          <p className="text-sm text-zinc-400">오늘 수익</p>
+          <p className="text-2xl font-bold text-white">
             {users.reduce((sum, u) => sum + (u.todayEarnings || 0), 0).toLocaleString()}원
           </p>
         </div>
       </div>
 
       {/* 사용자 테이블 */}
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700">
+        <table className="min-w-full divide-y divide-zinc-700">
+          <thead className="bg-zinc-900">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                 사용자 이름
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                 이메일
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                오늘 배달 건수
+              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                오늘 실적
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                오늘 수익
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                인증 여부
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                 포인트
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                권한
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                 작업
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-zinc-800 divide-y divide-zinc-700">
             {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
+              <tr key={user.id} className="hover:bg-zinc-700/50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                      {user.role === 'admin' ? <FaUserShield className="text-gray-600" /> : <FaUser className="text-gray-600" />}
+                    <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center mr-3">
+                      {user.role === 'admin' ? <FaUserShield className="text-yellow-400" /> : <FaUser className="text-zinc-400" />}
                     </div>
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-white">
                       {user.nickname || '미설정'}
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{user.email}</div>
+                  <div className="text-sm text-zinc-300">{user.email}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <input
-                    type="number"
-                    value={user.editedDeliveries ?? user.todayDeliveries}
-                    onChange={(e) => handleFieldEdit(user.id, 'editedDeliveries', parseInt(e.target.value) || 0)}
-                    className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={user.editedDeliveries ?? user.todayDeliveries}
+                        onChange={(e) => handleFieldEdit(user.id, 'editedDeliveries', parseInt(e.target.value) || 0)}
+                        className="w-16 px-2 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-zinc-400">건</span>
+                      <input
+                        type="number"
+                        value={user.editedEarnings ?? user.todayEarnings}
+                        onChange={(e) => handleFieldEdit(user.id, 'editedEarnings', parseInt(e.target.value) || 0)}
+                        className="w-24 px-2 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-zinc-400">원</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={user.editedVerified !== undefined ? user.editedVerified.toString() : user.verified.toString()}
+                        onChange={(e) => handleFieldEdit(user.id, 'editedVerified', e.target.value === 'true')}
+                        className="text-sm bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-white focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="true">인증</option>
+                        <option value="false">미인증</option>
+                      </select>
+                      <button
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setShowDateModal(true);
+                        }}
+                        className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-white rounded text-sm flex items-center gap-1"
+                        title="날짜별 실적 입력"
+                      >
+                        <FaCalendar size={12} />
+                        날짜별
+                      </button>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <input
-                    type="number"
-                    value={user.editedEarnings ?? user.todayEarnings}
-                    onChange={(e) => handleFieldEdit(user.id, 'editedEarnings', parseInt(e.target.value) || 0)}
-                    className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  <div className="space-y-1">
+                    <div className="flex items-center">
+                      <span className="text-sm text-white font-medium">{user.points.toLocaleString()}P</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={user.pointsAdjustment ?? 0}
+                        onChange={(e) => handleFieldEdit(user.id, 'pointsAdjustment', parseInt(e.target.value) || 0)}
+                        placeholder="+/-"
+                        className="w-20 px-2 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <FaCoins className="text-yellow-400" size={12} />
+                    </div>
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <select
-                    value={user.editedVerified !== undefined ? user.editedVerified.toString() : user.verified.toString()}
-                    onChange={(e) => handleFieldEdit(user.id, 'editedVerified', e.target.value === 'true')}
-                    className="text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 px-2 py-1"
+                    value={user.role}
+                    onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin')}
+                    className="text-sm bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-white focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="true">인증</option>
-                    <option value="false">미인증</option>
+                    <option value="user">일반</option>
+                    <option value="admin">관리자</option>
                   </select>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <input
-                      type="number"
-                      value={user.editedPoints ?? user.points}
-                      onChange={(e) => handleFieldEdit(user.id, 'editedPoints', parseInt(e.target.value) || 0)}
-                      className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <span className="ml-1 text-sm text-gray-500">P</span>
-                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center gap-2">
@@ -325,7 +426,7 @@ export default function UserManagement() {
                       className={`px-3 py-1 rounded text-white flex items-center gap-1 ${
                         hasChanges(user) && !user.saving
                           ? 'bg-green-600 hover:bg-green-700' 
-                          : 'bg-gray-300 cursor-not-allowed'
+                          : 'bg-zinc-600 cursor-not-allowed'
                       }`}
                       title="저장"
                     >
@@ -334,7 +435,7 @@ export default function UserManagement() {
                     </button>
                     <button
                       onClick={() => handleDeleteUser(user.id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-400 hover:text-red-300"
                       title="삭제"
                     >
                       <FaTrash />
@@ -347,15 +448,102 @@ export default function UserManagement() {
         </table>
       </div>
 
+      {/* 날짜별 실적 입력 모달 */}
+      {showDateModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-lg p-6 w-full max-w-md border border-zinc-800">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">
+                {selectedUser.nickname} - 날짜별 실적 입력
+              </h3>
+              <button
+                onClick={() => {
+                  setShowDateModal(false);
+                  setSelectedUser(null);
+                  setDateData({ deliveries: 0, earnings: 0, verified: false });
+                }}
+                className="text-zinc-400 hover:text-white"
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">날짜</label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">배달 건수</label>
+                <input
+                  type="number"
+                  value={dateData.deliveries}
+                  onChange={(e) => setDateData({ ...dateData, deliveries: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">수익</label>
+                <input
+                  type="number"
+                  value={dateData.earnings}
+                  onChange={(e) => setDateData({ ...dateData, earnings: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">인증 상태</label>
+                <select
+                  value={dateData.verified.toString()}
+                  onChange={(e) => setDateData({ ...dateData, verified: e.target.value === 'true' })}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="false">미인증</option>
+                  <option value="true">인증</option>
+                </select>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDateModal(false);
+                    setSelectedUser(null);
+                    setDateData({ deliveries: 0, earnings: 0, verified: false });
+                  }}
+                  className="flex-1 px-4 py-2 border border-zinc-700 text-zinc-300 rounded-md hover:bg-zinc-800"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleDateDataSubmit}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 새 사용자 추가 모달 */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-zinc-900 rounded-lg p-6 w-full max-w-md border border-zinc-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">새 사용자 추가</h3>
+              <h3 className="text-lg font-semibold text-white">새 사용자 추가</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-zinc-400 hover:text-white"
               >
                 <FaTimes size={20} />
               </button>
@@ -363,54 +551,54 @@ export default function UserManagement() {
             
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">이메일</label>
                 <input
                   type="email"
                   required
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">비밀번호</label>
                 <input
                   type="password"
                   required
                   value={newUser.password}
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">닉네임</label>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">닉네임</label>
                 <input
                   type="text"
                   required
                   value={newUser.nickname}
                   onChange={(e) => setNewUser({ ...newUser, nickname: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">지역</label>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">지역</label>
                 <input
                   type="text"
                   value={newUser.region}
                   onChange={(e) => setNewUser({ ...newUser, region: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">차량</label>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">차량</label>
                 <select
                   value={newUser.vehicle}
                   onChange={(e) => setNewUser({ ...newUser, vehicle: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="bicycle">자전거</option>
                   <option value="motorcycle">오토바이</option>
@@ -419,21 +607,21 @@ export default function UserManagement() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">전화번호</label>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">전화번호</label>
                 <input
                   type="tel"
                   value={newUser.phone}
                   onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">권한</label>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">권한</label>
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value as 'user' | 'admin' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="user">일반 사용자</option>
                   <option value="admin">관리자</option>
@@ -444,7 +632,7 @@ export default function UserManagement() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-zinc-700 text-zinc-300 rounded-md hover:bg-zinc-800"
                 >
                   취소
                 </button>

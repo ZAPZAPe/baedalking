@@ -45,48 +45,18 @@ interface DashboardStats {
 }
 
 export default function AdminPage() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, signOut } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    // 관리자 비밀번호 인증 확인
-    const checkAdminAuth = () => {
-      const isAuthenticated = sessionStorage.getItem('adminAuthenticated');
-      const authTime = sessionStorage.getItem('adminAuthTime');
-      
-      if (!isAuthenticated || !authTime) {
-        router.push('/admin-login');
-        return;
-      }
-      
-      // 인증 시간 확인 (24시간 유효)
-      const authDate = new Date(authTime);
-      const now = new Date();
-      const hoursDiff = (now.getTime() - authDate.getTime()) / (1000 * 60 * 60);
-      
-      if (hoursDiff > 24) {
-        sessionStorage.removeItem('adminAuthenticated');
-        sessionStorage.removeItem('adminAuthTime');
-        router.push('/admin-login');
-        return;
-      }
-      
-      setIsCheckingAuth(false);
-    };
-
-    checkAdminAuth();
-  }, [router]);
-
-  useEffect(() => {
-    // 관리자 권한 체크
-    if (!loading && !isCheckingAuth && (!user || userProfile?.role !== 'admin')) {
+    // 관리자 권한이 없으면 홈으로
+    if (!loading && (!user || userProfile?.role !== 'admin')) {
       router.push('/');
     }
-  }, [user, userProfile, loading, isCheckingAuth, router]);
+  }, [user, userProfile, loading, router]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -123,23 +93,35 @@ export default function AdminPage() {
   const currentTab = tabs.find(tab => tab.id === activeTab);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-black">
       {/* 사이드바 */}
-      <aside className={`${sidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 transition-all duration-300`}>
+      <aside className={`${sidebarCollapsed ? 'w-20' : 'w-64'} bg-zinc-900 border-r border-zinc-800 transition-all duration-300`}>
         <div className="p-4 h-full flex flex-col">
-          <nav className="space-y-1">
+          {/* 로고 */}
+          <div className="mb-8">
+            <div className="flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                <FaShieldAlt className="text-white" size={24} />
+              </div>
+              {!sidebarCollapsed && (
+                <h1 className="ml-3 text-xl font-bold text-white">관리자</h1>
+              )}
+            </div>
+          </div>
+
+          <nav className="space-y-1 flex-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : ''} px-3 py-2.5 text-sm font-medium rounded-lg transition-all group ${
                   activeTab === tab.id
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-gradient-to-r ' + tab.color + ' text-white'
+                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                 }`}
                 title={tab.label}
               >
-                <span className={`${activeTab === tab.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                <span className={`${activeTab === tab.id ? 'text-white' : 'text-zinc-400 group-hover:text-white'}`}>
                   {tab.icon}
                 </span>
                 {!sidebarCollapsed && <span className="ml-3">{tab.label}</span>}
@@ -147,21 +129,20 @@ export default function AdminPage() {
             ))}
           </nav>
           
-          <div className="mt-auto pt-4 border-t border-gray-200">
+          <div className="mt-auto pt-4 border-t border-zinc-800">
             <button
-              onClick={() => {
-                sessionStorage.removeItem('adminAuthenticated');
-                sessionStorage.removeItem('adminAuthTime');
-                router.push('/admin-login');
+              onClick={async () => {
+                await signOut();
+                router.push('/');
               }}
-              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : ''} px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-all`}
+              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : ''} px-3 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-all`}
             >
               <FaSignOutAlt size={20} />
               {!sidebarCollapsed && <span className="ml-3">로그아웃</span>}
             </button>
             <button
               onClick={() => router.push('/')}
-              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : ''} px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-all mt-1`}
+              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : ''} px-3 py-2.5 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-lg transition-all mt-1`}
             >
               <FaHome size={20} />
               {!sidebarCollapsed && <span className="ml-3">메인으로</span>}
@@ -169,94 +150,103 @@ export default function AdminPage() {
           </div>
         </div>
       </aside>
+
       {/* 메인 컨텐츠 */}
-      <main className="flex-1 overflow-y-auto bg-gray-50 p-0">
-        <div className="w-full h-full flex flex-col gap-8">
+      <main className="flex-1 overflow-y-auto bg-black">
+        <div className="w-full h-full flex flex-col">
           {/* 페이지 헤더 */}
-          <div className="flex items-center justify-between w-full px-8 pt-8 pb-4">
-            <div>
-              <h2 className={`text-3xl font-bold text-gray-900 mb-2`}>
-                {currentTab?.label}
-              </h2>
-              <p className="text-gray-600">
-                {activeTab === 'dashboard' && '전체 시스템 현황을 한눈에 확인하세요'}
-                {activeTab === 'users' && '사용자 계정을 관리하고 모니터링합니다'}
-                {activeTab === 'records' && '배달 기록을 검토하고 관리합니다'}
-                {activeTab === 'rankings' && '랭킹 시스템을 관리하고 조정합니다'}
-                {activeTab === 'points' && '포인트 발급 및 사용 내역을 관리합니다'}
-                {activeTab === 'fraud' && '부정행위를 감지하고 처리합니다'}
-                {activeTab === 'settings' && '시스템 설정을 구성합니다'}
-              </p>
-            </div>
-            <div className={`w-12 h-12 bg-gradient-to-br ${currentTab?.color} rounded-xl flex items-center justify-center shadow-lg`}>
-              <span className="text-white">{currentTab?.icon}</span>
+          <div className="bg-zinc-900 border-b border-zinc-800">
+            <div className="flex items-center justify-between px-8 py-6">
+              <div>
+                <h2 className={`text-3xl font-bold text-white mb-2`}>
+                  {currentTab?.label}
+                </h2>
+                <p className="text-zinc-400">
+                  {activeTab === 'dashboard' && '전체 시스템 현황을 한눈에 확인하세요'}
+                  {activeTab === 'users' && '사용자 계정을 관리하고 모니터링합니다'}
+                  {activeTab === 'records' && '배달 기록을 검토하고 관리합니다'}
+                  {activeTab === 'rankings' && '랭킹 시스템을 관리하고 조정합니다'}
+                  {activeTab === 'points' && '포인트 발급 및 사용 내역을 관리합니다'}
+                  {activeTab === 'fraud' && '부정행위를 감지하고 처리합니다'}
+                  {activeTab === 'settings' && '시스템 설정을 구성합니다'}
+                </p>
+              </div>
+              <div className={`w-14 h-14 bg-gradient-to-br ${currentTab?.color} rounded-xl flex items-center justify-center shadow-lg`}>
+                <span className="text-white">{currentTab?.icon}</span>
+              </div>
             </div>
           </div>
+
           {/* 통계 카드 (대시보드일 때만 표시) */}
           {activeTab === 'dashboard' && stats && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full px-8">
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-8 py-6">
+              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <FaUpload className="text-blue-600" size={20} />
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <FaUpload className="text-blue-400" size={20} />
                   </div>
-                  <span className="text-xs text-green-600 font-semibold flex items-center">
+                  <span className="text-xs text-green-400 font-semibold flex items-center">
                     <FaArrowUp size={12} className="mr-1" /> 12%
                   </span>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">{stats?.todayUploads != null ? stats.todayUploads.toLocaleString() : '0'}</h3>
-                <p className="text-sm text-gray-600 mt-1">오늘 업로드</p>
+                <h3 className="text-2xl font-bold text-white">{stats?.todayUploads != null ? stats.todayUploads.toLocaleString() : '0'}</h3>
+                <p className="text-sm text-zinc-400 mt-1">오늘 업로드</p>
               </div>
               
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <FaUsers className="text-purple-600" size={20} />
+                  <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <FaUsers className="text-purple-400" size={20} />
                   </div>
-                  <span className="text-xs text-green-600 font-semibold flex items-center">
+                  <span className="text-xs text-green-400 font-semibold flex items-center">
                     <FaArrowUp size={12} className="mr-1" /> 8%
                   </span>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">{stats?.totalUsers != null ? stats.totalUsers.toLocaleString() : '0'}</h3>
-                <p className="text-sm text-gray-600 mt-1">전체 사용자</p>
+                <h3 className="text-2xl font-bold text-white">{stats?.totalUsers != null ? stats.totalUsers.toLocaleString() : '0'}</h3>
+                <p className="text-sm text-zinc-400 mt-1">전체 사용자</p>
               </div>
               
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <FaClipboardList className="text-green-600" size={20} />
+                  <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <FaClipboardList className="text-green-400" size={20} />
                   </div>
-                  <span className="text-xs text-green-600 font-semibold flex items-center">
+                  <span className="text-xs text-green-400 font-semibold flex items-center">
                     <FaArrowUp size={12} className="mr-1" /> 15%
                   </span>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">{stats?.totalDeliveries != null ? stats.totalDeliveries.toLocaleString() : '0'}</h3>
-                <p className="text-sm text-gray-600 mt-1">총 배달 건수</p>
+                <h3 className="text-2xl font-bold text-white">{stats?.totalDeliveries != null ? stats.totalDeliveries.toLocaleString() : '0'}</h3>
+                <p className="text-sm text-zinc-400 mt-1">총 배달 건수</p>
               </div>
               
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <FaExclamationTriangle className="text-red-600" size={20} />
+                  <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
+                    <FaExclamationTriangle className="text-red-400" size={20} />
                   </div>
-                  <span className="text-xs text-red-600 font-semibold flex items-center">
+                  <span className="text-xs text-red-400 font-semibold flex items-center">
                     <FaArrowDown size={12} className="mr-1" /> 3%
                   </span>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">{stats?.fraudDetections != null ? stats.fraudDetections.toLocaleString() : '0'}</h3>
-                <p className="text-sm text-gray-600 mt-1">부정행위 감지</p>
+                <h3 className="text-2xl font-bold text-white">{stats?.fraudDetections != null ? stats.fraudDetections.toLocaleString() : '0'}</h3>
+                <p className="text-sm text-zinc-400 mt-1">부정행위 감지</p>
               </div>
             </div>
           )}
+
           {/* 컨텐츠 영역 */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 w-full mx-0 px-8 py-8">
-            {activeTab === 'dashboard' && <Dashboard />}
-            {activeTab === 'users' && <UserManagement />}
-            {activeTab === 'records' && <DeliveryRecords />}
-            {activeTab === 'rankings' && <RankingManagement />}
-            {activeTab === 'points' && <PointsManagement />}
-            {activeTab === 'fraud' && <FraudDetection />}
-            {activeTab === 'settings' && <SystemSettings />}
+          <div className="flex-1 px-8 py-6">
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 h-full">
+              <div className="p-6">
+                {activeTab === 'dashboard' && <Dashboard />}
+                {activeTab === 'users' && <UserManagement />}
+                {activeTab === 'records' && <DeliveryRecords />}
+                {activeTab === 'rankings' && <RankingManagement />}
+                {activeTab === 'points' && <PointsManagement />}
+                {activeTab === 'fraud' && <FraudDetection />}
+                {activeTab === 'settings' && <SystemSettings />}
+              </div>
+            </div>
           </div>
         </div>
       </main>
