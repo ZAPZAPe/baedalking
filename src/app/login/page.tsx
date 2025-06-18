@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FaComment, FaCrown, FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, clearOldSession } from '../../lib/supabase';
-import KakaoAd from '@/components/KakaoAd';
+import KakaoAdGlobal from '@/components/KakaoAdGlobal';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 
@@ -278,7 +278,7 @@ const Login = () => {
 
         {/* 하단 광고 */}
         <section className="mb-8">
-          <KakaoAd page="login" index={0} />
+          <KakaoAdGlobal page="login" index={0} />
         </section>
       </div>
     </div>

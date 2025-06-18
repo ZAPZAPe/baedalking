@@ -9,17 +9,12 @@ import { supabase } from '@/lib/supabase';
 import Loading from '@/components/Loading';
 import dynamicImport from 'next/dynamic';
 import { toast } from 'react-hot-toast';
+import Script from 'next/script';
 
 // 페이지를 동적으로 만들기
 export const dynamic = 'force-dynamic';
 import NoSSR from '@/components/NoSSR';
 import KakaoInit from '@/components/KakaoInit';
-
-// KakaoAd를 동적으로 import
-const KakaoAd = dynamicImport(() => import('@/components/KakaoAd'), {
-  ssr: false,
-  loading: () => <div className="w-full h-[100px] bg-white/5 rounded-lg animate-pulse" />
-});
 
 interface AttendanceRecord {
   date: string;
@@ -120,8 +115,8 @@ export default function AttendancePage() {
     
     setClaiming(true);
     try {
-      // 고정 포인트 10P
-      const totalPoints = 10;
+      // 고정 포인트 50P
+      const totalPoints = 50;
 
       console.log('포인트 지급 시도...');
       // 포인트 지급
@@ -299,7 +294,7 @@ export default function AttendancePage() {
                 ) : (
                   <>
                     <FaGift size={16} />
-                    {claiming ? '처리 중...' : '출근도장 찍기 (+10P)'}
+                    {claiming ? '처리 중...' : '출근도장 찍기 (+50P)'}
                   </>
                 )}
               </button>
@@ -378,32 +373,38 @@ export default function AttendancePage() {
                   );
                 })}
               </div>
-              
-              {/* 범례 추가 */}
-              <div className="mt-4 flex items-center justify-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-red-700 rounded transform rotate-6"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <FaCheck className="text-white text-[8px] transform rotate-6" />
-                    </div>
-                  </div>
-                  <span className="text-white/80">출근 완료</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-white/20 border border-white/40 rounded"></div>
-                  <span className="text-white/80">오늘</span>
-                </div>
-              </div>
             </div>
           </section>
 
-          {/* 하단 광고 */}
-          <section className="mb-2">
-            <KakaoAd page="attendance" index={1} />
+          {/* 광고 */}
+          <section className="mb-4">
+            <div className="w-full h-[100px] bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden">
+              <ins
+                className="kakao_ad_area"
+                style={{ display: 'none' }}
+                data-ad-unit="DAN-H23jVB9324Ae01jE"
+                data-ad-width="320"
+                data-ad-height="100"
+              />
+            </div>
           </section>
         </div>
       </div>
+      
+      {/* Kakao AdFit Script */}
+      <Script
+        src="//t1.daumcdn.net/kas/static/ba.min.js"
+        strategy="lazyOnload"
+        onLoad={() => {
+          if (typeof window !== 'undefined' && (window as any).adfit) {
+            try {
+              (window as any).adfit.init();
+            } catch (error) {
+              console.warn('광고 초기화 오류:', error);
+            }
+          }
+        }}
+      />
       
       <style jsx>{`
         @keyframes stamp-effect {

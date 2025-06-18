@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { FaClipboardList, FaCalendarAlt, FaMoneyBillWave, FaPlus, FaImage, FaCheck, FaTimes, FaChartLine, FaUsers, FaTrophy, FaFire, FaList, FaCalendar, FaTrash, FaFilter, FaCamera, FaSpinner, FaMotorcycle, FaBicycle } from 'react-icons/fa';
+import { useState, useEffect, useMemo } from 'react';
+import { FaClipboardList, FaCalendarAlt, FaMoneyBillWave, FaPlus, FaImage, FaCheck, FaTimes, FaChartLine, FaUsers, FaTrophy, FaFire, FaList, FaCalendar, FaTrash, FaFilter, FaCamera, FaSpinner, FaMotorcycle, FaBicycle, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getUserDeliveryRecords, deleteDeliveryRecord } from '@/services/deliveryService';
@@ -10,7 +10,7 @@ import Loading from '@/components/Loading';
 import ManualEntry from '@/components/delivery/ManualEntry';
 import Link from 'next/link';
 import Image from 'next/image';
-import KakaoAd from '@/components/KakaoAd';
+import KakaoAdGlobal from '@/components/KakaoAdGlobal';
 
 export default function RecordsPage() {
   const { user, userProfile, loading } = useAuth();
@@ -21,23 +21,68 @@ export default function RecordsPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<'all' | '배민커넥트' | '쿠팡이츠'>('all');
   const [manualOpen, setManualOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [currentPeriodOffset, setCurrentPeriodOffset] = useState(0); // 0: 현재, -1: 지난주/지난달, 1: 다음주/다음달
 
-  // 달력 관련 함수들
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  // 날짜 관련 계산을 useMemo로 최적화
+  const dateInfo = useMemo(() => {
+    const today = new Date();
+    let targetDate: Date;
+    
+    if (selectedPeriod === 'week') {
+      // 주간: currentPeriodOffset * 7일만큼 이동
+      targetDate = new Date(today.getTime() + currentPeriodOffset * 7 * 24 * 60 * 60 * 1000);
+    } else {
+      // 월간: currentPeriodOffset개월만큼 이동
+      targetDate = new Date(today.getFullYear(), today.getMonth() + currentPeriodOffset, today.getDate());
+    }
+    
+    const currentYear = targetDate.getFullYear();
+    const currentMonth = targetDate.getMonth();
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    return { today, targetDate, currentYear, currentMonth, firstDayOfMonth, daysInMonth, todayStr };
+  }, [selectedPeriod, currentPeriodOffset]);
+
+  // 날짜 계산 함수들
+  const getWeekStart = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const adjustedDay = day === 0 ? 7 : day;
+    const diff = d.getDate() - (adjustedDay - 1);
+    const weekStart = new Date(d.setDate(diff));
+    weekStart.setHours(0, 0, 0, 0);
+    return weekStart;
   };
 
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  const getMonthStart = (date: Date) => {
+    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+    monthStart.setHours(0, 0, 0, 0);
+    return monthStart;
   };
 
-  // 달력 관련 변수들
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth();
-  const firstDayOfMonth = getFirstDayOfMonth(today);
-  const daysInMonth = getDaysInMonth(today);
-  const todayStr = today.toISOString().split('T')[0];
+  // 기간별 필터링 - useMemo로 최적화
+  const filteredRecords = useMemo(() => {
+    let filteredByPlatform = records;
+    if (selectedPlatform !== 'all') {
+      filteredByPlatform = records.filter(record => record.platform === selectedPlatform);
+    }
+
+    if (selectedPeriod === 'week') {
+      const weekStart = getWeekStart(dateInfo.targetDate);
+      const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+      const weekStartStr = weekStart.toISOString().split('T')[0];
+      const weekEndStr = weekEnd.toISOString().split('T')[0];
+      return filteredByPlatform.filter(record => record.date >= weekStartStr && record.date <= weekEndStr);
+    } else {
+      const monthStart = getMonthStart(dateInfo.targetDate);
+      const monthEnd = new Date(dateInfo.targetDate.getFullYear(), dateInfo.targetDate.getMonth() + 1, 0);
+      const monthStartStr = monthStart.toISOString().split('T')[0];
+      const monthEndStr = monthEnd.toISOString().split('T')[0];
+      return filteredByPlatform.filter(record => record.date >= monthStartStr && record.date <= monthEndStr);
+    }
+  }, [records, selectedPlatform, selectedPeriod, dateInfo.targetDate]);
 
   // 사용자 배달 기록 가져오기
   useEffect(() => {
@@ -57,6 +102,11 @@ export default function RecordsPage() {
 
     fetchRecords();
   }, [user]);
+
+  // 기간이 변경될 때 offset 초기화
+  useEffect(() => {
+    setCurrentPeriodOffset(0);
+  }, [selectedPeriod]);
 
   // 기록 새로고침 함수
   const refreshRecords = async () => {
@@ -81,7 +131,6 @@ export default function RecordsPage() {
       try {
         await deleteDeliveryRecord(recordId);
         await refreshRecords();
-        // 팝업이 열려있다면 닫기
         if (selectedDate) {
           setSelectedDate(null);
         }
@@ -90,127 +139,6 @@ export default function RecordsPage() {
         alert('기록 삭제 중 오류가 발생했습니다.');
       }
     }
-  };
-
-  if (loading) {
-    return <Loading />;
-  }
-
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
-
-  // 날짜 계산 함수들
-  const getWeekStart = (date: Date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    // 일요일(0)을 7로 변환하여 월요일(1)을 기준으로 계산
-    const adjustedDay = day === 0 ? 7 : day;
-    const diff = d.getDate() - (adjustedDay - 1);
-    const weekStart = new Date(d.setDate(diff));
-    weekStart.setHours(0, 0, 0, 0);
-    console.log('주 시작일:', weekStart.toISOString().split('T')[0]);
-    return weekStart;
-  };
-
-  const getMonthStart = (date: Date) => {
-    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-    monthStart.setHours(0, 0, 0, 0);
-    console.log('월 시작일:', monthStart.toISOString().split('T')[0]);
-    return monthStart;
-  };
-
-  // 기간별 필터링
-  const getFilteredRecords = () => {
-    let filteredByPlatform = records;
-    if (selectedPlatform !== 'all') {
-      filteredByPlatform = records.filter(record => record.platform === selectedPlatform);
-    }
-
-    if (selectedPeriod === 'week') {
-      const weekStart = getWeekStart(today);
-      const weekStartStr = weekStart.toISOString().split('T')[0];
-      return filteredByPlatform.filter(record => {
-        // 날짜 문자열 직접 비교
-        return record.date >= weekStartStr;
-      });
-    } else {
-      const monthStart = getMonthStart(today);
-      const monthStartStr = monthStart.toISOString().split('T')[0];
-      return filteredByPlatform.filter(record => {
-        // 날짜 문자열 직접 비교
-        return record.date >= monthStartStr;
-      });
-    }
-  };
-
-  const filteredRecords = getFilteredRecords();
-  
-  // 오늘 기록 계산
-  const todayRecords = records.filter(record => record.date === todayStr);
-  const todayTotal = todayRecords.reduce((sum, record) => sum + record.amount, 0);
-  const todayCount = todayRecords.reduce((sum, record) => sum + record.deliveryCount, 0);
-
-  // 선택된 기간 통계
-  const periodTotal = filteredRecords.reduce((sum, record) => sum + record.amount, 0);
-  const periodCount = filteredRecords.reduce((sum, record) => sum + record.deliveryCount, 0);
-  const periodDays = selectedPeriod === 'week' ? 7 : new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const dailyAverage = Math.floor(periodTotal / periodDays);
-
-  // 플랫폼별 통계
-  const baeminRecords = filteredRecords.filter(r => r.platform === '배민커넥트');
-  const coupangRecords = filteredRecords.filter(r => r.platform === '쿠팡이츠');
-  const baeminTotal = baeminRecords.reduce((sum, record) => sum + record.amount, 0);
-  const coupangTotal = coupangRecords.reduce((sum, record) => sum + record.amount, 0);
-
-  const getPlatformName = (platform: string) => {
-    switch (platform) {
-      case '배민커넥트': return '배민커넥트';
-      case '쿠팡이츠': return '쿠팡이츠';
-      default: return platform;
-    }
-  };
-
-  const getPlatformColor = (platform: string) => {
-    switch (platform) {
-      case '배민커넥트': return 'text-cyan-300';
-      case '쿠팡이츠': return 'text-orange-300';
-      default: return 'text-gray-300';
-    }
-  };
-
-  // 날짜별로 그룹화
-  const recordsByDate = filteredRecords.reduce((groups, record) => {
-    const date = record.date;
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(record);
-    return groups;
-  }, {} as Record<string, DeliveryRecord[]>);
-
-  const sortedDates = Object.keys(recordsByDate).sort((a, b) => b.localeCompare(a));
-
-  const getCalendarDays = () => {
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const daysInMonth = getDaysInMonth(today);
-    const firstDay = getFirstDayOfMonth(today);
-    const days = [];
-
-    // 이전 달의 빈 날짜들
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-
-    // 이번 달의 날짜들
-    for (let i = 1; i <= daysInMonth; i++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      days.push(dateStr);
-    }
-
-    return days;
   };
 
   const getRecordsByDateStr = (dateStr: string) => {
@@ -222,17 +150,76 @@ export default function RecordsPage() {
     return dayRecords.reduce((sum, record) => sum + record.amount, 0);
   };
 
+  // 기간 네비게이션 함수들
+  const goToPreviousPeriod = () => {
+    setCurrentPeriodOffset(prev => prev - 1);
+  };
+
+  const goToNextPeriod = () => {
+    setCurrentPeriodOffset(prev => prev + 1);
+  };
+
+  const goToCurrentPeriod = () => {
+    setCurrentPeriodOffset(0);
+  };
+
+  // 기간 표시 텍스트 생성
+  const getPeriodDisplayText = () => {
+    if (selectedPeriod === 'week') {
+      const weekStart = getWeekStart(dateInfo.targetDate);
+      const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+      
+      if (currentPeriodOffset === 0) {
+        return '이번 주';
+      } else if (currentPeriodOffset === -1) {
+        return '지난 주';
+      } else if (currentPeriodOffset === 1) {
+        return '다음 주';
+      } else {
+        return `${Math.abs(currentPeriodOffset)}${currentPeriodOffset < 0 ? '주 전' : '주 후'}`;
+      }
+    } else {
+      if (currentPeriodOffset === 0) {
+        return '이번 달';
+      } else if (currentPeriodOffset === -1) {
+        return '지난 달';
+      } else if (currentPeriodOffset === 1) {
+        return '다음 달';
+      } else {
+        return `${Math.abs(currentPeriodOffset)}${currentPeriodOffset < 0 ? '개월 전' : '개월 후'}`;
+      }
+    }
+  };
+
+  // 로딩 중이거나 사용자가 없는 경우 처리
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
+
+  // 통계 계산
+  const todayRecords = records.filter(record => record.date === dateInfo.todayStr);
+  const todayTotal = todayRecords.reduce((sum, record) => sum + record.amount, 0);
+  const todayCount = todayRecords.reduce((sum, record) => sum + record.deliveryCount, 0);
+
+  const periodTotal = filteredRecords.reduce((sum, record) => sum + record.amount, 0);
+  const periodCount = filteredRecords.reduce((sum, record) => sum + record.deliveryCount, 0);
+  const periodDays = selectedPeriod === 'week' ? 7 : new Date(dateInfo.targetDate.getFullYear(), dateInfo.targetDate.getMonth() + 1, 0).getDate();
+  const dailyAverage = Math.floor(periodTotal / periodDays);
+
   return (
     <div className="relative z-10">
       <div className="max-w-3xl mx-auto px-4">
         {/* 오늘의 실적 */}
         <section className="mb-4 mt-2">
           <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
-            {/* 배경 애니메이션 효과 */}
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
             
             <div className="relative z-10">
-              {/* 상단 타이틀 */}
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white">오늘의 실적</h2>
@@ -245,7 +232,6 @@ export default function RecordsPage() {
                 </div>
               </div>
 
-              {/* 실적 정보 */}
               <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center hover:bg-white/20 transition-all">
                   <p className="text-xs sm:text-sm text-purple-200 mb-1">오늘 수익</p>
@@ -255,11 +241,10 @@ export default function RecordsPage() {
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center hover:bg-white/20 transition-all">
                   <p className="text-xs sm:text-sm text-purple-200 mb-1">일평균</p>
                   <p className="text-lg sm:text-xl font-bold text-white">{dailyAverage.toLocaleString()}원</p>
-                  <p className="text-xs text-purple-200">{selectedPeriod === 'week' ? '이번 주' : '이번 달'}</p>
+                  <p className="text-xs text-purple-200">{getPeriodDisplayText()}</p>
                 </div>
               </div>
 
-              {/* 버튼 그룹 */}
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => setManualOpen(true)}
@@ -280,21 +265,19 @@ export default function RecordsPage() {
           </div>
         </section>
 
-        {/* 광고 - 오늘의 실적 하단으로 이동 */}
+        {/* 광고 */}
         <section className="mb-4">
-          <KakaoAd page="shop" index={1} />
+          <KakaoAdGlobal page="records" index={0} />
         </section>
 
-        {/* 통합된 필터 및 기록 섹션 */}
+        {/* 필터 및 기록 섹션 */}
         <section className="mb-2">
           <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
-            {/* 배경 애니메이션 효과 */}
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
             
             <div className="relative z-10">
               {/* 필터 섹션 */}
               <div className="space-y-3 mb-4">
-                {/* 기간 선택 */}
                 <div className="flex gap-2">
                   {[
                     { value: 'week' as const, label: '주간', Icon: FaCalendarAlt },
@@ -316,7 +299,6 @@ export default function RecordsPage() {
                   ))}
                 </div>
 
-                {/* 플랫폼 선택 */}
                 <div className="flex gap-2">
                   {[
                     { value: 'all' as const, label: '전체', Icon: FaList },
@@ -340,7 +322,6 @@ export default function RecordsPage() {
                 </div>
               </div>
 
-              {/* 구분선 */}
               <div className="h-px bg-purple-400/20 my-4"></div>
 
               {/* 달력 보기 */}
@@ -349,18 +330,42 @@ export default function RecordsPage() {
                   // 주간 리포트
                   <div className="space-y-3">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-base font-bold text-white">
-                        {getWeekStart(today).toLocaleDateString('ko-KR', {
-                          month: 'long',
-                          day: 'numeric'
-                        })} ~ {new Date(getWeekStart(today).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', {
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </h3>
+                      <button
+                        onClick={goToPreviousPeriod}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        <FaChevronLeft className="text-white" size={14} />
+                      </button>
+                      
+                      <div className="text-center">
+                        <h3 className="text-base font-bold text-white">
+                          {getWeekStart(dateInfo.targetDate).toLocaleDateString('ko-KR', {
+                            month: 'long',
+                            day: 'numeric'
+                          })} ~ {new Date(getWeekStart(dateInfo.targetDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', {
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </h3>
+                        <p className="text-xs text-purple-200 mt-1">{getPeriodDisplayText()}</p>
+                        {currentPeriodOffset !== 0 && (
+                          <button
+                            onClick={goToCurrentPeriod}
+                            className="text-xs text-amber-400 hover:text-amber-300 mt-1"
+                          >
+                            현재로 돌아가기
+                          </button>
+                        )}
+                      </div>
+                      
+                      <button
+                        onClick={goToNextPeriod}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        <FaChevronRight className="text-white" size={14} />
+                      </button>
                     </div>
 
-                    {/* 주간 통계 */}
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="bg-white/10 rounded-xl p-3">
                         <div className="text-xs text-purple-200 mb-1">주간 합산 금액</div>
@@ -386,9 +391,9 @@ export default function RecordsPage() {
                         </div>
                       ))}
                       {Array.from({ length: 7 }, (_, i) => {
-                        const date = new Date(getWeekStart(today).getTime() + i * 24 * 60 * 60 * 1000);
+                        const date = new Date(getWeekStart(dateInfo.targetDate).getTime() + i * 24 * 60 * 60 * 1000);
                         const dateStr = date.toISOString().split('T')[0];
-                        const isToday = dateStr === todayStr;
+                        const isToday = dateStr === dateInfo.todayStr;
                         const hasRecords = getRecordsByDateStr(dateStr).length > 0;
 
                         return (
@@ -419,12 +424,36 @@ export default function RecordsPage() {
                   // 월간 리포트
                   <div className="space-y-3">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-base font-bold text-white">
-                        {today.getFullYear()}년 {today.getMonth() + 1}월
-                      </h3>
+                      <button
+                        onClick={goToPreviousPeriod}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        <FaChevronLeft className="text-white" size={14} />
+                      </button>
+                      
+                      <div className="text-center">
+                        <h3 className="text-base font-bold text-white">
+                          {dateInfo.targetDate.getFullYear()}년 {dateInfo.targetDate.getMonth() + 1}월
+                        </h3>
+                        <p className="text-xs text-purple-200 mt-1">{getPeriodDisplayText()}</p>
+                        {currentPeriodOffset !== 0 && (
+                          <button
+                            onClick={goToCurrentPeriod}
+                            className="text-xs text-amber-400 hover:text-amber-300 mt-1"
+                          >
+                            현재로 돌아가기
+                          </button>
+                        )}
+                      </div>
+                      
+                      <button
+                        onClick={goToNextPeriod}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        <FaChevronRight className="text-white" size={14} />
+                      </button>
                     </div>
 
-                    {/* 월간 통계 */}
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="bg-white/10 rounded-xl p-3">
                         <div className="text-xs text-purple-200 mb-1">월간 합산 금액</div>
@@ -440,7 +469,6 @@ export default function RecordsPage() {
                       </div>
                     </div>
 
-                    {/* 일평균 통계 */}
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="bg-white/10 rounded-xl p-3">
                         <div className="text-xs text-purple-200 mb-1">일평균 금액</div>
@@ -465,13 +493,13 @@ export default function RecordsPage() {
                           {day}
                         </div>
                       ))}
-                      {Array.from({ length: firstDayOfMonth }, (_, i) => (
+                      {Array.from({ length: dateInfo.firstDayOfMonth }, (_, i) => (
                         <div key={`empty-${i}`} className="aspect-square" />
                       ))}
-                      {Array.from({ length: daysInMonth }, (_, i) => {
-                        const date = new Date(currentYear, currentMonth, i + 1);
+                      {Array.from({ length: dateInfo.daysInMonth }, (_, i) => {
+                        const date = new Date(dateInfo.currentYear, dateInfo.currentMonth, i + 1);
                         const dateStr = date.toISOString().split('T')[0];
-                        const isToday = dateStr === todayStr;
+                        const isToday = dateStr === dateInfo.todayStr;
                         const hasRecords = getRecordsByDateStr(dateStr).length > 0;
 
                         return (
@@ -503,7 +531,6 @@ export default function RecordsPage() {
             </div>
           </div>
         </section>
-
       </div>
 
       {/* 수기 입력 모달 */}
@@ -516,7 +543,7 @@ export default function RecordsPage() {
         }}
       />
 
-      {/* 달력 보기일 때 선택된 날짜의 상세 정보 */}
+      {/* 선택된 날짜의 상세 정보 */}
       {selectedDate && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gradient-to-br from-purple-900/90 to-pink-900/90 backdrop-blur-lg rounded-3xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto shadow-2xl border border-purple-500/30">
@@ -611,6 +638,7 @@ export default function RecordsPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 } 

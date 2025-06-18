@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { FaUser, FaMapMarkerAlt, FaMotorcycle, FaBicycle, FaCar, FaWalking, FaEdit, FaSignOutAlt, FaChevronLeft, FaCheck, FaTimes, FaCrown, FaBell, FaLock, FaQuestionCircle, FaCog, FaShieldAlt, FaCamera, FaCoins, FaList, FaGift, FaShare, FaComment, FaFileAlt, FaUsers, FaTimes as FaClose, FaCopy } from 'react-icons/fa';
+import { FaUser, FaMapMarkerAlt, FaMotorcycle, FaBicycle, FaCar, FaWalking, FaEdit, FaSignOutAlt, FaChevronLeft, FaCheck, FaTimes, FaCrown, FaBell, FaLock, FaQuestionCircle, FaCog, FaShieldAlt, FaCamera, FaCoins, FaList, FaGift, FaShare, FaComment, FaFileAlt, FaUsers, FaTimes as FaClose } from 'react-icons/fa';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -10,17 +10,12 @@ import { toast } from 'react-hot-toast';
 import dynamicImport from 'next/dynamic';
 import Loading from '@/components/Loading';
 import NoSSR from '@/components/NoSSR';
-
+import KakaoAdGlobal from '@/components/KakaoAdGlobal';
 
 // 페이지를 동적으로 만들기
 export const dynamic = 'force-dynamic';
 
 // 동적 import
-const KakaoAd = dynamicImport(() => import('@/components/KakaoAd'), {
-  ssr: false,
-  loading: () => <div className="w-full h-[100px] bg-white/5 rounded-lg animate-pulse" />
-});
-
 const KakaoInit = dynamicImport(() => import('@/components/KakaoInit'), {
   ssr: false
 });
@@ -71,29 +66,41 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
+    // 파일 크기 체크 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('이미지 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+
+    // 파일 타입 체크
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
     setUploadingImage(true);
     try {
-      // 파일 이름 생성 (userId_timestamp)
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-      const filePath = `profile-images/${fileName}`;
+      const formData = new FormData();
+      formData.append('image', file);
 
-      // Supabase Storage에 업로드
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
+      // API 엔드포인트 사용
+      const response = await fetch('/api/upload/profile', {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (uploadError) throw uploadError;
+      if (!response.ok) {
+        throw new Error('이미지 업로드 실패');
+      }
 
-      // 공개 URL 가져오기
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setProfileImage(publicUrl);
+      const data = await response.json();
       
-      // 바로 프로필 업데이트
-      await updateProfile({ profileImage: publicUrl });
+      if (data.imageUrl) {
+        setProfileImage(data.imageUrl);
+        
+        // 바로 프로필 업데이트
+        await updateProfile({ profileImage: data.imageUrl });
+      }
       
     } catch (error) {
       console.error('이미지 업로드 실패:', error);
@@ -521,7 +528,7 @@ export default function SettingsPage() {
 
         {/* 광고 - 내 정보 하단으로 이동 */}
         <section className="mb-4">
-          <KakaoAd page="home" index={2} />
+          <KakaoAdGlobal page="settings" index={0} />
         </section>
 
         {/* 포인트 섹션 */}
@@ -571,7 +578,7 @@ export default function SettingsPage() {
 
         {/* 광고 - 포인트 하단으로 이동 */}
         <section className="mb-4">
-          <KakaoAd page="home" index={1} />
+          <KakaoAdGlobal page="settings" index={1} />
         </section>
 
         {/* 친구 초대 섹션 */}

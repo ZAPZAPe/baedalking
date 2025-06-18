@@ -102,7 +102,7 @@ export async function GET(request: Request) {
         points = 300;
         reason = `일일 3위 달성`;
       } else if (user.rank >= 4 && user.rank <= 10) {
-        points = 200;
+        points = 100;
         reason = `일일 TOP 10 달성 (${user.rank}위)`;
       }
       

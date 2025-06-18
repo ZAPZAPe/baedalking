@@ -1,17 +1,22 @@
 {
-  "name": "배달킹 - 배달대행 라이더 수입 관리",
+  "name": "배달킹",
   "short_name": "배달킹",
-  "description": "배달킹과 함께 더 스마트한 배달 라이프를 시작하세요",
+  "description": "배달킹 - 배달의민족 클론코딩",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1e3a8a",
-  "theme_color": "#1e3a8a",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait",
   "icons": [
     {
       "src": "/favicon.ico",
-      "sizes": "16x16 32x32 48x48",
+      "sizes": "any",
       "type": "image/x-icon"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
     }
   ],
   "categories": ["business", "productivity", "utilities"],

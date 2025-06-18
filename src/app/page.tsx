@@ -11,8 +11,8 @@ import { FaCrown, FaTrophy, FaUpload, FaUsers, FaStar, FaMedal, FaChartLine, FaF
 import { useRouter } from 'next/navigation';
 import { initKakaoShare, inviteFriends } from '@/services/kakaoShare';
 import { generateInviteCode } from '@/services/inviteService';
-import KakaoAd from '@/components/KakaoAd';
 import Loading from '@/components/Loading';
+import KakaoAdGlobal from '@/components/KakaoAdGlobal';
 
 const DEFAULT_RANKERS: RankingData[] = [
   { rank: 1, userId: '', nickname: '배달왕', region: '서울', totalAmount: 2850000, totalOrders: 89, platform: '배민커넥트', vehicle: 'motorcycle' },
@@ -235,7 +235,15 @@ export default function Home() {
           <>
             {/* 상단 광고 */}
             <section className="mt-2 mb-4">
-              <KakaoAd page="home" index={0} />
+              <div className="w-full h-[100px] bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden">
+                <ins
+                  className="kakao_ad_area"
+                  style={{ display: 'none' }}
+                  data-ad-unit="DAN-hoOuYkLu161z0omL"
+                  data-ad-width="320"
+                  data-ad-height="100"
+                />
+              </div>
             </section>
             
             <section className="mb-4">
@@ -247,7 +255,15 @@ export default function Home() {
           <>
             {/* 상단 광고 */}
             <section className="mt-2 mb-4">
-              <KakaoAd page="home" index={0} />
+              <div className="w-full h-[100px] bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden">
+                <ins
+                  className="kakao_ad_area"
+                  style={{ display: 'none' }}
+                  data-ad-unit="DAN-hoOuYkLu161z0omL"
+                  data-ad-width="320"
+                  data-ad-height="100"
+                />
+              </div>
             </section>
 
             {/* 프로필 정보 */}
@@ -266,7 +282,15 @@ export default function Home() {
 
             {/* 중간 광고 */}
             <section className="mb-4">
-              <KakaoAd page="home" index={1} />
+              <div className="w-full h-[100px] bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden">
+                <ins
+                  className="kakao_ad_area"
+                  style={{ display: 'none' }}
+                  data-ad-unit="DAN-xsiNefKQFaudq5Uw"
+                  data-ad-width="320"
+                  data-ad-height="100"
+                />
+              </div>
             </section>
 
             {/* 플랫폼 건당 단가 */}
@@ -367,7 +391,7 @@ export default function Home() {
           <>
             {/* 상단 광고 */}
             <section className="mt-2 mb-4">
-              <KakaoAd page="home" index={0} />
+              <KakaoAdGlobal page="home" index={0} />
             </section>
 
             {/* 배달킹에 오신 것을 환영합니다 */}
@@ -405,7 +429,7 @@ export default function Home() {
 
             {/* 중간 광고 */}
             <section className="mb-4">
-              <KakaoAd page="home" index={1} />
+              <KakaoAdGlobal page="home" index={1} />
             </section>
 
             {/* 실시간 TOP3 */}
@@ -480,9 +504,9 @@ export default function Home() {
           </>
         )}
 
-        {/* 하단 광고 */}
+                {/* 하단 광고 */}
         <section className="mb-2">
-          <KakaoAd page="home" index={2} />
+          <KakaoAdGlobal page="home" index={2} />
         </section>
       </div>
     </div>

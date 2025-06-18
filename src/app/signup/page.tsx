@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaCrown, FaEnvelope, FaLock, FaUser, FaMapMarkerAlt, FaMotorcycle, FaUserPlus, FaChevronLeft, FaGift } from 'react-icons/fa';
+import { FaCrown, FaEnvelope, FaLock, FaUser, FaMapMarkerAlt, FaMotorcycle, FaUserPlus, FaChevronLeft, FaGift, FaComment, FaSignInAlt, FaEye, FaEyeSlash, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 import { supabase } from '../../lib/supabase';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
-import KakaoAd from '@/components/KakaoAd';
+import KakaoAdGlobal from '@/components/KakaoAdGlobal';
 
 const SignUp = () => {
   const router = useRouter();
@@ -450,9 +450,32 @@ const SignUp = () => {
 
         {/* 하단 광고 */}
         <section className="mb-8">
-          <KakaoAd page="signup" index={0} />
+          <div className="w-full h-[100px] bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden">
+            <ins
+              className="kakao_ad_area"
+              style={{ display: 'none' }}
+              data-ad-unit="DAN-sMpnrnTCEfjs8dMd"
+              data-ad-width="320"
+              data-ad-height="100"
+            />
+          </div>
         </section>
       </div>
+      
+      {/* Kakao AdFit Script */}
+      <Script
+        src="//t1.daumcdn.net/kas/static/ba.min.js"
+        strategy="lazyOnload"
+        onLoad={() => {
+          if (typeof window !== 'undefined' && (window as any).adfit) {
+            try {
+              (window as any).adfit.init();
+            } catch (error) {
+              console.warn('광고 초기화 오류:', error);
+            }
+          }
+        }}
+      />
     </div>
   );
 };

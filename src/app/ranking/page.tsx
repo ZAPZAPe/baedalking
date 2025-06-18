@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FaCrown, FaTrophy, FaMedal, FaStar, FaFilter, FaUsers, FaFireAlt, FaCamera, FaCoins, FaList, FaChevronDown, FaShare, FaTimes, FaUser, FaMapMarkerAlt, FaMotorcycle, FaBicycle, FaCar, FaWalking } from 'react-icons/fa';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTodayRanking, getWeeklyRanking, getMonthlyRanking, RankingData } from '@/services/rankingService';
 import { Ranking } from '@/types/ranking';
 import Loading from '@/components/Loading';
-import KakaoAd from '@/components/KakaoAd';
+
 import { shareRanking, initKakaoShare } from '@/services/kakaoShare';
 import { toast } from 'react-hot-toast';
+import KakaoAdGlobal from '@/components/KakaoAdGlobal';
 
 export default function RankingPage() {
   const { user, userProfile, loading } = useAuth();
@@ -256,7 +257,7 @@ export default function RankingPage() {
 
         {/* 광고 - 실시간 랭킹 하단으로 이동 */}
         <section className="mb-4">
-          <KakaoAd page="ranking" index={0} />
+          <KakaoAdGlobal page="ranking" index={0} />
         </section>
 
         {/* 통합된 필터 및 랭킹 섹션 */}
@@ -555,6 +556,7 @@ export default function RankingPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 } 

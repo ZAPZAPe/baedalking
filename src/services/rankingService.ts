@@ -241,6 +241,65 @@ export const getUserRankingInfo = async (userId: string): Promise<{
   }
 };
 
+// 플랫폼별 TOP 3 라이더 조회
+export const getPlatformTopRankers = async (): Promise<{
+  baemin: RankingData[];
+  coupang: RankingData[];
+}> => {
+  try {
+    const { data, error } = await supabase
+      .from('today_rankings_realtime')
+      .select('*')
+      .in('platform', ['배민커넥트', '쿠팡이츠'])
+      .order('rank', { ascending: true })
+      .limit(50); // 충분한 데이터 가져오기
+
+    if (error) {
+      console.error('플랫폼별 랭킹 조회 오류:', error);
+      return { baemin: [], coupang: [] };
+    }
+
+    if (!data || data.length === 0) {
+      return { baemin: [], coupang: [] };
+    }
+
+    // 플랫폼별로 분류
+    const baeminRankers = data
+      .filter(row => row.platform === '배민커넥트')
+      .slice(0, 3)
+      .map(row => ({
+        userId: row.user_id,
+        nickname: row.nickname,
+        region: row.region,
+        totalAmount: row.total_amount,
+        totalOrders: row.total_orders,
+        rank: row.rank,
+        platform: row.platform
+      }));
+
+    const coupangRankers = data
+      .filter(row => row.platform === '쿠팡이츠')
+      .slice(0, 3)
+      .map(row => ({
+        userId: row.user_id,
+        nickname: row.nickname,
+        region: row.region,
+        totalAmount: row.total_amount,
+        totalOrders: row.total_orders,
+        rank: row.rank,
+        platform: row.platform
+      }));
+
+    return {
+      baemin: baeminRankers,
+      coupang: coupangRankers
+    };
+  } catch (error) {
+    console.error('플랫폼별 TOP 3 조회 오류:', error);
+    return { baemin: [], coupang: [] };
+  }
+};
+
 const getCurrentSession = async () => {
   const { data: session } = await supabase.auth.getSession();
   return {

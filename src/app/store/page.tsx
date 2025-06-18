@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getPointTransactions, PointTransaction } from '@/services/pointService';
 import Loading from '@/components/Loading';
-import KakaoAd from '@/components/KakaoAd';
+import KakaoAdGlobal from '@/components/KakaoAdGlobal';
 
 export default function StorePage() {
   const { user, userProfile, loading } = useAuth();
@@ -37,8 +37,13 @@ export default function StorePage() {
     return <Loading />;
   }
 
+  useEffect(() => {
+    if (!loading && (!user || !userProfile)) {
+      router.push('/login');
+    }
+  }, [user, userProfile, loading, router]);
+
   if (!user || !userProfile) {
-    router.push('/login');
     return null;
   }
 
@@ -87,7 +92,7 @@ export default function StorePage() {
 
         {/* 광고 - 내 포인트 하단으로 이동 */}
         <section className="mb-4">
-          <KakaoAd page="shop" index={0} />
+          <KakaoAdGlobal page="store" index={0} />
         </section>
 
         {/* 상점 곧 오픈 */}
@@ -257,6 +262,7 @@ export default function StorePage() {
           </div>
         </div>
       )}
+
     </div>
   );
 } 
