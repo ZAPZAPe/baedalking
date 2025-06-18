@@ -102,11 +102,13 @@ export default function Home() {
   const router = useRouter();
   const [topRankers, setTopRankers] = useState<RankingData[]>(DEFAULT_RANKERS);
   const [loadingRanking, setLoadingRanking] = useState(true);
+  const [hasLoadedRanking, setHasLoadedRanking] = useState(false);
 
   const fetchRanking = useCallback(async () => {
     try {
       const ranking = await getTodayRanking();
-      setTopRankers(ranking.slice(0, 3));
+      setTopRankers(ranking.slice(0, 3).length > 0 ? ranking.slice(0, 3) : DEFAULT_RANKERS);
+      setHasLoadedRanking(true);
     } catch (error) {
       console.error('랭킹 로드 실패:', error);
       // 에러 시 기본값 유지
@@ -116,9 +118,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // AuthContext 로딩과 독립적으로 랭킹 데이터 로드
-    fetchRanking();
-  }, [fetchRanking]);
+    // 페이지 로드 시 즉시 랭킹 데이터 로드 (Auth와 독립적으로)
+    if (!hasLoadedRanking) {
+      fetchRanking();
+    }
+  }, [fetchRanking, hasLoadedRanking]);
 
   // 카카오 공유 초기화
   useEffect(() => {
@@ -133,59 +137,47 @@ export default function Home() {
           <KakaoAd page="home" index={0} />
         </section>
 
-        {authLoading ? (
-          // Auth 로딩 중에도 스켈레톤 UI 표시
-          <>
-            <section className="mb-4">
-              <UserProfileSkeleton />
-            </section>
-            <section className="mb-4">
-              <SkeletonLoader />
-            </section>
-            <section className="mb-4">
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
-                <div className="animate-pulse">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="h-20 bg-white/20 rounded-xl"></div>
-                    <div className="h-20 bg-white/20 rounded-xl"></div>
-                  </div>
+        {/* Progressive Loading - Auth 상태와 관계없이 TOP3 먼저 표시 */}
+        <section className="mb-4">
+          {loadingRanking ? (
+            <SkeletonLoader />
+          ) : (
+            <TopRankersSection rankers={topRankers} />
+          )}
+        </section>
+
+        {/* 중간 광고 - 실시간 TOP3 바로 아래 */}
+        <section className="mb-4">
+          <KakaoAd page="home" index={1} />
+        </section>
+
+        {/* 플랫폼별 실시간 통계 - Auth 상태와 관계없이 표시 */}
+        <section className="mb-4">
+          <Suspense fallback={
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
+              <div className="animate-pulse">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="h-20 bg-white/20 rounded-xl"></div>
+                  <div className="h-20 bg-white/20 rounded-xl"></div>
                 </div>
               </div>
-            </section>
-          </>
+            </div>
+          }>
+            <PlatformStatistics />
+          </Suspense>
+        </section>
+
+        {/* 사용자별 콘텐츠 */}
+        {authLoading ? (
+          // Auth 로딩 중에는 사용자 프로필만 스켈레톤 표시
+          <section className="mb-4">
+            <UserProfileSkeleton />
+          </section>
         ) : user && userProfile ? (
           <>
             {/* 사용자 프로필 */}
             <section className="mb-4">
               <UserProfile userProfile={userProfile} />
-            </section>
-
-            {/* 실시간 TOP3 */}
-            <section className="mb-4">
-              <Suspense fallback={<SkeletonLoader />}>
-                <TopRankers topRankers={topRankers} />
-              </Suspense>
-            </section>
-
-            {/* 중간 광고 - 실시간 TOP3 바로 아래로 이동 */}
-            <section className="mb-4">
-              <KakaoAd page="home" index={1} />
-            </section>
-
-            {/* 플랫폼별 실시간 통계 */}
-            <section className="mb-4">
-              <Suspense fallback={
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
-                  <div className="animate-pulse">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="h-20 bg-white/20 rounded-xl"></div>
-                      <div className="h-20 bg-white/20 rounded-xl"></div>
-                    </div>
-                  </div>
-                </div>
-              }>
-                <PlatformStatistics />
-              </Suspense>
             </section>
 
             {/* 주요 기능 섹션 */}
@@ -264,62 +256,6 @@ export default function Home() {
                 </div>
               </div>
             </section>
-
-            {/* 서비스 특징 */}
-            <section className="mb-4">
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
-                <h3 className="text-xl font-bold text-white mb-4 text-center">왜 배달킹인가?</h3>
-                <div className="space-y-3">
-                  <div className="bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl p-3 border border-amber-400/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-amber-400/20 rounded-full flex items-center justify-center">
-                        <FaBolt size={14} className="text-amber-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-bold text-sm">실시간 랭킹 시스템</h3>
-                        <p className="text-amber-200 text-xs">매일 업데이트되는 전국 라이더 순위</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-3 border border-blue-400/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-400/20 rounded-full flex items-center justify-center">
-                        <FaGift size={14} className="text-blue-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-bold text-sm">포인트 리워드</h3>
-                        <p className="text-blue-200 text-xs">실적 업로드로 포인트 적립</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-3 border border-purple-400/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-purple-400/20 rounded-full flex items-center justify-center">
-                        <FaShieldAlt size={14} className="text-purple-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-bold text-sm">안전한 커뮤니티</h3>
-                        <p className="text-purple-200 text-xs">검증된 라이더들만의 공간</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-xl p-3 border border-yellow-400/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-yellow-400/20 rounded-full flex items-center justify-center">
-                        <FaCalendarCheck size={14} className="text-yellow-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-bold text-sm">출근도장 시스템</h3>
-                        <p className="text-yellow-200 text-xs">매일 출근하고 포인트 받기</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
           </>
         ) : (
           <>
@@ -350,79 +286,64 @@ export default function Home() {
                 </div>
               </div>
             </section>
+          </>
+        )}
 
-            {/* 실시간 TOP3 */}
-            <section className="mb-4">
-              <TopRankers topRankers={topRankers} />
-            </section>
-
-            {/* 비 로그인 상태 광고 - 실시간 TOP3 바로 아래로 이동 */}
-            <section className="mb-4">
-              <KakaoAd page="home" index={1} />
-            </section>
-
-            {/* 플랫폼별 실시간 통계 */}
-            <section className="mb-4">
-              <PlatformStatistics />
-            </section>
-
-            {/* 서비스 특징 */}
-            <section className="mb-4">
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
-                <h3 className="text-xl font-bold text-white mb-4 text-center">왜 배달킹인가?</h3>
-                <div className="space-y-3">
-                  <div className="bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl p-3 border border-amber-400/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-amber-400/20 rounded-full flex items-center justify-center">
-                        <FaBolt size={14} className="text-amber-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-bold text-sm">실시간 랭킹 시스템</h3>
-                        <p className="text-amber-200 text-xs">매일 업데이트되는 전국 라이더 순위</p>
-                      </div>
-                    </div>
+        {/* 서비스 특징 - 모든 사용자에게 표시 */}
+        <section className="mb-4">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
+            <h3 className="text-xl font-bold text-white mb-4 text-center">왜 배달킹인가?</h3>
+            <div className="space-y-3">
+              <div className="bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl p-3 border border-amber-400/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-amber-400/20 rounded-full flex items-center justify-center">
+                    <FaBolt size={14} className="text-amber-400" />
                   </div>
-
-                  <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-3 border border-blue-400/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-400/20 rounded-full flex items-center justify-center">
-                        <FaGift size={14} className="text-blue-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-bold text-sm">포인트 리워드</h3>
-                        <p className="text-blue-200 text-xs">실적 업로드로 포인트 적립</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-3 border border-purple-400/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-purple-400/20 rounded-full flex items-center justify-center">
-                        <FaShieldAlt size={14} className="text-purple-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-bold text-sm">안전한 커뮤니티</h3>
-                        <p className="text-purple-200 text-xs">검증된 라이더들만의 공간</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-xl p-3 border border-yellow-400/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-yellow-400/20 rounded-full flex items-center justify-center">
-                        <FaCalendarCheck size={14} className="text-yellow-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-bold text-sm">출근도장 시스템</h3>
-                        <p className="text-yellow-200 text-xs">매일 출근하고 포인트 받기</p>
-                      </div>
-                    </div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-sm">실시간 랭킹 시스템</h3>
+                    <p className="text-amber-200 text-xs">매일 업데이트되는 전국 라이더 순위</p>
                   </div>
                 </div>
               </div>
-            </section>
-          </>
-        )}
+
+              <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-3 border border-blue-400/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-400/20 rounded-full flex items-center justify-center">
+                    <FaGift size={14} className="text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-sm">포인트 리워드</h3>
+                    <p className="text-blue-200 text-xs">실적 업로드로 포인트 적립</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-3 border border-purple-400/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-purple-400/20 rounded-full flex items-center justify-center">
+                    <FaShieldAlt size={14} className="text-purple-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-sm">안전한 커뮤니티</h3>
+                    <p className="text-purple-200 text-xs">검증된 라이더들만의 공간</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-xl p-3 border border-yellow-400/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-yellow-400/20 rounded-full flex items-center justify-center">
+                    <FaCalendarCheck size={14} className="text-yellow-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-sm">출근도장 시스템</h3>
+                    <p className="text-yellow-200 text-xs">매일 출근하고 포인트 받기</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* 하단 광고 */}
         <section className="mb-2">

@@ -20,11 +20,17 @@ export function PlatformStatistics() {
   useEffect(() => {
     fetchPlatformStats();
     
-    // 실시간 업데이트를 위한 구독
+    // 실시간 업데이트를 위한 구독 - platform_stats 테이블 구독으로 변경
     const channel = supabase
-      .channel('platform-stats')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_records' }, () => {
-        fetchPlatformStats();
+      .channel('platform-stats-optimized')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'delivery_records',
+        filter: 'verified=eq.true'
+      }, () => {
+        // 디바운스를 위한 타임아웃
+        setTimeout(fetchPlatformStats, 1000);
       })
       .subscribe();
 
@@ -35,33 +41,22 @@ export function PlatformStatistics() {
 
   const fetchPlatformStats = async () => {
     try {
-      // 인증된 배달 기록만 가져오기
+      // platform_stats_realtime 뷰에서 이미 집계된 데이터 가져오기
       const { data, error } = await supabase
-        .from('delivery_records')
-        .select('platform, amount, delivery_count')
-        .eq('verified', true);
+        .from('platform_stats_realtime')
+        .select('*')
+        .in('platform', ['배민커넥트', '쿠팡이츠']);
 
       if (error) throw error;
 
-      // 플랫폼별로 집계
-      const platformMap = new Map<string, { totalAmount: number; totalOrders: number }>();
-      
-      data?.forEach(record => {
-        const existing = platformMap.get(record.platform) || { totalAmount: 0, totalOrders: 0 };
-        platformMap.set(record.platform, {
-          totalAmount: existing.totalAmount + Number(record.amount),
-          totalOrders: existing.totalOrders + Number(record.delivery_count)
-        });
-      });
-
-      // 통계 정리 - 배민커넥트와 쿠팡이츠만 표시
+      // 통계 정리
       const platformStats: PlatformStat[] = ['배민커넥트', '쿠팡이츠'].map(platform => {
-        const stats = platformMap.get(platform) || { totalAmount: 0, totalOrders: 0 };
+        const stat = data?.find(s => s.platform === platform);
         return {
           platform,
-          totalAmount: stats.totalAmount,
-          totalOrders: stats.totalOrders,
-          averagePerOrder: stats.totalOrders > 0 ? Math.round(stats.totalAmount / stats.totalOrders) : 0,
+          totalAmount: stat?.total_amount || 0,
+          totalOrders: stat?.total_orders || 0,
+          averagePerOrder: stat?.average_per_order || 0,
           logo: platform === '배민커넥트' ? '/baemin-logo.svg' : '/coupang-logo.svg',
           color: platform === '배민커넥트' ? 'from-cyan-400 to-blue-500' : 'from-green-400 to-emerald-500'
         };
@@ -70,6 +65,25 @@ export function PlatformStatistics() {
       setStats(platformStats);
     } catch (error) {
       console.error('플랫폼 통계 로드 실패:', error);
+      // 에러 시 빈 통계 표시
+      setStats([
+        {
+          platform: '배민커넥트',
+          totalAmount: 0,
+          totalOrders: 0,
+          averagePerOrder: 0,
+          logo: '/baemin-logo.svg',
+          color: 'from-cyan-400 to-blue-500'
+        },
+        {
+          platform: '쿠팡이츠',
+          totalAmount: 0,
+          totalOrders: 0,
+          averagePerOrder: 0,
+          logo: '/coupang-logo.svg',
+          color: 'from-green-400 to-emerald-500'
+        }
+      ]);
     } finally {
       setLoading(false);
     }

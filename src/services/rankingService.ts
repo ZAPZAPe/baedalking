@@ -22,25 +22,18 @@ interface DeliveryRecordWithUser {
   };
 }
 
-// 오늘 랭킹 조회
+// 오늘 랭킹 조회 - 최적화 버전
 export const getTodayRanking = async (region?: string): Promise<RankingData[]> => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    
+    // today_rankings_realtime 뷰에서 이미 계산된 랭킹 가져오기
     let query = supabase
-      .from('delivery_records')
-      .select(`
-        user_id,
-        users!inner(nickname, region),
-        amount,
-        delivery_count,
-        platform
-      `)
-      .eq('date', today)
-      .eq('verified', true);
+      .from('today_rankings_realtime')
+      .select('*')
+      .order('rank', { ascending: true })
+      .limit(100); // 상위 100명만 가져오기
     
     if (region && region !== 'all') {
-      query = query.eq('users.region', region);
+      query = query.eq('region', region);
     }
 
     const { data, error } = await query;
@@ -54,52 +47,16 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
       return [];
     }
 
-    const userStats = new Map<string, RankingData>();
-    (data as unknown as DeliveryRecordWithUser[])?.forEach(record => {
-      const userId = record.user_id;
-      const existing = userStats.get(userId) || {
-        userId,
-        nickname: record.users.nickname,
-        region: record.users.region,
-        totalAmount: 0,
-        totalOrders: 0,
-        platform: record.platform
-      };
-      existing.totalAmount += record.amount;
-      existing.totalOrders += record.delivery_count;
-      userStats.set(userId, existing);
-    });
-    
-    const rankings = Array.from(userStats.values())
-      .sort((a, b) => {
-        // 금액이 다른 경우 금액순
-        if (b.totalAmount !== a.totalAmount) {
-          return b.totalAmount - a.totalAmount;
-        }
-        // 금액이 같은 경우 건수순
-        if (b.totalOrders !== a.totalOrders) {
-          return b.totalOrders - a.totalOrders;
-        }
-        // 금액과 건수가 모두 같은 경우 공동 순위 (이름순)
-        return a.nickname.localeCompare(b.nickname);
-      })
-      .reduce((acc: RankingData[], curr, idx, arr) => {
-        if (idx === 0) {
-          // 첫 번째 항목
-          curr.rank = 1;
-        } else {
-          const prev = arr[idx - 1];
-          // 금액과 건수가 모두 같은 경우에만 공동 순위
-          if (prev.totalAmount === curr.totalAmount && prev.totalOrders === curr.totalOrders) {
-            curr.rank = prev.rank;
-          } else {
-            curr.rank = idx + 1;
-          }
-        }
-        return [...acc, curr];
-      }, []);
-      
-    return rankings;
+    // 뷰에서 가져온 데이터를 RankingData 형식으로 변환
+    return data.map(row => ({
+      userId: row.user_id,
+      nickname: row.nickname,
+      region: row.region,
+      totalAmount: row.total_amount,
+      totalOrders: row.total_orders,
+      rank: row.rank,
+      platform: row.platform
+    }));
   } catch (error) {
     console.error('오늘 랭킹 조회 오류:', error);
     return [];
