@@ -11,7 +11,7 @@ import KakaoAd from '@/components/KakaoAd';
 import Loading from '@/components/Loading';
 
 export default function SettingsPage() {
-  const { user, userProfile, signOut, updateProfile } = useAuth();
+  const { user, userProfile, loading: authLoading, signOut, updateProfile, refreshUserProfile } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -91,16 +91,24 @@ export default function SettingsPage() {
     setNicknameError('');
 
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('nickname')
-        .eq('nickname', newNickname)
-        .neq('id', user?.id)
-        .single();
+      const response = await fetch('/api/check-nickname', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          nickname: newNickname,
+          currentUserId: user?.id 
+        }),
+      });
 
-      if (error) throw error;
+      const data = await response.json();
 
-      if (data) {
+      if (!response.ok) {
+        throw new Error(data.error || '닉네임 확인 중 오류가 발생했습니다.');
+      }
+
+      if (!data.isAvailable) {
         setNicknameError('이미 사용 중인 닉네임입니다.');
         return false;
       }
@@ -161,6 +169,9 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
+      // AuthContext의 userProfile 업데이트
+      await refreshUserProfile();
+      
       toast.success('프로필이 성공적으로 업데이트되었습니다.');
       setIsEditMode(false);
     } catch (error) {
@@ -302,7 +313,7 @@ export default function SettingsPage() {
     return null;
   }
 
-  if (loading || !userProfile) {
+  if (authLoading || !userProfile) {
     return <Loading />;
   }
 
@@ -511,7 +522,7 @@ export default function SettingsPage() {
                     </div>
                     <span className="text-white font-bold text-sm">현재 포인트</span>
                   </div>
-                  <span className="text-yellow-200 text-sm">1,000P</span>
+                  <span className="text-yellow-200 text-sm">{(userProfile?.points || 0).toLocaleString()}P</span>
                 </div>
               </div>
 

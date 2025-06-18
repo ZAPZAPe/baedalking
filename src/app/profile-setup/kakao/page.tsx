@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaPhone, FaMapMarkerAlt, FaMotorcycle, FaCrown, FaRocket } from 'react-icons/fa';
+import { FaPhone, FaMapMarkerAlt, FaMotorcycle, FaCrown, FaRocket, FaGift } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { toast } from 'react-hot-toast';
 
 // 한국 주요 지역 목록
 const REGIONS = [
@@ -23,14 +24,17 @@ const VEHICLES = [
 
 const KakaoProfileSetup = () => {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [checkingReferral, setCheckingReferral] = useState(false);
+  const [referralValid, setReferralValid] = useState<boolean | null>(null);
   
   const [formData, setFormData] = useState({
     phone: '',
     region: '',
-    vehicle: ''
+    vehicle: '',
+    referralCode: ''
   });
 
   // 로그인하지 않은 경우 로그인 페이지로 리다이렉트
@@ -44,6 +48,42 @@ const KakaoProfileSetup = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setError('');
+    
+    // 추천인 코드가 변경되면 유효성 상태 초기화
+    if (name === 'referralCode') {
+      setReferralValid(null);
+    }
+  };
+
+  // 추천인 코드 확인
+  const checkReferralCode = async () => {
+    if (!formData.referralCode) {
+      setReferralValid(null);
+      return;
+    }
+
+    setCheckingReferral(true);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, nickname')
+        .eq('referral_code', formData.referralCode)
+        .single();
+
+      if (error || !data) {
+        setReferralValid(false);
+        setError('유효하지 않은 추천인 코드입니다.');
+      } else {
+        setReferralValid(true);
+        setError('');
+        toast.success(`${data.nickname}님의 추천 코드가 확인되었습니다!`);
+      }
+    } catch (error) {
+      setReferralValid(false);
+      setError('추천인 코드 확인 중 오류가 발생했습니다.');
+    } finally {
+      setCheckingReferral(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,6 +98,39 @@ const KakaoProfileSetup = () => {
     setError('');
 
     try {
+      // 추천인이 있는 경우 추천인에게 포인트 지급
+      if (formData.referralCode && referralValid) {
+        // 추천인 정보 조회
+        const { data: referrer, error: referrerError } = await supabase
+          .from('users')
+          .select('id, points')
+          .eq('referral_code', formData.referralCode)
+          .single();
+
+        if (!referrerError && referrer) {
+          // 추천인에게 300포인트 지급
+          const { error: updatePointsError } = await supabase
+            .from('users')
+            .update({
+              points: (referrer.points || 0) + 300
+            })
+            .eq('id', referrer.id);
+
+          if (!updatePointsError) {
+            // 포인트 내역 기록
+            await supabase
+              .from('point_history')
+              .insert({
+                user_id: referrer.id,
+                amount: 300,
+                type: 'referral_reward',
+                description: '친구 추천 보상',
+                created_at: new Date().toISOString()
+              });
+          }
+        }
+      }
+
       // 사용자 프로필 업데이트
       const { error: updateError } = await supabase
         .from('users')
@@ -65,12 +138,21 @@ const KakaoProfileSetup = () => {
           phone: formData.phone,
           region: formData.region,
           vehicle: formData.vehicle,
+          referred_by: formData.referralCode || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', user?.id);
 
       if (updateError) throw updateError;
 
+      // AuthContext의 userProfile 업데이트
+      await refreshUserProfile();
+
+      // 성공 메시지
+      if (formData.referralCode && referralValid) {
+        toast.success('추천인에게 300포인트가 지급되었습니다!');
+      }
+      
       // 홈으로 이동
       router.push('/');
     } catch (error: any) {
@@ -112,6 +194,9 @@ const KakaoProfileSetup = () => {
               <h3 className="text-lg font-bold text-white">가입 보너스</h3>
             </div>
             <p className="text-yellow-300 font-bold text-xl text-center">500P 지급 완료!</p>
+            <p className="text-yellow-200 text-sm text-center mt-2">
+              추천인 코드 입력 시 추천인에게 300P 추가 지급!
+            </p>
           </div>
         </section>
 
@@ -188,6 +273,43 @@ const KakaoProfileSetup = () => {
                 </div>
               </div>
 
+              {/* 추천인 코드 */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1">
+                  추천인 코드 <span className="text-white/40">(선택사항)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaGift className={`h-4 w-4 ${referralValid === true ? 'text-green-400' : referralValid === false ? 'text-red-400' : 'text-white/40'}`} />
+                  </div>
+                  <input
+                    type="text"
+                    name="referralCode"
+                    value={formData.referralCode}
+                    onChange={handleInputChange}
+                    onBlur={checkReferralCode}
+                    className={`block w-full pl-10 pr-20 py-3 bg-white/10 border rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:bg-white/15 transition-all ${
+                      referralValid === true ? 'border-green-400/50' : 
+                      referralValid === false ? 'border-red-400/50' : 'border-white/20'
+                    }`}
+                    placeholder="추천인 코드를 입력하세요"
+                  />
+                  {checkingReferral && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                  {referralValid === true && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <span className="text-green-400 text-sm">✓</span>
+                    </div>
+                  )}
+                </div>
+                {referralValid === true && (
+                  <p className="text-green-400 text-xs mt-1">추천인에게 300P가 지급됩니다!</p>
+                )}
+              </div>
+
               {/* 에러 메시지 */}
               {error && (
                 <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-3">
@@ -198,7 +320,7 @@ const KakaoProfileSetup = () => {
               {/* 완료 버튼 */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || checkingReferral}
                 className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 px-4 rounded-xl font-bold hover:shadow-lg hover:shadow-amber-500/25 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-amber-400/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {loading ? (

@@ -160,6 +160,7 @@ function CallbackContent() {
                   console.log('로그인 성공 (재시도)');
                   
                   // users 테이블에 프로필 생성
+                  const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
                   const { error: profileError } = await supabase
                     .from('users')
                     .upsert({
@@ -170,6 +171,7 @@ function CallbackContent() {
                       kakao_id: userData.id.toString(),
                       profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
                       points: 500,
+                      referral_code: referralCode,
                       created_at: new Date().toISOString(),
                     }, {
                       onConflict: 'id'
@@ -204,6 +206,7 @@ function CallbackContent() {
               console.log('신규 사용자 로그인 성공');
               
               // users 테이블에 프로필 생성
+              const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
               const { error: profileError } = await supabase
                 .from('users')
                 .upsert({
@@ -214,6 +217,7 @@ function CallbackContent() {
                   kakao_id: userData.id.toString(),
                   profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
                   points: 500,
+                  referral_code: referralCode,
                   created_at: new Date().toISOString(),
                 }, {
                   onConflict: 'id'
@@ -229,6 +233,16 @@ function CallbackContent() {
         } else if (signInData.session) {
           console.log('기존 사용자 로그인 성공');
           
+          // 기존 사용자 정보 확인
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('referral_code')
+            .eq('id', signInData.user.id)
+            .single();
+          
+          // 추천 코드가 없으면 생성
+          const referralCode = existingUser?.referral_code || `BK${Date.now().toString(36).toUpperCase()}`;
+          
           // users 테이블 업데이트 (있는 경우에만)
           const { error: updateError } = await supabase
             .from('users')
@@ -239,6 +253,7 @@ function CallbackContent() {
               nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
               kakao_id: userData.id.toString(),
               profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
+              referral_code: referralCode,
               updated_at: new Date().toISOString(),
             }, {
               onConflict: 'id'

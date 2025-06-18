@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
-    const { nickname } = await request.json();
+    const { nickname, currentUserId } = await request.json();
 
     if (!nickname) {
       return NextResponse.json(
@@ -12,11 +12,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data, error } = await supabase
+    // 현재 사용자를 제외하고 닉네임 중복 검사
+    let query = supabase
       .from('users')
       .select('id')
-      .eq('nickname', nickname)
-      .single();
+      .eq('nickname', nickname);
+
+    // 현재 사용자 ID가 있으면 해당 사용자는 제외
+    if (currentUserId) {
+      query = query.neq('id', currentUserId);
+    }
+
+    const { data, error } = await query.single();
 
     if (error && error.code !== 'PGRST116') {
       throw error;
