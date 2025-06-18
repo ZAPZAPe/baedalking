@@ -175,17 +175,28 @@ export default function UserManagement() {
     if (!selectedUser) return;
 
     try {
+      console.log('실적 저장 시작:', {
+        user: selectedUser.nickname,
+        date: selectedDate,
+        data: dateData
+      });
+
       // 선택한 날짜의 배달 기록 확인
-      const { data: existingRecords } = await supabase
+      const { data: existingRecords, error: selectError } = await supabase
         .from('delivery_records')
         .select('*')
         .eq('user_id', selectedUser.id)
         .eq('date', selectedDate)
         .eq('platform', dateData.platform);
 
+      if (selectError) {
+        console.error('기존 기록 조회 오류:', selectError);
+        throw selectError;
+      }
+
       if (existingRecords && existingRecords.length > 0) {
         // 기존 기록 업데이트
-        await supabase
+        const { data: updateData, error: updateError } = await supabase
           .from('delivery_records')
           .update({
             delivery_count: dateData.deliveries,
@@ -195,9 +206,15 @@ export default function UserManagement() {
             updated_at: new Date().toISOString()
           })
           .eq('id', existingRecords[0].id);
+
+        if (updateError) {
+          console.error('업데이트 오류:', updateError);
+          throw updateError;
+        }
+        console.log('업데이트 성공:', updateData);
       } else {
         // 새 기록 생성
-        await supabase
+        const { data: insertData, error: insertError } = await supabase
           .from('delivery_records')
           .insert({
             user_id: selectedUser.id,
@@ -208,6 +225,12 @@ export default function UserManagement() {
             verified: dateData.verified,
             created_at: new Date().toISOString()
           });
+
+        if (insertError) {
+          console.error('삽입 오류:', insertError);
+          throw insertError;
+        }
+        console.log('삽입 성공:', insertData);
       }
 
       toast.success('날짜별 실적이 저장되었습니다.');
@@ -217,9 +240,9 @@ export default function UserManagement() {
       
       // 목록 새로고침
       fetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('날짜별 실적 저장 오류:', error);
-      toast.error('저장에 실패했습니다.');
+      toast.error(error.message || '저장에 실패했습니다.');
     }
   };
 
