@@ -116,7 +116,7 @@ function CallbackContent() {
         });
 
         // Supabase에 사용자 생성 또는 로그인
-        const email = userData.kakao_account?.email || `kakao_${userData.id}@baedalking.com`;
+                    const email = userData.kakao_account?.email || `kakao_${userData.id}@baedalrank.com`;
         const password = `kakao_${userData.id}_secret`;
 
         // 먼저 로그인 시도

@@ -104,7 +104,7 @@ const SignUp = () => {
         ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
         : typeof window !== 'undefined' 
           ? `${window.location.origin}/auth/callback`
-          : 'https://www.baedalking.com/auth/callback';
+          : 'https://www.baedalrank.com/auth/callback';
           
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,

@@ -7,17 +7,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import Loading from '@/components/Loading';
 import NoSSR from '@/components/NoSSR';
 
+// 페이지를 동적으로 만들기
+export const dynamic = 'force-dynamic';
+
 // 동적 import
-const KakaoAd = dynamic(() => import('@/components/KakaoAd'), {
+const KakaoAd = dynamicImport(() => import('@/components/KakaoAd'), {
   ssr: false,
   loading: () => <div className="w-full h-[100px] bg-white/5 rounded-lg animate-pulse" />
 });
 
-const KakaoInit = dynamic(() => import('@/components/KakaoInit'), {
+const KakaoInit = dynamicImport(() => import('@/components/KakaoInit'), {
   ssr: false
 });
 
@@ -333,9 +336,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="relative z-10">
-      <KakaoInit />
-      <div className="max-w-3xl mx-auto px-4">
+    <NoSSR>
+      <div className="relative z-10">
+        <KakaoInit />
+        <div className="max-w-3xl mx-auto px-4">
         {/* 내 정보 섹션 */}
         <section className="mb-4 mt-2">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
@@ -619,31 +623,31 @@ export default function SettingsPage() {
                         content: {
                           title: '🚀 배달킹에서 함께 배달왕에 도전해요!',
                           description: `${userProfile.nickname}님이 초대했어요! 지금 가입하면 500P 즉시 지급! 추천 코드: ${userProfile.referral_code}`,
-                          imageUrl: 'https://www.baedalking.com/baedalking-logo.png',
+                          imageUrl: 'https://www.baedalrank.com/baedalrank-logo.png',
                           link: {
-                            mobileWebUrl: `https://www.baedalking.com/invite/${userProfile.referral_code}`,
-                            webUrl: `https://www.baedalking.com/invite/${userProfile.referral_code}`,
+                                                            mobileWebUrl: `https://www.baedalrank.com/invite/${userProfile.referral_code}`,
+                                webUrl: `https://www.baedalrank.com/invite/${userProfile.referral_code}`,
                           },
                         },
                         buttons: [
                           {
                             title: '지금 가입하기',
                             link: {
-                              mobileWebUrl: `https://www.baedalking.com/invite/${userProfile.referral_code}`,
-                              webUrl: `https://www.baedalking.com/invite/${userProfile.referral_code}`,
+                              mobileWebUrl: `https://www.baedalrank.com/invite/${userProfile.referral_code}`,
+                              webUrl: `https://www.baedalrank.com/invite/${userProfile.referral_code}`,
                             },
                           },
                         ],
                       });
-                    } else {
-                      // 카카오 SDK가 없으면 클립보드에 복사
-                      await navigator.clipboard.writeText(`https://www.baedalking.com/invite/${userProfile.referral_code}`);
+                                          } else {
+                        // 카카오 SDK가 없으면 클립보드에 복사
+                        await navigator.clipboard.writeText(`https://www.baedalrank.com/invite/${userProfile.referral_code}`);
                       toast.success('초대 링크가 복사되었습니다.');
                     }
                   } catch (error) {
-                    console.error('공유 실패:', error);
-                    // 실패 시 클립보드에 복사
-                    await navigator.clipboard.writeText(`https://www.baedalking.com/invite/${userProfile.referral_code}`);
+                                          console.error('공유 실패:', error);
+                      // 실패 시 클립보드에 복사
+                      await navigator.clipboard.writeText(`https://www.baedalrank.com/invite/${userProfile.referral_code}`);
                     toast.success('초대 링크가 복사되었습니다.');
                   }
                 }}
@@ -810,5 +814,6 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
+    </NoSSR>
   );
 } 

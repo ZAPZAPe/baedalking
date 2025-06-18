@@ -52,7 +52,7 @@ const Login = () => {
     setError('');
 
     try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.baedalking.com';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.baedalrank.com';
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',

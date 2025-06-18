@@ -64,7 +64,7 @@ export const loginWithKakao = async () => {
             success: async function(response: any) {
               const kakaoUser = {
                 id: response.id.toString(),
-                email: response.kakao_account?.email || `kakao_${response.id}@baedalking.com`,
+                email: response.kakao_account?.email || `kakao_${response.id}@baedalrank.com`,
                 nickname: response.properties?.nickname || response.kakao_account?.profile?.nickname || '카카오유저',
                 profileImage: response.properties?.profile_image || response.kakao_account?.profile?.profile_image_url,
               };
@@ -130,7 +130,7 @@ export const loginWithKakao = async () => {
       // 리다이렉트 URI 추가
       redirectUri: process.env.NEXT_PUBLIC_APP_URL 
         ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/kakao/callback`
-        : 'https://www.baedalking.com/auth/kakao/callback'
+        : 'https://www.baedalrank.com/auth/kakao/callback'
     });
   });
 };

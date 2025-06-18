@@ -3,14 +3,16 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import Script from 'next/script';
 import KakaoSDK from '@/components/KakaoSDK';
 import LayoutWrapper from '@/components/LayoutWrapper';
 import MainContent from '@/components/MainContent';
 
+export const dynamic = 'force-dynamic';
+
 // Navigation을 동적으로 로드하여 초기 로딩 성능 개선
-const Navigation = dynamic(() => import("@/components/Navigation"), {
+const Navigation = dynamicImport(() => import("@/components/Navigation"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-14 bg-gradient-to-r from-blue-900 to-purple-900 border-b border-white/10" />
@@ -62,7 +64,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
         <meta name="description" content="배달킹 - 배달의민족 랭킹 시스템" />
         <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/baedalking-logo.png" />
+        <link rel="apple-touch-icon" href="/baedalrank-logo.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={inter.className}>

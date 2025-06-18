@@ -45,25 +45,25 @@ export const shareToKakao = () => {
       content: {
         title: '배달킹 - 실시간 배달 랭킹',
         description: '배달 라이더들의 실시간 랭킹을 확인하고 경쟁해보세요!',
-        imageUrl: 'https://baedalking.com/og-image.png',
+        imageUrl: 'https://baedalrank.com/og-image.png',
         link: {
-          mobileWebUrl: 'https://baedalking.com',
-          webUrl: 'https://baedalking.com',
+          mobileWebUrl: 'https://baedalrank.com',
+          webUrl: 'https://baedalrank.com',
         },
       },
       buttons: [
         {
           title: '앱으로 보기',
           link: {
-            mobileWebUrl: 'https://baedalking.com',
-            webUrl: 'https://baedalking.com',
+            mobileWebUrl: 'https://baedalrank.com',
+            webUrl: 'https://baedalrank.com',
           },
         },
       ],
     });
   } catch (error) {
     console.error('카카오 공유 중 오류 발생:', error);
-    fallbackShare('배달킹 - 실시간 배달 랭킹', 'https://baedalking.com');
+    fallbackShare('배달킹 - 실시간 배달 랭킹', 'https://baedalrank.com');
   }
 };
 
@@ -71,7 +71,7 @@ export const shareToKakao = () => {
 export const inviteFriends = () => {
   if (!window.Kakao) {
     console.error('카카오 SDK가 로드되지 않았습니다.');
-    fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', 'https://baedalking.com');
+    fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', 'https://baedalrank.com');
     return;
   }
 
@@ -83,23 +83,23 @@ export const inviteFriends = () => {
         description: '지금 가입하면 500P 즉시 지급! 친구와 함께 실시간 랭킹 경쟁하고, 전국 배달왕에 도전해보세요.',
         imageUrl: 'https://k.kakaocdn.net/14/dn/btsOCCP8KCJ/uPlo3tMwq4eHi8USTFrLkk/o.jpg',
         link: {
-          mobileWebUrl: 'https://baedalking.com',
-          webUrl: 'https://baedalking.com',
+          mobileWebUrl: 'https://baedalrank.com',
+          webUrl: 'https://baedalrank.com',
         },
       },
       buttons: [
         {
           title: '내 순위 확인하기',
           link: {
-            mobileWebUrl: 'https://baedalking.com',
-            webUrl: 'https://baedalking.com',
+            mobileWebUrl: 'https://baedalrank.com',
+            webUrl: 'https://baedalrank.com',
           },
         },
       ],
     });
   } catch (error) {
     console.error('친구 초대 공유 중 오류 발생:', error);
-    fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', 'https://baedalking.com');
+    fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', 'https://baedalrank.com');
   }
 };
 
@@ -161,7 +161,7 @@ ${region} ${platform} 기준
 📦 ${deliveryCount}건
   `.trim();
 
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://www.baedalking.com';
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://www.baedalrank.com';
 
   console.log('카카오톡 공유 시도:', { title, description });
 
@@ -171,7 +171,7 @@ ${region} ${platform} 기준
       content: {
         title: title,
         description: description,
-        imageUrl: 'https://www.baedalking.com/baedalking-logo.png',
+        imageUrl: 'https://www.baedalrank.com/baedalrank-logo.png',
         link: {
           mobileWebUrl: currentUrl,
           webUrl: currentUrl,

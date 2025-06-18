@@ -35,7 +35,7 @@ interface SystemConfig {
 export default function SystemSettings() {
   const [config, setConfig] = useState<SystemConfig>({
     siteName: '배달왕',
-    adminEmail: 'admin@baedalking.com',
+          adminEmail: 'admin@baedalrank.com',
     maintenanceMode: false,
     signupBonus: 500,
     referralBonus: 100,

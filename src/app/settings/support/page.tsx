@@ -186,7 +186,7 @@ export default function SupportPage() {
                   </div>
                   <div>
                     <h4 className="text-white font-bold text-sm">이메일</h4>
-                    <p className="text-green-200 text-xs">support@baedalking.com</p>
+                    <p className="text-green-200 text-xs">support@baedalrank.com</p>
                   </div>
                 </div>
               </div>
