@@ -32,7 +32,7 @@ interface ExtendedDeliveryRecord {
   deliveryCount: number;
   platform: string;
   verified: boolean;
-  createdAt: string;
+  createdAt?: string;
   updatedAt?: string;
   userNickname?: string;
   userRegion?: string;
@@ -311,7 +311,7 @@ export default function DeliveryRecords() {
                     {getStatusBadge(record.status, record.verified)}
                   </td>
                   <td className="px-6 py-4 text-zinc-400 text-sm">
-                    {format(new Date(record.createdAt), 'MM.dd HH:mm', { locale: ko })}
+                    {format(new Date(record.createdAt || record.date), 'yyyy-MM-dd HH:mm', { locale: ko })}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
@@ -423,7 +423,7 @@ export default function DeliveryRecords() {
                 <div>
                   <label className="text-sm text-zinc-400">제출 시간</label>
                   <p className="text-white">
-                    {format(new Date(selectedRecord.createdAt), 'yyyy년 MM월 dd일 HH:mm', { locale: ko })}
+                    {format(new Date(selectedRecord.createdAt || selectedRecord.date), 'yyyy년 MM월 dd일 HH:mm', { locale: ko })}
                   </p>
                 </div>
               </div>

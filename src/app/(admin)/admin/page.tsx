@@ -335,7 +335,7 @@ export default function AdminPage() {
       </aside>
 
       {/* 메인 컨텐츠 */}
-      <main className="lg:ml-64 xl:ml-80 min-h-screen">
+      <main className="min-h-screen bg-gradient-to-br from-zinc-900 to-black">
         {/* 모바일 헤더 */}
         <header className="lg:hidden bg-zinc-900/80 backdrop-blur-lg border-b border-purple-500/20 sticky top-0 z-30">
           <div className="flex items-center justify-between p-4">
@@ -353,7 +353,7 @@ export default function AdminPage() {
         </header>
 
         {/* 페이지 헤더 */}
-        <div className="bg-gradient-to-b from-zinc-900 to-transparent border-b border-purple-500/20">
+        <div className="sticky top-0 z-40 bg-gradient-to-b from-zinc-900 to-transparent border-b border-purple-500/20">
           <div className="p-6 lg:p-8">
             <div className="flex items-center justify-between mb-2">
               <div>
@@ -429,26 +429,28 @@ export default function AdminPage() {
         )}
 
         {/* 컨텐츠 영역 */}
-        <div className="p-6 lg:p-8">
-          <div className="bg-gradient-to-br from-zinc-900 to-black rounded-3xl border border-purple-500/20 shadow-2xl overflow-hidden">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-96">
-                <Loading />
-              </div>
-            ) : (
-              <div className="p-6 lg:p-8">
-                {/* 각 메뉴별 컨텐츠 렌더링 */}
-                {activeMenu === 'dashboard' && <Dashboard />}
+        <div className="ml-64">
+          <div className="p-6 lg:p-8">
+            <div className="bg-gradient-to-br from-zinc-900 to-black rounded-3xl border border-purple-500/20 shadow-2xl overflow-hidden">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-96">
+                  <Loading />
+                </div>
+              ) : (
+                <div className="p-6 lg:p-8">
+                  {/* 각 메뉴별 컨텐츠 렌더링 */}
+                  {activeMenu === 'dashboard' && <Dashboard />}
 
-                {activeMenu === 'users' && <UserManagement />}
+                  {activeMenu === 'users' && <UserManagement />}
 
-                {activeMenu === 'deliveries' && <DeliveryRecords />}
-                {activeMenu === 'points' && <PointsManagement />}
-                {activeMenu === 'rankings' && <RankingManagement />}
-                {activeMenu === 'fraud' && <FraudDetection />}
-                {activeMenu === 'settings' && <SystemSettings />}
-              </div>
-            )}
+                  {activeMenu === 'deliveries' && <DeliveryRecords />}
+                  {activeMenu === 'points' && <PointsManagement />}
+                  {activeMenu === 'rankings' && <RankingManagement />}
+                  {activeMenu === 'fraud' && <FraudDetection />}
+                  {activeMenu === 'settings' && <SystemSettings />}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>

@@ -97,7 +97,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-4">
       {/* 시간 범위 선택 */}
       <div className="flex items-center justify-between">
         <h3 className="text-2xl font-bold text-white">대시보드 개요</h3>
