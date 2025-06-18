@@ -11,10 +11,6 @@ interface UserWithTodayData extends UserProfile {
   todayDeliveries: number;
   todayEarnings: number;
   verified: boolean;
-  editedDeliveries?: number;
-  editedEarnings?: number;
-  editedVerified?: boolean;
-  editedPoints?: number;
   pointsAdjustment?: number;
   saving?: boolean;
 }
@@ -30,7 +26,8 @@ export default function UserManagement() {
   const [dateData, setDateData] = useState({
     deliveries: 0,
     earnings: 0,
-    verified: false
+    verified: false,
+    platform: '배민커넥트' as '배민커넥트' | '쿠팡이츠'
   });
   const [newUser, setNewUser] = useState({
     email: '',
@@ -136,16 +133,6 @@ export default function UserManagement() {
     try {
       const updateData: any = {};
       
-      if (user.editedDeliveries !== undefined) {
-        updateData.todayDeliveries = user.editedDeliveries;
-      }
-      if (user.editedEarnings !== undefined) {
-        updateData.todayEarnings = user.editedEarnings;
-      }
-      if (user.editedVerified !== undefined) {
-        updateData.verified = user.editedVerified;
-      }
-      
       // 포인트 조정이 있는 경우
       if (user.pointsAdjustment !== undefined && user.pointsAdjustment !== 0) {
         const newPoints = user.points + user.pointsAdjustment;
@@ -159,8 +146,6 @@ export default function UserManagement() {
             points: user.pointsAdjustment,
             reason: user.pointsAdjustment > 0 ? '관리자 포인트 추가' : '관리자 포인트 차감'
           });
-      } else if (user.editedPoints !== undefined) {
-        updateData.points = user.editedPoints;
       }
       
       // 실제 API 호출
@@ -170,14 +155,7 @@ export default function UserManagement() {
       setUsers(users.map(u => 
         u.id === user.id ? {
           ...u,
-          todayDeliveries: user.editedDeliveries ?? u.todayDeliveries,
-          todayEarnings: user.editedEarnings ?? u.todayEarnings,
-          verified: user.editedVerified ?? u.verified,
           points: updateData.points ?? u.points,
-          editedDeliveries: undefined,
-          editedEarnings: undefined,
-          editedVerified: undefined,
-          editedPoints: undefined,
           pointsAdjustment: undefined,
           saving: false
         } : u
@@ -202,7 +180,8 @@ export default function UserManagement() {
         .from('delivery_records')
         .select('*')
         .eq('user_id', selectedUser.id)
-        .eq('date', selectedDate);
+        .eq('date', selectedDate)
+        .eq('platform', dateData.platform);
 
       if (existingRecords && existingRecords.length > 0) {
         // 기존 기록 업데이트
@@ -212,6 +191,7 @@ export default function UserManagement() {
             delivery_count: dateData.deliveries,
             amount: dateData.earnings,
             verified: dateData.verified,
+            platform: dateData.platform,
             updated_at: new Date().toISOString()
           })
           .eq('id', existingRecords[0].id);
@@ -224,7 +204,7 @@ export default function UserManagement() {
             date: selectedDate,
             delivery_count: dateData.deliveries,
             amount: dateData.earnings,
-            platform: '배민커넥트', // 기본값
+            platform: dateData.platform,
             verified: dateData.verified,
             created_at: new Date().toISOString()
           });
@@ -233,7 +213,10 @@ export default function UserManagement() {
       toast.success('날짜별 실적이 저장되었습니다.');
       setShowDateModal(false);
       setSelectedUser(null);
-      setDateData({ deliveries: 0, earnings: 0, verified: false });
+      setDateData({ deliveries: 0, earnings: 0, verified: false, platform: '배민커넥트' });
+      
+      // 목록 새로고침
+      fetchUsers();
     } catch (error) {
       console.error('날짜별 실적 저장 오류:', error);
       toast.error('저장에 실패했습니다.');
@@ -247,11 +230,7 @@ export default function UserManagement() {
   );
 
   const hasChanges = (user: UserWithTodayData) => {
-    return user.editedDeliveries !== undefined ||
-           user.editedEarnings !== undefined ||
-           user.editedVerified !== undefined ||
-           user.editedPoints !== undefined ||
-           (user.pointsAdjustment !== undefined && user.pointsAdjustment !== 0);
+    return (user.pointsAdjustment !== undefined && user.pointsAdjustment !== 0);
   };
 
   if (loading) {
@@ -353,42 +332,20 @@ export default function UserManagement() {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={user.editedDeliveries ?? user.todayDeliveries}
-                        onChange={(e) => handleFieldEdit(user.id, 'editedDeliveries', parseInt(e.target.value) || 0)}
-                        className="w-16 px-2 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-zinc-400">건</span>
-                      <input
-                        type="number"
-                        value={user.editedEarnings ?? user.todayEarnings}
-                        onChange={(e) => handleFieldEdit(user.id, 'editedEarnings', parseInt(e.target.value) || 0)}
-                        className="w-24 px-2 py-1 text-sm bg-zinc-700 border border-zinc-600 rounded text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-zinc-400">원</span>
+                      <span className="text-sm text-zinc-400">{user.todayDeliveries}건</span>
+                      <span className="text-sm text-zinc-400">{user.todayEarnings.toLocaleString()}원</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={user.editedVerified !== undefined ? user.editedVerified.toString() : user.verified.toString()}
-                        onChange={(e) => handleFieldEdit(user.id, 'editedVerified', e.target.value === 'true')}
-                        className="text-sm bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-white focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="true">인증</option>
-                        <option value="false">미인증</option>
-                      </select>
-                      <button
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowDateModal(true);
-                        }}
-                        className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-white rounded text-sm flex items-center gap-1"
-                        title="날짜별 실적 입력"
-                      >
-                        <FaCalendar size={12} />
-                        날짜별
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setShowDateModal(true);
+                      }}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm flex items-center gap-1"
+                      title="날짜별 실적 입력"
+                    >
+                      <FaCalendar size={12} />
+                      실적 입력
+                    </button>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -460,7 +417,7 @@ export default function UserManagement() {
                 onClick={() => {
                   setShowDateModal(false);
                   setSelectedUser(null);
-                  setDateData({ deliveries: 0, earnings: 0, verified: false });
+                  setDateData({ deliveries: 0, earnings: 0, verified: false, platform: '배민커넥트' });
                 }}
                 className="text-zinc-400 hover:text-white"
               >
@@ -477,6 +434,18 @@ export default function UserManagement() {
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">플랫폼</label>
+                <select
+                  value={dateData.platform}
+                  onChange={(e) => setDateData({ ...dateData, platform: e.target.value as '배민커넥트' | '쿠팡이츠' })}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="배민커넥트">배민커넥트</option>
+                  <option value="쿠팡이츠">쿠팡이츠</option>
+                </select>
               </div>
               
               <div>
@@ -517,7 +486,7 @@ export default function UserManagement() {
                   onClick={() => {
                     setShowDateModal(false);
                     setSelectedUser(null);
-                    setDateData({ deliveries: 0, earnings: 0, verified: false });
+                    setDateData({ deliveries: 0, earnings: 0, verified: false, platform: '배민커넥트' });
                   }}
                   className="flex-1 px-4 py-2 border border-zinc-700 text-zinc-300 rounded-md hover:bg-zinc-800"
                 >
