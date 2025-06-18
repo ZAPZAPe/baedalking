@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaComment, FaCrown, FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { supabase, clearOldSession } from '../../lib/supabase';
 import KakaoAd from '@/components/KakaoAd';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -16,29 +16,49 @@ const Login = () => {
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const checkingSession = useRef(false);
 
   // 카카오 SDK 초기화
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // 사용자 프로필 확인
-        const { data: profile } = await supabase
-          .from('users')
-          .select('nickname, region, vehicle')
-          .eq('id', session.user.id)
-          .single();
+      // 이미 체크 중이거나 AuthContext에서 로딩 중이면 스킵
+      if (checkingSession.current || authLoading) return;
+      
+      checkingSession.current = true;
+      
+      try {
+        // 오래된 세션 정리
+        clearOldSession();
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // 사용자 프로필 확인
+          const { data: profile } = await supabase
+            .from('users')
+            .select('nickname, region, vehicle')
+            .eq('id', session.user.id)
+            .single();
 
-        if (profile?.nickname && profile?.region && profile?.vehicle) {
-          router.push('/');
-        } else {
-          router.push('/profile-setup');
+          if (profile?.nickname && profile?.region && profile?.vehicle) {
+            router.push('/');
+          } else {
+            router.push('/profile-setup');
+          }
         }
+      } catch (error) {
+        console.error('세션 체크 에러:', error);
+        // 에러 발생 시 세션 정리
+        clearOldSession();
+      } finally {
+        checkingSession.current = false;
       }
     };
 
-    checkUser();
-  }, [router]);
+    // AuthContext 로딩이 완료된 후에만 실행
+    if (!authLoading) {
+      checkUser();
+    }
+  }, [router, authLoading]);
 
   // 이미 로그인된 경우 홈으로 리다이렉션
   useEffect(() => {

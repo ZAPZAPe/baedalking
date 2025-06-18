@@ -1,8 +1,8 @@
 const AD_UNITS = [
-  'DAN-cV8be5DKnSRmZrxZ',  // 홈 상단
-  'DAN-veyUDOOMf8vvxxX3',  // 랭킹 상단
-  'DAN-qfowyTHOc7r5oDwB',  // 업로드 상단
-  'DAN-ooLQwoBQ9SyYTQkP',  // 상점 상단
+  'DAN-PKcQgtjGf7vvdr78',  // 광고 유닛 1
+  'DAN-d8OfXesHwJqB1Hx1',  // 광고 유닛 2
+  'DAN-V4PKO6oIybDcuwOm',  // 광고 유닛 3
+  'DAN-TpSiqhSOy1wzazKK',  // 광고 유닛 4
 ] as const;
 
 // 페이지별로 필요한 광고 개수를 정의

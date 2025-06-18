@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, clearOldSession } from '../lib/supabase';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { logoutKakao } from '@/services/kakaoAuth';
 
@@ -51,6 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isCheckingSession, setIsCheckingSession] = useState(false);
 
   const loadUserProfile = useCallback(async (authUser: SupabaseUser) => {
     try {
@@ -159,10 +160,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    let sessionCheckTimeout: NodeJS.Timeout;
 
     const checkAuthState = async () => {
+      // 이미 세션 체크 중이면 중복 실행 방지
+      if (isCheckingSession) return;
+      
+      setIsCheckingSession(true);
+      
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // 오래된 세션 정리
+        clearOldSession();
+        
+        // 세션 체크에 타임아웃 설정 (3초)
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => {
+          sessionCheckTimeout = setTimeout(() => reject(new Error('Session check timeout')), 3000);
+        });
+        
+        const { data: { session } } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
+        
+        clearTimeout(sessionCheckTimeout);
         
         if (mounted && session?.user) {
           await loadUserProfile(session.user);
@@ -171,13 +192,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUserProfile(null);
         }
       } catch (error: any) {
+        console.error('세션 체크 에러:', error);
         if (mounted) {
+          // 타임아웃이나 에러 발생 시 세션 클리어
+          if (error.message === 'Session check timeout') {
+            console.log('세션 체크 타임아웃 - 로컬 스토리지 정리');
+            // 모든 관련 스토리지 키 정리
+            ['supabase.auth.token', 'sb-auth-token', 'baedalking-auth'].forEach(key => {
+              localStorage.removeItem(key);
+              sessionStorage.removeItem(key);
+            });
+          }
           setUser(null);
           setUserProfile(null);
         }
       } finally {
         if (mounted) {
           setLoading(false);
+          setIsCheckingSession(false);
         }
       }
     };
@@ -187,6 +219,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Supabase auth 상태 변화 감지
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
+      
+      console.log('Auth 상태 변경:', event);
       
       if (session?.user) {
         await loadUserProfile(session.user);
@@ -199,6 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       mounted = false;
+      clearTimeout(sessionCheckTimeout);
       subscription.unsubscribe();
     };
   }, [loadUserProfile]);
