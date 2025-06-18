@@ -114,7 +114,12 @@ export default function Home() {
               <UserProfile userProfile={userProfile} />
             </section>
 
-            {/* 플랫폼별 실시간 통계 - 새로 추가 */}
+            {/* 실시간 TOP3 */}
+            <section className="mb-4">
+              <TopRankers topRankers={topRankers} />
+            </section>
+
+            {/* 플랫폼별 실시간 통계 */}
             <section className="mb-4">
               <PlatformStatistics />
             </section>
@@ -199,11 +204,6 @@ export default function Home() {
             {/* 중간 광고 */}
             <section className="mb-4">
               <KakaoAd page="home" index={1} />
-            </section>
-
-            {/* 실시간 TOP3 */}
-            <section className="mb-4">
-              <TopRankers topRankers={topRankers} />
             </section>
 
             {/* 서비스 특징 */}
@@ -292,7 +292,12 @@ export default function Home() {
               </div>
             </section>
 
-            {/* 플랫폼별 실시간 통계 - 비로그인 상태에도 표시 */}
+            {/* 실시간 TOP3 */}
+            <section className="mb-4">
+              <TopRankers topRankers={topRankers} />
+            </section>
+
+            {/* 플랫폼별 실시간 통계 */}
             <section className="mb-4">
               <PlatformStatistics />
             </section>
@@ -300,11 +305,6 @@ export default function Home() {
             {/* 비 로그인 상태 광고 */}
             <section className="mb-4">
               <KakaoAd page="home" index={1} />
-            </section>
-
-            {/* 실시간 TOP3 */}
-            <section className="mb-4">
-              <TopRankers topRankers={topRankers} />
             </section>
 
             {/* 서비스 특징 */}

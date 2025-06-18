@@ -222,7 +222,7 @@ export const getDeliveryStats = async (userId: string) => {
       currentRank: null,
       recentDeliveries: data.slice(0, 5).map((record: any) => ({
         ...record,
-        platform: record.platform.replace('BAEMIN_CONNECT', '배민커넥트').replace('COUPANG_EATS', '쿠팡이츠'),
+        platform: record.platform,
         createdAt: new Date(record.date)
       })),
       achievements: []
