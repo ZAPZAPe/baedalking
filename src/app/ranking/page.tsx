@@ -519,10 +519,10 @@ export default function RankingPage() {
               <div className="bg-white/5 rounded-xl p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {getVehicleIcon(selectedUser.bikeType)}
+                    {getVehicleIcon(selectedUser.vehicle)}
                     <span className="text-blue-200 text-sm">운송수단</span>
                   </div>
-                  <span className="text-white font-medium">{getVehicleText(selectedUser.bikeType)}</span>
+                  <span className="text-white font-medium">{getVehicleText(selectedUser.vehicle)}</span>
                 </div>
               </div>
 
