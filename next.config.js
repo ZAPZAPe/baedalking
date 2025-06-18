@@ -41,7 +41,8 @@ const nextConfig = {
   poweredByHeader: false,
   // 실험적 기능들
   experimental: {
-    optimizeCss: true,
+    // optimizeCss 비활성화 - SSR 빌드 에러 방지
+    // optimizeCss: true
     optimizePackageImports: ['react-icons'],
   },
 }
