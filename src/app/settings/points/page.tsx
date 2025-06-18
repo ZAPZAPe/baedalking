@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaCalendarCheck, FaCoins, FaGift, FaChevronLeft, FaCheck, FaTrophy, FaStar, FaFireAlt } from 'react-icons/fa';
+import { FaCalendarCheck, FaCoins, FaGift, FaChevronLeft, FaCheck, FaTrophy, FaStar, FaFireAlt, FaStamp } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -25,6 +25,7 @@ export default function AttendancePage() {
   const [consecutiveDays, setConsecutiveDays] = useState(0);
   const [monthlyAttendance, setMonthlyAttendance] = useState<number>(0);
   const [claiming, setClaiming] = useState(false);
+  const [justAttended, setJustAttended] = useState(false);
 
   useEffect(() => {
     if (user && userProfile) {
@@ -159,9 +160,15 @@ export default function AttendancePage() {
       await refreshUserProfile();
       setTodayAttended(true);
       setConsecutiveDays(consecutiveDays + 1);
+      setJustAttended(true);
       
       toast.success(`출근도장 완료! +${totalPoints} 포인트`);
       await fetchAttendanceData();
+      
+      // 3초 후 애니메이션 효과 제거
+      setTimeout(() => {
+        setJustAttended(false);
+      }, 3000);
     } catch (error) {
       console.error('출근도장 실패 상세:', error);
       // toast.error 는 이미 위에서 처리함
@@ -299,26 +306,82 @@ export default function AttendancePage() {
                 </div>
               ))}
               
-              {getCalendarDays().map((day, index) => (
-                <div
-                  key={index}
-                  className={`aspect-square flex items-center justify-center rounded-lg ${
-                    day === null
-                      ? ''
-                      : isAttendedDay(day)
-                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white font-bold'
-                      : day === new Date().getDate()
-                      ? 'bg-white/20 text-white border border-white/40'
-                      : 'bg-white/5 text-white/60'
-                  }`}
-                >
-                  {day && (
-                    <span className="text-sm">
-                      {day}
-                    </span>
-                  )}
+              {getCalendarDays().map((day, index) => {
+                const isToday = day === new Date().getDate();
+                const attended = day ? isAttendedDay(day) : false;
+                const showAnimation = attended && isToday && justAttended;
+                
+                return (
+                  <div
+                    key={index}
+                    className={`aspect-square flex items-center justify-center rounded-lg relative ${
+                      day === null
+                        ? ''
+                        : attended
+                        ? ''
+                        : isToday
+                        ? 'bg-white/20 border border-white/40'
+                        : 'bg-white/5'
+                    }`}
+                  >
+                    {day && (
+                      <>
+                        {attended ? (
+                          <div className="relative w-full h-full flex items-center justify-center group">
+                            {/* 도장 컨테이너 */}
+                            <div className={`absolute inset-1 ${showAnimation ? 'animate-stamp-effect' : ''}`}>
+                              {/* 빨간 도장 베이스 */}
+                              <div className="relative w-full h-full">
+                                {/* 도장 본체 */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-500 to-red-700 rounded-lg transform rotate-6 shadow-lg" />
+                                
+                                {/* 도장 테두리 */}
+                                <div className="absolute inset-0 border-2 border-red-800 rounded-lg transform rotate-6" />
+                                
+                                {/* 도장 중앙 디자인 */}
+                                <div className="absolute inset-0 flex items-center justify-center transform rotate-6">
+                                  <div className="w-3/4 h-3/4 border-2 border-red-300/50 rounded-full flex items-center justify-center">
+                                    <div className="text-white font-bold text-[10px]">출근</div>
+                                  </div>
+                                </div>
+                                
+                                {/* 도장 잉크 효과 */}
+                                <div className="absolute -inset-1 bg-gradient-to-br from-red-400/30 via-transparent to-red-600/20 rounded-lg blur-sm transform rotate-6" />
+                              </div>
+                            </div>
+                            
+                            {/* 날짜 표시 */}
+                            <span className="absolute bottom-0 left-0 right-0 text-center text-[10px] text-white/90 font-bold z-20">
+                              {day}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className={`text-sm ${isToday ? 'text-white font-bold' : 'text-white/60'}`}>
+                            {day}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* 범례 추가 */}
+            <div className="mt-4 flex items-center justify-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-red-700 rounded transform rotate-6"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-white text-[8px] font-bold transform rotate-6">출근</span>
+                  </div>
                 </div>
-              ))}
+                <span className="text-white/80">출근 완료</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-white/20 border border-white/40 rounded"></div>
+                <span className="text-white/80">오늘</span>
+              </div>
             </div>
           </div>
         </section>
@@ -328,6 +391,31 @@ export default function AttendancePage() {
           <KakaoAd page="attendance" index={1} />
         </section>
       </div>
+      
+      <style jsx>{`
+        @keyframes stamp-effect {
+          0% {
+            transform: scale(0) rotate(6deg);
+            opacity: 0;
+          }
+          50% {
+            transform: scale(1.2) rotate(6deg);
+            opacity: 1;
+          }
+          70% {
+            transform: scale(0.9) rotate(6deg);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1) rotate(6deg);
+            opacity: 1;
+          }
+        }
+        
+        .animate-stamp-effect {
+          animation: stamp-effect 0.6s ease-out;
+        }
+      `}</style>
     </div>
   );
 } 
