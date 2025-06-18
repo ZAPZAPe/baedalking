@@ -8,6 +8,7 @@ import Script from 'next/script';
 import KakaoSDK from '@/components/KakaoSDK';
 import LayoutWrapper from '@/components/LayoutWrapper';
 import MainContent from '@/components/MainContent';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,7 @@ export default function RootLayout({
             </MainContent>
           </NotificationProvider>
         </AuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

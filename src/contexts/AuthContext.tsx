@@ -172,10 +172,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 오래된 세션 정리
         clearOldSession();
         
-        // 세션 체크에 타임아웃 설정 (3초)
+        // 세션 체크에 타임아웃 설정 (10초로 증가)
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise((_, reject) => {
-          sessionCheckTimeout = setTimeout(() => reject(new Error('Session check timeout')), 3000);
+          sessionCheckTimeout = setTimeout(() => reject(new Error('Session check timeout')), 10000);
         });
         
         const { data: { session } } = await Promise.race([
@@ -196,12 +196,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (mounted) {
           // 타임아웃이나 에러 발생 시 세션 클리어
           if (error.message === 'Session check timeout') {
-            console.log('세션 체크 타임아웃 - 로컬 스토리지 정리');
-            // 모든 관련 스토리지 키 정리
-            ['supabase.auth.token', 'sb-auth-token', 'baedalking-auth'].forEach(key => {
-              localStorage.removeItem(key);
-              sessionStorage.removeItem(key);
-            });
+            console.log('세션 체크 타임아웃 - 카카오 로그인 직후 여부 확인');
+            
+            // 카카오 로그인 직후인지 확인 (URL에 code 파라미터가 있는지)
+            const urlParams = new URLSearchParams(window.location.search);
+            const isKakaoCallback = window.location.pathname.includes('/auth/kakao/callback') || urlParams.has('code');
+            
+            if (!isKakaoCallback) {
+              console.log('카카오 로그인이 아님 - 로컬 스토리지 정리');
+              // 모든 관련 스토리지 키 정리
+              ['supabase.auth.token', 'sb-auth-token', 'baedalking-auth'].forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+              });
+            } else {
+              console.log('카카오 로그인 직후 - 스토리지 유지');
+            }
           }
           setUser(null);
           setUserProfile(null);

@@ -52,12 +52,16 @@ function CallbackContent() {
 
         if (session) {
           console.log('로그인 성공, 프로필 설정으로 이동');
+          // AuthContext가 세션을 인식할 때까지 추가 대기
+          await new Promise(resolve => setTimeout(resolve, 500));
           router.push('/profile-setup');
         } else {
           console.log('세션 없음, 2초 후 재확인');
           setTimeout(async () => {
             const { data: { session: retrySession } } = await supabase.auth.getSession();
             if (retrySession) {
+              // AuthContext가 세션을 인식할 때까지 추가 대기
+              await new Promise(resolve => setTimeout(resolve, 500));
               router.push('/profile-setup');
             } else {
               console.log('재확인 후에도 세션 없음, 로그인 페이지로 이동');
@@ -159,6 +163,9 @@ function CallbackContent() {
                 if (!retrySignInError && retrySignInData.session) {
                   console.log('로그인 성공 (재시도)');
                   
+                  // 세션이 완전히 설정될 때까지 대기
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  
                   // users 테이블에 프로필 생성 (신규 사용자만)
                   const { data: existingProfile } = await supabase
                     .from('users')
@@ -187,6 +194,8 @@ function CallbackContent() {
                     }
                   }
 
+                  // AuthContext가 세션을 인식할 때까지 추가 대기
+                  await new Promise(resolve => setTimeout(resolve, 500));
                   router.push('/profile-setup');
                 } else {
                   console.error('재시도 로그인 실패:', retrySignInError);
@@ -210,6 +219,9 @@ function CallbackContent() {
 
             if (!newSignInError && newSignInData.session) {
               console.log('신규 사용자 로그인 성공');
+              
+              // 세션이 완전히 설정될 때까지 대기
+              await new Promise(resolve => setTimeout(resolve, 1000));
               
               // users 테이블에 프로필 생성 (신규 사용자만)
               const { data: existingProfile } = await supabase
@@ -239,11 +251,16 @@ function CallbackContent() {
                 }
               }
 
+              // AuthContext가 세션을 인식할 때까지 추가 대기
+              await new Promise(resolve => setTimeout(resolve, 500));
               router.push('/profile-setup');
             }
           }
         } else if (signInData.session) {
           console.log('기존 사용자 로그인 성공');
+          
+          // 세션이 완전히 설정될 때까지 대기
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           // 기존 사용자 정보 확인
           const { data: existingUser } = await supabase
@@ -295,6 +312,8 @@ function CallbackContent() {
             }
           }
 
+          // AuthContext가 세션을 인식할 때까지 추가 대기
+          await new Promise(resolve => setTimeout(resolve, 500));
           router.push('/profile-setup');
         }
       } catch (error) {
