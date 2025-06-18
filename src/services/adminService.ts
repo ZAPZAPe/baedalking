@@ -45,16 +45,59 @@ interface Settings {
 // 대시보드 통계 가져오기
 export const getDashboardStats = async (): Promise<DashboardStats> => {
   try {
-    const { data: stats, error } = await supabase
-      .from('dashboard_stats')
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 오늘 업로드 수
+    const { data: todayRecords } = await supabase
+      .from('delivery_records')
       .select('*')
-      .single();
-
-    if (error) throw error;
-    return stats;
+      .gte('created_at', today + 'T00:00:00')
+      .lte('created_at', today + 'T23:59:59');
+    
+    // 전체 사용자 수
+    const { data: users } = await supabase
+      .from('users')
+      .select('*');
+    
+    // 전체 배달 기록 수
+    const { data: allRecords } = await supabase
+      .from('delivery_records')
+      .select('*');
+    
+    // 최근 7일 업로드 트렌드
+    const uploadTrend = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const count = allRecords?.filter(r => 
+        r.created_at.startsWith(dateStr)
+      ).length || 0;
+      
+      uploadTrend.push({
+        date: date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+        count
+      });
+    }
+    
+    return {
+      todayUploads: todayRecords?.length || 0,
+      totalUsers: users?.length || 0,
+      totalDeliveries: allRecords?.length || 0,
+      fraudDetections: 0, // fraud_records 테이블이 없으므로 0
+      uploadTrend
+    };
   } catch (error) {
     console.error('대시보드 통계 가져오기 오류:', error);
-    throw error;
+    // 오류 시 기본값 반환
+    return {
+      todayUploads: 0,
+      totalUsers: 0,
+      totalDeliveries: 0,
+      fraudDetections: 0,
+      uploadTrend: []
+    };
   }
 };
 
@@ -255,25 +298,72 @@ export const deleteDeliveryRecord = async (userId: string, recordId: string): Pr
 // 통계 데이터 가져오기
 export const getStatistics = async (timeRange: 'week' | 'month' | 'year'): Promise<Statistics> => {
   try {
-    const { data: stats, error } = await supabase
-      .from('statistics')
-      .select('*')
-      .eq('time_range', timeRange)
-      .single();
-
-    if (error) throw error;
+    // 먼저 실제 데이터로 통계 계산
+    const { data: users } = await supabase.from('users').select('*');
+    const { data: records } = await supabase.from('delivery_records').select('*');
+    
+    const now = new Date();
+    const timeAgo = new Date();
+    
+    if (timeRange === 'week') {
+      timeAgo.setDate(now.getDate() - 7);
+    } else if (timeRange === 'month') {
+      timeAgo.setMonth(now.getMonth() - 1);
+    } else {
+      timeAgo.setFullYear(now.getFullYear() - 1);
+    }
+    
+    const recentUsers = users?.filter(u => new Date(u.created_at) >= timeAgo) || [];
+    const recentRecords = records?.filter(r => new Date(r.created_at) >= timeAgo) || [];
+    
+    const totalAmount = records?.reduce((sum, r) => sum + (r.amount || 0), 0) || 0;
+    const recentAmount = recentRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
+    
+    // 플랫폼별 통계
+    const platformMap = new Map();
+    records?.forEach(r => {
+      if (!r.platform) return;
+      const current = platformMap.get(r.platform) || { platform: r.platform, count: 0, amount: 0 };
+      current.count += 1;
+      current.amount += r.amount || 0;
+      platformMap.set(r.platform, current);
+    });
+    
+    // 지역별 통계
+    const regionMap = new Map();
+    users?.forEach(u => {
+      if (!u.region || u.region === '') return;
+      const userRecords = records?.filter(r => r.user_id === u.id) || [];
+      const current = regionMap.get(u.region) || { region: u.region, count: 0, amount: 0 };
+      current.count += userRecords.length;
+      current.amount += userRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
+      regionMap.set(u.region, current);
+    });
+    
+    // 트렌드 데이터 (최근 7일)
+    const trendData = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const count = records?.filter(r => r.date === dateStr).length || 0;
+      trendData.push({
+        date: date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+        count
+      });
+    }
     
     return {
-      totalUsers: stats?.total_users || 0,
-      userGrowth: stats?.user_growth || 0,
-      totalRecords: stats?.total_records || 0,
-      recordGrowth: stats?.record_growth || 0,
-      totalAmount: stats?.total_amount || 0,
-      amountGrowth: stats?.amount_growth || 0,
-      fraudCount: stats?.fraud_count || 0,
-      trendData: stats?.trend_data || [],
-      platformStats: stats?.platform_stats || [],
-      regionStats: stats?.region_stats || []
+      totalUsers: users?.length || 0,
+      userGrowth: users?.length ? Math.round((recentUsers.length / users.length) * 100) : 0,
+      totalRecords: records?.length || 0,
+      recordGrowth: records?.length ? Math.round((recentRecords.length / records.length) * 100) : 0,
+      totalAmount,
+      amountGrowth: totalAmount ? Math.round((recentAmount / totalAmount) * 100) : 0,
+      fraudCount: 0, // fraud_records 테이블이 없으므로 0
+      trendData,
+      platformStats: Array.from(platformMap.values()).sort((a, b) => b.count - a.count),
+      regionStats: Array.from(regionMap.values()).sort((a, b) => b.amount - a.amount)
     };
   } catch (error) {
     console.error('통계 데이터 가져오기 오류:', error);

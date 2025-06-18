@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Script from 'next/script';
 import { FaCrown, FaEnvelope, FaLock, FaUser, FaMapMarkerAlt, FaMotorcycle, FaUserPlus, FaChevronLeft, FaGift, FaComment, FaSignInAlt, FaEye, FaEyeSlash, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 import { supabase } from '../../lib/supabase';
 import Link from 'next/link';

@@ -1,241 +1,115 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getStatistics, getUsers, getDeliveryRecords } from '@/services/adminService';
-import { Line, Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js';
-import { FaUsers, FaTruck, FaMoneyBillWave, FaExclamationTriangle, FaArrowUp, FaArrowDown } from 'react-icons/fa';
-import { toast } from 'react-hot-toast';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-interface Statistics {
-  totalUsers: number;
-  userGrowth: number;
-  totalRecords: number;
-  recordGrowth: number;
-  totalAmount: number;
-  amountGrowth: number;
-  fraudCount: number;
-  trendData: { date: string; count: number }[];
-  platformStats: { platform: string; count: number; amount: number }[];
-  regionStats: { region: string; count: number; amount: number }[];
-}
+import { 
+  FaChartLine, 
+  FaUsers, 
+  FaClipboardList, 
+  FaCoins,
+  FaUpload,
+  FaTrophy,
+  FaExclamationTriangle,
+  FaCalendarCheck,
+  FaArrowUp,
+  FaArrowDown,
+  FaBolt,
+  FaFire,
+  FaGift,
+  FaBell,
+  FaChartBar,
+  FaCheckCircle
+} from 'react-icons/fa';
+import { getStatistics, getUsers, getAllDeliveryRecords, getFraudRecords } from '@/services/adminService';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, startOfMonth } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<Statistics>({
-    totalUsers: 0,
-    userGrowth: 0,
-    totalRecords: 0,
-    recordGrowth: 0,
-    totalAmount: 0,
-    amountGrowth: 0,
-    fraudCount: 0,
-    trendData: [],
-    platformStats: [],
-    regionStats: []
-  });
-  const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchData();
+    fetchDashboardData();
   }, [timeRange]);
 
-  const fetchData = async () => {
+  const fetchDashboardData = async () => {
     try {
       setLoading(true);
       
-      // 사용자 데이터 가져오기
+      // 통계 데이터 가져오기
+      const statistics = await getStatistics(timeRange);
       const users = await getUsers();
-      const records = await getDeliveryRecords();
+      const records = await getAllDeliveryRecords();
       
-      // 통계 계산
-      const now = new Date();
-      const rangeStart = new Date();
-      
-      if (timeRange === 'week') {
-        rangeStart.setDate(now.getDate() - 7);
-      } else if (timeRange === 'month') {
-        rangeStart.setMonth(now.getMonth() - 1);
-      } else {
-        rangeStart.setFullYear(now.getFullYear() - 1);
+      // fraud_records 테이블이 없는 경우를 대비한 처리
+      let frauds = [];
+      try {
+        frauds = await getFraudRecords();
+      } catch (error) {
+        console.log('부정 사용 기록 테이블이 아직 생성되지 않았습니다.');
       }
-      
-      // 기간별 데이터 필터링
-      const recentUsers = users.filter(u => new Date(u.createdAt) >= rangeStart);
-      const recentRecords = records.filter(r => new Date(r.date) >= rangeStart);
-      
-      // 플랫폼별 통계
-      const platformData = records.reduce((acc, record) => {
-        const platform = record.platform;
-        if (!acc[platform]) {
-          acc[platform] = { count: 0, amount: 0 };
-        }
-        acc[platform].count += record.deliveryCount;
-        acc[platform].amount += record.amount;
-        return acc;
-      }, {} as Record<string, { count: number; amount: number }>);
-      
-      const platformStats = Object.entries(platformData).map(([platform, data]) => ({
-        platform,
-        count: data.count,
-        amount: data.amount
-      }));
-      
-      // 지역별 통계
-      const regionData = users.reduce((acc, user) => {
-        const region = user.region || '미설정';
-        if (!acc[region]) {
-          acc[region] = { count: 0, amount: 0 };
-        }
-        acc[region].count += 1;
-        
-        // 해당 유저의 배달 기록 합산
-        const userRecords = records.filter(r => r.userId === user.id);
-        acc[region].amount += userRecords.reduce((sum, r) => sum + r.amount, 0);
-        
-        return acc;
-      }, {} as Record<string, { count: number; amount: number }>);
-      
-      const regionStats = Object.entries(regionData)
-        .map(([region, data]) => ({
-          region,
-          count: data.count,
-          amount: data.amount
+
+      // 최근 활동 생성
+      const activities = [
+        ...records.slice(0, 5).map(r => ({
+          type: 'upload',
+          user: r.userNickname || '알 수 없음',
+          message: `배달 기록 업로드 (${r.deliveryCount}건)`,
+          time: r.createdAt ? new Date(r.createdAt) : new Date(),
+          icon: FaUpload,
+          color: 'text-blue-400'
+        })),
+        ...users.slice(0, 3).map(u => ({
+          type: 'user',
+          user: u.nickname,
+          message: '새로운 사용자 가입',
+          time: new Date(u.createdAt),
+          icon: FaUsers,
+          color: 'text-purple-400'
         }))
-        .sort((a, b) => b.amount - a.amount)
-        .slice(0, 5);
-      
-      // 일별 트렌드 데이터
-      const trendData: { date: string; count: number }[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        
-        const count = records.filter(r => r.date === dateStr).length;
-        trendData.push({ date: dateStr, count });
-      }
-      
-      // 성장률 계산
-      const previousUsers = users.length - recentUsers.length;
-      const userGrowth = previousUsers > 0 ? ((recentUsers.length / previousUsers) * 100) : 0;
-      
-      const previousRecords = records.length - recentRecords.length;
-      const recordGrowth = previousRecords > 0 ? ((recentRecords.length / previousRecords) * 100) : 0;
-      
-      const totalAmount = records.reduce((sum, r) => sum + r.amount, 0);
-      const recentAmount = recentRecords.reduce((sum, r) => sum + r.amount, 0);
-      const previousAmount = totalAmount - recentAmount;
-      const amountGrowth = previousAmount > 0 ? ((recentAmount / previousAmount) * 100) : 0;
-      
-      setStats({
-        totalUsers: users.length,
-        userGrowth,
-        totalRecords: records.length,
-        recordGrowth,
-        totalAmount,
-        amountGrowth,
-        fraudCount: 0, // 부정행위 감지 기능은 추후 구현
-        trendData,
-        platformStats,
-        regionStats
-      });
+      ].sort((a, b) => b.time.getTime() - a.time.getTime()).slice(0, 8);
+
+      setStats(statistics);
+      setRecentActivities(activities);
     } catch (error) {
-      console.error('데이터 가져오기 오류:', error);
-      toast.error('데이터를 불러오는데 실패했습니다.');
+      console.error('대시보드 데이터 로드 오류:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const lineChartData = {
-    labels: stats.trendData.map(d => {
-      const date = new Date(d.date);
-      return `${date.getMonth() + 1}/${date.getDate()}`;
-    }),
-    datasets: [
-      {
-        label: '일별 업로드',
-        data: stats.trendData.map(d => d.count),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.4
-      }
-    ]
-  };
+  // 차트 데이터 생성
+  const chartData = stats?.trendData || [];
+  const platformData = stats?.platformStats || [];
+  const regionData = stats?.regionStats || [];
 
-  const barChartData = {
-    labels: stats.platformStats.map(p => p.platform),
-    datasets: [
-      {
-        label: '플랫폼별 수익',
-        data: stats.platformStats.map(p => p.amount),
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(251, 146, 60, 0.8)',
-          'rgba(34, 197, 94, 0.8)'
-        ]
-      }
-    ]
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true
-      }
-    }
-  };
+  // 차트 색상
+  const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="w-full">
+    <div className="space-y-6">
       {/* 시간 범위 선택 */}
-      <div className="mb-6 flex justify-end">
+      <div className="flex items-center justify-between">
+        <h3 className="text-2xl font-bold text-white">대시보드 개요</h3>
         <div className="flex gap-2">
           {(['week', 'month', 'year'] as const).map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-4 py-2 rounded-lg transition-all ${
                 timeRange === range
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                  : 'bg-white/10 text-zinc-400 hover:text-white hover:bg-white/20'
               }`}
             >
               {range === 'week' ? '주간' : range === 'month' ? '월간' : '연간'}
@@ -244,106 +118,241 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <FaUsers className="text-blue-600" size={24} />
-            <span className={`text-sm font-medium flex items-center gap-1 ${
-              stats.userGrowth >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {stats.userGrowth >= 0 ? <FaArrowUp /> : <FaArrowDown />}
-              {Math.abs(stats.userGrowth).toFixed(1)}%
-            </span>
+      {/* 주요 지표 카드 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <div className="group relative bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-cyan-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+          
+          <div className="relative">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg group-hover:animate-pulse">
+                <FaUsers className="text-white" size={20} />
+              </div>
+              <div className={`flex items-center gap-1 text-xs ${stats?.userGrowth > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {stats?.userGrowth > 0 ? <FaArrowUp size={10} /> : <FaArrowDown size={10} />}
+                <span>{Math.abs(stats?.userGrowth || 0)}%</span>
+              </div>
+            </div>
+            <h3 className="text-zinc-400 text-sm mb-1">전체 사용자</h3>
+            <p className="text-2xl lg:text-3xl font-black text-white">
+              {(stats?.totalUsers || 0).toLocaleString()}명
+            </p>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
-          <p className="text-sm text-gray-600 mt-1">전체 사용자</p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <FaTruck className="text-green-600" size={24} />
-            <span className={`text-sm font-medium flex items-center gap-1 ${
-              stats.recordGrowth >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {stats.recordGrowth >= 0 ? <FaArrowUp /> : <FaArrowDown />}
-              {Math.abs(stats.recordGrowth).toFixed(1)}%
-            </span>
+        <div className="group relative bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-600/10 to-emerald-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+          
+          <div className="relative">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg group-hover:animate-pulse">
+                <FaClipboardList className="text-white" size={20} />
+              </div>
+              <div className={`flex items-center gap-1 text-xs ${stats?.recordGrowth > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {stats?.recordGrowth > 0 ? <FaArrowUp size={10} /> : <FaArrowDown size={10} />}
+                <span>{Math.abs(stats?.recordGrowth || 0)}%</span>
+              </div>
+            </div>
+            <h3 className="text-zinc-400 text-sm mb-1">총 배달 기록</h3>
+            <p className="text-2xl lg:text-3xl font-black text-white">
+              {(stats?.totalRecords || 0).toLocaleString()}건
+            </p>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.totalRecords}</p>
-          <p className="text-sm text-gray-600 mt-1">전체 배달 기록</p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <FaMoneyBillWave className="text-yellow-600" size={24} />
-            <span className={`text-sm font-medium flex items-center gap-1 ${
-              stats.amountGrowth >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {stats.amountGrowth >= 0 ? <FaArrowUp /> : <FaArrowDown />}
-              {Math.abs(stats.amountGrowth).toFixed(1)}%
-            </span>
+        <div className="group relative bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105">
+          <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/10 to-orange-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+          
+          <div className="relative">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-600 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:animate-pulse">
+                <FaCoins className="text-white" size={20} />
+              </div>
+              <div className={`flex items-center gap-1 text-xs ${stats?.amountGrowth > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {stats?.amountGrowth > 0 ? <FaArrowUp size={10} /> : <FaArrowDown size={10} />}
+                <span>{Math.abs(stats?.amountGrowth || 0)}%</span>
+              </div>
+            </div>
+            <h3 className="text-zinc-400 text-sm mb-1">총 매출액</h3>
+            <p className="text-2xl lg:text-3xl font-black text-white">
+              {(stats?.totalAmount || 0).toLocaleString()}원
+            </p>
           </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {(stats.totalAmount / 1000000).toFixed(1)}M
-          </p>
-          <p className="text-sm text-gray-600 mt-1">총 수익</p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <FaExclamationTriangle className="text-red-600" size={24} />
+        <div className="group relative bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-600/10 to-rose-600/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+          
+          <div className="relative">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-rose-600 rounded-xl flex items-center justify-center shadow-lg group-hover:animate-pulse">
+                <FaExclamationTriangle className="text-white" size={20} />
+              </div>
+              <div className="flex items-center gap-1 text-xs text-yellow-400">
+                <FaBell size={10} />
+                <span>주의</span>
+              </div>
+            </div>
+            <h3 className="text-zinc-400 text-sm mb-1">부정 사용 감지</h3>
+            <p className="text-2xl lg:text-3xl font-black text-white">
+              {(stats?.fraudCount || 0).toLocaleString()}건
+            </p>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.fraudCount}</p>
-          <p className="text-sm text-gray-600 mt-1">부정 감지</p>
         </div>
       </div>
 
       {/* 차트 섹션 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">업로드 트렌드</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 업로드 트렌드 차트 */}
+        <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 border border-purple-500/20">
+          <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <FaChartLine className="text-purple-400" />
+            업로드 트렌드
+          </h4>
           <div className="h-64">
-            <Line data={lineChartData} options={chartOptions} />
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="date" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #374151' }}
+                  labelStyle={{ color: '#e5e7eb' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#8b5cf6" 
+                  fillOpacity={1} 
+                  fill="url(#colorGradient)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">플랫폼별 수익</h3>
+        {/* 플랫폼별 통계 */}
+        <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 border border-purple-500/20">
+          <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <FaChartBar className="text-cyan-400" />
+            플랫폼별 실적
+          </h4>
           <div className="h-64">
-            <Bar data={barChartData} options={chartOptions} />
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={platformData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="platform" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #374151' }}
+                  labelStyle={{ color: '#e5e7eb' }}
+                />
+                <Bar dataKey="count" fill="#06b6d4" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* 지역별 통계 테이블 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">지역별 TOP 5</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">지역</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">사용자 수</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">총 수익</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">평균 수익</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.regionStats.map((region, index) => (
-                <tr key={region.region} className="border-b border-gray-100">
-                  <td className="py-3 px-4 text-sm text-gray-900">{region.region}</td>
-                  <td className="py-3 px-4 text-sm text-gray-900 text-right">{region.count}</td>
-                  <td className="py-3 px-4 text-sm text-gray-900 text-right">
-                    {region.amount.toLocaleString()}원
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-900 text-right">
-                    {region.count > 0 ? Math.round(region.amount / region.count).toLocaleString() : 0}원
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* 최근 활동 및 지역별 통계 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 최근 활동 */}
+        <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 border border-purple-500/20">
+          <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <FaBolt className="text-yellow-400" />
+            최근 활동
+          </h4>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {recentActivities.map((activity, index) => {
+              const Icon = activity.icon;
+              return (
+                <div key={index} className="flex items-start gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                  <div className={`w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center ${activity.color}`}>
+                    <Icon size={16} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white text-sm font-medium">{activity.user}</p>
+                    <p className="text-zinc-400 text-xs">{activity.message}</p>
+                    <p className="text-zinc-500 text-xs mt-1">
+                      {format(activity.time, 'MM월 dd일 HH:mm', { locale: ko })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 지역별 통계 */}
+        <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 border border-purple-500/20">
+          <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <FaTrophy className="text-orange-400" />
+            지역별 TOP 5
+          </h4>
+          <div className="space-y-3">
+                         {regionData.slice(0, 5).map((region: any, index: number) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white ${
+                    index === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' :
+                    index === 1 ? 'bg-gradient-to-br from-slate-400 to-slate-600' :
+                    index === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-800' :
+                    'bg-gradient-to-br from-zinc-600 to-zinc-800'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">{region.region}</p>
+                    <p className="text-zinc-400 text-xs">{region.count}건</p>
+                  </div>
+                </div>
+                <p className="text-white font-bold">{region.amount.toLocaleString()}원</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 알림 섹션 */}
+      <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-2xl p-6 border border-purple-500/30">
+        <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <FaBell className="text-purple-400" />
+          시스템 알림
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white/10 rounded-xl p-4 flex items-center gap-3">
+            <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+              <FaCheckCircle className="text-green-400" size={20} />
+            </div>
+            <div>
+              <p className="text-white font-medium">시스템 정상</p>
+              <p className="text-zinc-400 text-sm">모든 서비스 정상 작동중</p>
+            </div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-4 flex items-center gap-3">
+            <div className="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+              <FaExclamationTriangle className="text-yellow-400" size={20} />
+            </div>
+            <div>
+              <p className="text-white font-medium">대기중 인증</p>
+              <p className="text-zinc-400 text-sm">15건의 배달 기록 검토 필요</p>
+            </div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-4 flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+              <FaGift className="text-blue-400" size={20} />
+            </div>
+            <div>
+              <p className="text-white font-medium">이벤트 진행중</p>
+              <p className="text-zinc-400 text-sm">신규 가입 이벤트 활성화</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
