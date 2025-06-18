@@ -100,11 +100,17 @@ const SignUp = () => {
       }
 
       // 2. Supabase Auth에 사용자 생성
+      const redirectUrl = process.env.NEXT_PUBLIC_APP_URL 
+        ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+        : typeof window !== 'undefined' 
+          ? `${window.location.origin}/auth/callback`
+          : 'https://www.baedalking.com/auth/callback';
+          
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: redirectUrl,
         }
       });
 

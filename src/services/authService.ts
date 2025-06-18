@@ -1,14 +1,28 @@
 import { supabase } from '@/lib/supabase';
 
+// 리다이렉트 URL 가져오기 헬퍼 함수
+const getRedirectUrl = (path: string = '/auth/callback'): string => {
+  // 환경 변수에서 먼저 확인
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return `${process.env.NEXT_PUBLIC_APP_URL}${path}`;
+  }
+  
+  // 클라이언트 사이드에서만 window.location 사용
+  if (typeof window !== 'undefined' && window.location) {
+    return `${window.location.origin}${path}`;
+  }
+  
+  // 기본값
+  return `https://www.baedalking.com${path}`;
+};
+
 // 회원가입
 export const signUp = async (email: string, password: string, nickname: string) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/callback`
-        : 'https://www.baedalking.com/auth/callback',
+      emailRedirectTo: getRedirectUrl('/auth/callback'),
       data: {
         nickname,
       }
