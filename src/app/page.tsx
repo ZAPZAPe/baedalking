@@ -5,8 +5,9 @@ import { useState, useEffect, useCallback, memo } from 'react';
 import { getTodayRanking, RankingData } from '@/services/rankingService';
 import { UserProfile } from '@/components/home/UserProfile';
 import { TopRankers } from '@/components/home/TopRankers';
+import { PlatformStatistics } from '@/components/home/PlatformStatistics';
 import Link from 'next/link';
-import { FaCrown, FaTrophy, FaUpload, FaUsers, FaStar, FaMedal, FaChartLine, FaFireAlt, FaBell, FaGift, FaCamera, FaSignInAlt, FaRocket, FaShieldAlt, FaCoins, FaArrowRight, FaPlay, FaHeart, FaBolt, FaStore, FaUserFriends, FaShare, FaComment } from 'react-icons/fa';
+import { FaCrown, FaTrophy, FaUpload, FaUsers, FaStar, FaMedal, FaChartLine, FaFireAlt, FaBell, FaGift, FaCamera, FaSignInAlt, FaRocket, FaShieldAlt, FaCoins, FaArrowRight, FaPlay, FaHeart, FaBolt, FaStore, FaUserFriends, FaShare, FaComment, FaCalendarCheck } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { initKakaoShare, inviteFriends } from '@/services/kakaoShare';
 import KakaoAd from '@/components/KakaoAd';
@@ -113,6 +114,11 @@ export default function Home() {
               <UserProfile userProfile={userProfile} />
             </section>
 
+            {/* 플랫폼별 실시간 통계 - 새로 추가 */}
+            <section className="mb-4">
+              <PlatformStatistics />
+            </section>
+
             {/* 주요 기능 섹션 */}
             <section className="mb-4">
               <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
@@ -151,6 +157,18 @@ export default function Home() {
                     </div>
                   </Link>
 
+                  <Link href="/settings/points" prefetch={true} className="bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-xl p-4 border border-yellow-400/30 hover:scale-105 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
+                        <FaCalendarCheck className="text-white" size={18} />
+                      </div>
+                      <div>
+                        <h3 className="text-white font-bold text-sm">출근도장</h3>
+                        <p className="text-yellow-200 text-xs">매일 10P 지급</p>
+                      </div>
+                    </div>
+                  </Link>
+
                   <Link href="/store" prefetch={true} className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl p-4 border border-green-400/30 hover:scale-105 transition-all">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center">
@@ -163,14 +181,14 @@ export default function Home() {
                     </div>
                   </Link>
 
-                  <button onClick={inviteFriends} className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-4 border border-blue-400/30 hover:scale-105 transition-all">
-                    <div className="flex items-center gap-3">
+                  <button onClick={inviteFriends} className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-4 border border-blue-400/30 hover:scale-105 transition-all col-span-2">
+                    <div className="flex items-center gap-3 justify-center">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-xl flex items-center justify-center">
                         <FaShare className="text-white" size={18} />
                       </div>
                       <div>
-                        <h3 className="text-white font-bold text-sm">친구 초대</h3>
-                        <p className="text-blue-200 text-xs">카카오톡 공유</p>
+                        <h3 className="text-white font-bold text-sm">친구 초대하기</h3>
+                        <p className="text-blue-200 text-xs">카카오톡으로 공유</p>
                       </div>
                     </div>
                   </button>
@@ -228,6 +246,18 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
+
+                  <div className="bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-xl p-3 border border-yellow-400/30">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-yellow-400/20 rounded-full flex items-center justify-center">
+                        <FaCalendarCheck size={14} className="text-yellow-400" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-white font-bold text-sm">출근도장 시스템</h3>
+                        <p className="text-yellow-200 text-xs">매일 출근하고 포인트 받기</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -260,6 +290,11 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
+            </section>
+
+            {/* 플랫폼별 실시간 통계 - 비로그인 상태에도 표시 */}
+            <section className="mb-4">
+              <PlatformStatistics />
             </section>
 
             {/* 비 로그인 상태 광고 */}
@@ -309,6 +344,18 @@ export default function Home() {
                       <div className="flex-1">
                         <h3 className="text-white font-bold text-sm">안전한 커뮤니티</h3>
                         <p className="text-purple-200 text-xs">검증된 라이더들만의 공간</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-xl p-3 border border-yellow-400/30">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-yellow-400/20 rounded-full flex items-center justify-center">
+                        <FaCalendarCheck size={14} className="text-yellow-400" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-white font-bold text-sm">출근도장 시스템</h3>
+                        <p className="text-yellow-200 text-xs">매일 출근하고 포인트 받기</p>
                       </div>
                     </div>
                   </div>

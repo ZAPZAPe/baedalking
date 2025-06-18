@@ -46,7 +46,7 @@ export default function AttendancePage() {
         .from('point_history')
         .select('*')
         .eq('user_id', user.id)
-        .eq('type', 'attendance')
+        .like('reason', '출근도장%')
         .gte('created_at', startOfMonth.toISOString())
         .order('created_at', { ascending: false });
 
@@ -81,7 +81,7 @@ export default function AttendancePage() {
       setMonthlyAttendance(records?.length || 0);
       setAttendanceRecords(records?.map(r => ({
         date: r.created_at,
-        points: r.amount,
+        points: r.points,
         consecutive_days: consecutive
       })) || []);
     } catch (error) {
@@ -101,6 +101,8 @@ export default function AttendancePage() {
     
     if (!user || todayAttended || claiming) {
       console.log('조건 미충족으로 리턴');
+      if (!user) toast.error('로그인이 필요합니다.');
+      if (todayAttended) toast.error('오늘은 이미 출근도장을 찍으셨습니다.');
       return;
     }
     
@@ -115,9 +117,8 @@ export default function AttendancePage() {
         .from('point_history')
         .insert({
           user_id: user.id,
-          type: 'attendance',
-          amount: totalPoints,
-          description: `출근도장 (${consecutiveDays + 1}일 연속)`
+          points: totalPoints,
+          reason: `출근도장 (${consecutiveDays + 1}일 연속)`
         })
         .select()
         .single();
@@ -126,6 +127,12 @@ export default function AttendancePage() {
 
       if (pointError) {
         console.error('포인트 지급 에러:', pointError);
+        // 더 구체적인 에러 메시지
+        if (pointError.code === '42501') {
+          toast.error('포인트 지급 권한이 없습니다. 관리자에게 문의하세요.');
+        } else {
+          toast.error(`포인트 지급 실패: ${pointError.message}`);
+        }
         throw pointError;
       }
 
@@ -144,6 +151,7 @@ export default function AttendancePage() {
 
       if (updateError) {
         console.error('사용자 포인트 업데이트 에러:', updateError);
+        toast.error(`포인트 업데이트 실패: ${updateError.message}`);
         throw updateError;
       }
 
@@ -156,7 +164,7 @@ export default function AttendancePage() {
       await fetchAttendanceData();
     } catch (error) {
       console.error('출근도장 실패 상세:', error);
-      toast.error('출근도장에 실패했습니다.');
+      // toast.error 는 이미 위에서 처리함
     } finally {
       setClaiming(false);
     }
