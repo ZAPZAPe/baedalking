@@ -11,10 +11,11 @@
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
-    to bottom right,
-    rgb(var(--background-start-rgb)),
+    to bottom,
+    transparent,
     rgb(var(--background-end-rgb))
-  );
+  )
+  rgb(var(--background-start-rgb));
   min-height: 100vh;
 }
 
@@ -58,6 +59,23 @@ body {
 
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
 }
 
 /* 반응형 디자인 */

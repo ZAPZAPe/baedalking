@@ -38,6 +38,10 @@ export const metadata: Metadata = {
   title: '배달킹 - 배달대행 라이더 수입 관리',
   description: '배달킹과 함께 더 스마트한 배달 라이프를 시작하세요.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/baedalking-logo.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -58,15 +62,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#000000" />
-        <meta name="description" content="배달킹 - 배달의민족 랭킹 시스템" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/baedalrank-logo.png" />
-        <link rel="manifest" href="/manifest.json" />
-      </head>
+
       <body className={inter.className}>
         {/* 카카오 SDK */}
         <KakaoSDK />

@@ -8,17 +8,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // 빈 문자열이라도 createClient는 호출하여 빌드가 실패하지 않도록 함
-export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder-key', {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
+    storageKey: 'baedalking-auth',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    // 세션 스토리지를 sessionStorage로 변경하여 브라우저 종료 시 자동으로 클리어
-    storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
-    // 디버그 모드 활성화 (개발 환경에서만)
-    debug: process.env.NODE_ENV === 'development',
-    // 토큰 갱신 타임아웃 설정 (5초)
-    storageKey: 'baedalking-auth',
+    debug: process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SUPABASE_DEBUG === 'true'
   },
   global: {
     headers: {

@@ -240,150 +240,160 @@ export default function UploadPage() {
           <>
             {/* 업로드 안내 */}
             <section className="mb-4 mt-2">
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">실적 업로드</h2>
-                    <p className="text-blue-200 text-sm">
-                      사진만 올리면 AI가 자동으로 분석해요!
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-                    <FaUpload className="text-white" size={20} />
-                  </div>
-                </div>
-
-                {/* 오늘 날짜 안내 */}
-                <div className="mb-4 bg-blue-500/20 border border-blue-500/50 rounded-xl p-3">
-                  <div className="flex items-center gap-2">
-                    <div className="text-blue-200">
-                      <p className="font-medium text-sm">오늘 날짜: {getKoreanToday()}</p>
-                      <p className="text-xs mt-1">매일 오전 6시에 날짜가 갱신됩니다</p>
+              <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
+                {/* 배경 애니메이션 효과 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-white">실적 업로드</h2>
+                      <p className="text-purple-200 text-xs sm:text-sm">
+                        사진만 올리면 AI가 자동으로 분석해요! 🤖
+                      </p>
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg animate-bounce">
+                      <FaUpload className="text-white w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                   </div>
-                </div>
 
-                {/* 파일 선택 영역 */}
-                <div className="space-y-3">
-                  <div
-                    className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center cursor-pointer hover:border-white/40 transition-colors"
-                    onClick={() => document.getElementById('fileInput')?.click()}
-                  >
-                    <input
-                      type="file"
-                      id="fileInput"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleFileSelect(file);
-                      }}
-                    />
-                    {selectedFile ? (
-                      <div className="space-y-2">
-                        <div className="w-12 h-12 mx-auto bg-white/10 rounded-lg flex items-center justify-center">
-                          <FaImage className="text-white" size={20} />
-                        </div>
-                        <p className="text-white font-medium text-sm">{selectedFile.name}</p>
-                        <p className="text-blue-200 text-xs">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                        {analyzing && (
-                          <div className="mt-2">
-                            <div className="flex items-center justify-center gap-2">
-                              <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                              <p className="text-amber-200 text-xs">분석 중...</p>
-                            </div>
+                  {/* 오늘 날짜 안내 */}
+                  <div className="mb-4 bg-purple-500/20 border border-purple-500/50 rounded-xl p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="text-purple-200">
+                        <p className="font-medium text-sm">오늘 날짜: {getKoreanToday()}</p>
+                        <p className="text-xs mt-1">매일 오전 6시에 날짜가 갱신됩니다</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 파일 선택 영역 */}
+                  <div className="space-y-3">
+                    <div
+                      className="border-2 border-dashed border-purple-400/30 rounded-xl p-4 text-center cursor-pointer hover:border-purple-400/50 transition-colors bg-white/5 hover:bg-white/10"
+                      onClick={() => document.getElementById('fileInput')?.click()}
+                    >
+                      <input
+                        type="file"
+                        id="fileInput"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileSelect(file);
+                        }}
+                      />
+                      {selectedFile ? (
+                        <div className="space-y-2">
+                          <div className="w-12 h-12 mx-auto bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center">
+                            <FaImage className="text-white" size={20} />
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="w-12 h-12 mx-auto bg-white/10 rounded-lg flex items-center justify-center">
-                          <FaCamera className="text-white" size={20} />
+                          <p className="text-white font-medium text-sm">{selectedFile.name}</p>
+                          <p className="text-purple-200 text-xs">
+                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                          {analyzing && (
+                            <div className="mt-2">
+                              <div className="flex items-center justify-center gap-2">
+                                <div className="w-4 h-4 border-2 border-purple-300/20 border-t-purple-300 rounded-full animate-spin"></div>
+                                <p className="text-amber-200 text-xs">AI가 분석하고 있어요...</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-white font-medium text-sm">사진 선택하기</p>
-                        <p className="text-blue-200 text-xs">
-                          JPG, PNG, HEIC 형식 지원
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 분석 결과 표시 */}
-                  {analysisComplete && analysisResult && (
-                    <div className="bg-white/5 rounded-xl p-3 space-y-2">
-                      <h4 className="text-white font-medium text-sm mb-2">분석 결과</h4>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-white/60 text-xs">플랫폼</p>
-                          <p className="text-white font-medium text-sm">{detectedPlatform}</p>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="w-12 h-12 mx-auto bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center">
+                            <FaCamera className="text-white" size={20} />
+                          </div>
+                          <p className="text-white font-medium text-sm">사진 선택하기</p>
+                          <p className="text-purple-200 text-xs">
+                            JPG, PNG, HEIC 형식 지원
+                          </p>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-white/60 text-xs">날짜</p>
-                          <p className="text-white font-medium text-sm">{detectedDate}</p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-white/60 text-xs">배달 건수</p>
-                          <p className="text-white font-medium text-sm">{deliveryCount}건</p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-white/60 text-xs">총 금액</p>
-                          <p className="text-white font-medium text-sm">{amount.toLocaleString()}원</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
-                  )}
 
-                  {/* 업로드 버튼 */}
-                  <button
-                    className={`w-full py-3 rounded-xl text-white font-bold text-sm transition-all ${
-                      analysisComplete && !analyzing
-                        ? 'bg-gradient-to-r from-amber-400 to-orange-500 hover:shadow-lg hover:shadow-amber-500/25 hover:scale-[1.02]'
-                        : 'bg-white/20 cursor-not-allowed'
-                    }`}
-                    onClick={handleUpload}
-                    disabled={!analysisComplete || analyzing || uploading}
-                  >
-                    {uploading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                        <span>등록 중...</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2">
-                        <FaUpload size={14} />
-                        <span>등록하기</span>
+                    {/* 분석 결과 표시 */}
+                    {analysisComplete && analysisResult && (
+                      <div className="bg-white/10 rounded-xl p-3 space-y-2">
+                        <h4 className="text-white font-medium text-sm mb-2">분석 결과</h4>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-purple-200 text-xs">플랫폼</p>
+                            <p className="text-white font-medium text-sm">{detectedPlatform}</p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-purple-200 text-xs">날짜</p>
+                            <p className="text-white font-medium text-sm">{detectedDate}</p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-purple-200 text-xs">배달 건수</p>
+                            <p className="text-white font-medium text-sm">{deliveryCount}건</p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-purple-200 text-xs">총 금액</p>
+                            <p className="text-white font-medium text-sm">{amount.toLocaleString()}원</p>
+                          </div>
+                        </div>
                       </div>
                     )}
-                  </button>
+
+                    {/* 업로드 버튼 */}
+                    <button
+                      className={`w-full py-3 rounded-xl text-white font-bold text-sm transition-all ${
+                        analysisComplete && !analyzing
+                          ? 'bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 hover:shadow-lg hover:shadow-xl hover:scale-[1.02]'
+                          : 'bg-white/20 cursor-not-allowed'
+                      }`}
+                      onClick={handleUpload}
+                      disabled={!analysisComplete || analyzing || uploading}
+                    >
+                      {uploading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                          <span>등록 중...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <FaUpload className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span>등록하기</span>
+                        </div>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* 예시 이미지 */}
             <section className="mb-4">
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
-                <h3 className="text-base font-bold text-white mb-3">예시 이미지</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    className="aspect-[4/3] bg-white/5 rounded-lg overflow-hidden hover:bg-white/10 transition-colors flex flex-col items-center justify-center"
-                    onClick={() => openExampleModal('배민커넥트')}
-                  >
-                    <div className="flex flex-col items-center justify-center h-full w-full">
-                      <img src="/baemin-logo.svg" alt="배민커넥트 로고" className="w-10 h-10 mb-2" />
-                      <p className="text-white font-medium text-sm text-center">배민커넥트</p>
-                    </div>
-                  </button>
-                  <button
-                    className="aspect-[4/3] bg-white/5 rounded-lg overflow-hidden hover:bg-white/10 transition-colors flex flex-col items-center justify-center"
-                    onClick={() => openExampleModal('쿠팡이츠')}
-                  >
-                    <div className="flex flex-col items-center justify-center h-full w-full">
-                      <img src="/coupang-logo.svg" alt="쿠팡이츠 로고" className="w-10 h-10 mb-2" />
-                      <p className="text-white font-medium text-sm text-center">쿠팡이츠</p>
-                    </div>
-                  </button>
+              <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
+                {/* 배경 애니메이션 효과 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
+                
+                <div className="relative z-10">
+                  <h3 className="text-base font-bold text-white mb-3">예시 이미지</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      className="aspect-[4/3] bg-white/10 rounded-xl overflow-hidden hover:bg-white/20 transition-all hover:scale-[1.02] flex flex-col items-center justify-center group"
+                      onClick={() => openExampleModal('배민커넥트')}
+                    >
+                      <div className="flex flex-col items-center justify-center h-full w-full">
+                        <img src="/baemin-logo.svg" alt="배민커넥트 로고" className="w-10 h-10 mb-2 group-hover:scale-110 transition-transform" />
+                        <p className="text-white font-medium text-sm text-center">배민커넥트</p>
+                      </div>
+                    </button>
+                    <button
+                      className="aspect-[4/3] bg-white/10 rounded-xl overflow-hidden hover:bg-white/20 transition-all hover:scale-[1.02] flex flex-col items-center justify-center group"
+                      onClick={() => openExampleModal('쿠팡이츠')}
+                    >
+                      <div className="flex flex-col items-center justify-center h-full w-full">
+                        <img src="/coupang-logo.svg" alt="쿠팡이츠 로고" className="w-10 h-10 mb-2 group-hover:scale-110 transition-transform" />
+                        <p className="text-white font-medium text-sm text-center">쿠팡이츠</p>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               </div>
             </section>
@@ -392,83 +402,88 @@ export default function UploadPage() {
           <>
             {/* 업로드 성공 */}
             <section className="mb-4">
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">업로드 완료!</h2>
-                    <p className="text-blue-200 text-sm">
-                      AI가 자동으로 분석했어요
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <FaCheckCircle className="text-white" size={20} />
-                  </div>
-                </div>
-
-                {/* 분석 결과 */}
-                <div className="space-y-3">
-                  <div className="bg-white/5 rounded-xl p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-white/60 text-sm">플랫폼</p>
-                      <p className="text-white font-medium text-sm">{detectedPlatform}</p>
-                    </div>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-white/60 text-sm">배달 건수</p>
-                      <p className="text-white font-medium text-sm">{deliveryCount}건</p>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-white/60 text-sm">총 금액</p>
-                      <p className="text-white font-medium text-sm">
-                        {amount.toLocaleString()}원
+              <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
+                {/* 배경 애니메이션 효과 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-white">업로드 완료!</h2>
+                      <p className="text-purple-200 text-xs sm:text-sm">
+                        AI가 자동으로 분석했어요 ✨
                       </p>
                     </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                      <FaCheckCircle className="text-white w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
                   </div>
 
-                  {/* 포인트 획득 */}
-                  {!isDuplicateUpload ? (
-                    <div className="bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl p-3 border border-amber-500/20">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
-                          <FaCoins className="text-white" size={16} />
-                        </div>
-                        <div>
-                          <p className="text-white font-medium text-sm">포인트 획득!</p>
-                          <p className="text-amber-200 text-xs">
-                            실적 업로드 보너스 +{earnedPoints}P
-                          </p>
-                        </div>
+                  {/* 분석 결과 */}
+                  <div className="space-y-3">
+                    <div className="bg-white/10 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-purple-200 text-sm">플랫폼</p>
+                        <p className="text-white font-medium text-sm">{detectedPlatform}</p>
+                      </div>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-purple-200 text-sm">배달 건수</p>
+                        <p className="text-white font-medium text-sm">{deliveryCount}건</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-purple-200 text-sm">총 금액</p>
+                        <p className="text-white font-medium text-sm">
+                          {amount.toLocaleString()}원
+                        </p>
                       </div>
                     </div>
-                  ) : (
-                    <div className="bg-blue-500/20 border border-blue-500/50 rounded-xl p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
-                          <FaCheckCircle className="text-blue-400" size={16} />
-                        </div>
-                        <div>
-                          <p className="text-white font-medium text-sm">데이터 업데이트 완료</p>
-                          <p className="text-blue-200 text-xs">
-                            이미 오늘 포인트를 받으셨습니다
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
-                  {/* 버튼 */}
-                  <div className="flex gap-2">
-                    <button
-                      className="flex-1 py-3 px-4 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-bold"
-                      onClick={resetUpload}
-                    >
-                      다시 업로드
-                    </button>
-                    <button
-                      className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all hover:scale-[1.02] text-sm font-bold"
-                      onClick={() => router.push('/')}
-                    >
-                      홈으로
-                    </button>
+                    {/* 포인트 획득 */}
+                    {!isDuplicateUpload ? (
+                      <div className="bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl p-3 border border-amber-500/20">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+                            <FaCoins className="text-white" size={16} />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium text-sm">포인트 획득!</p>
+                            <p className="text-amber-200 text-xs">
+                              실적 업로드 보너스 +{earnedPoints}P
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-500/20 border border-blue-500/50 rounded-xl p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
+                            <FaCheckCircle className="text-blue-400" size={16} />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium text-sm">데이터 업데이트 완료</p>
+                            <p className="text-blue-200 text-xs">
+                              이미 오늘 포인트를 받으셨습니다
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 버튼 */}
+                    <div className="flex gap-2">
+                      <button
+                        className="flex-1 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all text-sm font-bold"
+                        onClick={resetUpload}
+                      >
+                        다시 업로드
+                      </button>
+                      <button
+                        className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white hover:shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] text-sm font-bold"
+                        onClick={() => router.push('/')}
+                      >
+                        홈으로
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -485,7 +500,7 @@ export default function UploadPage() {
       {/* 예시 모달 */}
       {showExampleModal && selectedExampleApp && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-white/20 max-w-md w-full">
+          <div className="bg-gradient-to-br from-purple-900/90 to-pink-900/90 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-purple-500/30 max-w-md w-full">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-white">
                 {selectedExampleApp} 예시
