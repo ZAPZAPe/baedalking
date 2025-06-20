@@ -26,35 +26,56 @@ interface NavigationProps {
 }
 
 // NavLink 컴포넌트를 메모이제이션
-const NavLink = memo(({ href, pathname, icon: Icon, label }: {
+const NavLink = memo(({ href, pathname, icon: Icon, label, disabled = false }: {
   href: string;
   pathname: string;
   icon: any;
   label: string;
-}) => (
-  <Link 
-    href={href} 
-    className={`flex flex-col items-center justify-center w-16 h-16 ${
-      pathname === href 
-        ? 'text-yellow-400' 
-        : 'text-white hover:text-yellow-400'
-    } transition-colors`}
-  >
-    <Icon size={24} />
-    <span className="text-xs mt-1">{label}</span>
-  </Link>
-));
+  disabled?: boolean;
+}) => {
+  if (disabled) {
+    return (
+      <div className="flex flex-col items-center justify-center w-16 h-16 text-white/30 cursor-not-allowed">
+        <Icon size={24} />
+        <span className="text-xs mt-1">{label}</span>
+      </div>
+    );
+  }
+
+  return (
+    <Link 
+      href={href} 
+      className={`flex flex-col items-center justify-center w-16 h-16 ${
+        pathname === href 
+          ? 'text-yellow-400' 
+          : 'text-white hover:text-yellow-400'
+      } transition-colors`}
+    >
+      <Icon size={24} />
+      <span className="text-xs mt-1">{label}</span>
+    </Link>
+  );
+});
 
 NavLink.displayName = 'NavLink';
 
 export default function Navigation({ title }: NavigationProps) {
   const pathname = usePathname();
   const defaultTitle = useMemo(() => titleMap[pathname] || '', [pathname]);
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification, clearAll } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const router = useRouter();
+
+  // 프로필 설정이 완료되지 않았는지 확인
+  const isProfileIncomplete = useMemo(() => {
+    if (!userProfile) return true;
+    return !userProfile.nickname || !userProfile.region || !userProfile.vehicle || !userProfile.phone;
+  }, [userProfile]);
+
+  // 프로필 설정 중인지 확인
+  const isInProfileSetup = pathname === '/profile-setup';
 
   // 관리자 경로면 네비게이션 렌더링하지 않음
   if (pathname?.startsWith('/admin')) {
@@ -156,11 +177,41 @@ export default function Navigation({ title }: NavigationProps) {
       {user && (
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900 to-pink-900 border-t border-purple-500/30">
           <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-around">
-            <NavLink href="/ranking" pathname={pathname} icon={FaTrophy} label="랭킹" />
-            <NavLink href="/records" pathname={pathname} icon={FaHistory} label="기록" />
-            <NavLink href="/upload" pathname={pathname} icon={FaUpload} label="업로드" />
-            <NavLink href="/store" pathname={pathname} icon={FaStore} label="상점" />
-            <NavLink href="/settings" pathname={pathname} icon={FaCog} label="설정" />
+            <NavLink 
+              href="/ranking" 
+              pathname={pathname} 
+              icon={FaTrophy} 
+              label="랭킹" 
+              disabled={isProfileIncomplete && !isInProfileSetup}
+            />
+            <NavLink 
+              href="/records" 
+              pathname={pathname} 
+              icon={FaHistory} 
+              label="기록" 
+              disabled={isProfileIncomplete && !isInProfileSetup}
+            />
+            <NavLink 
+              href="/upload" 
+              pathname={pathname} 
+              icon={FaUpload} 
+              label="업로드" 
+              disabled={isProfileIncomplete && !isInProfileSetup}
+            />
+            <NavLink 
+              href="/store" 
+              pathname={pathname} 
+              icon={FaStore} 
+              label="상점" 
+              disabled={isProfileIncomplete && !isInProfileSetup}
+            />
+            <NavLink 
+              href="/settings" 
+              pathname={pathname} 
+              icon={FaCog} 
+              label="설정" 
+              disabled={false} // 설정은 항상 접근 가능
+            />
           </div>
         </nav>
       )}

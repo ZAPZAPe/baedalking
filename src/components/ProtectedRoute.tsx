@@ -31,18 +31,27 @@ const ProtectedRoute = ({ children, requireProfile = true, allowedPaths = [] }: 
         return;
       }
       
-      // 필수 필드가 모두 설정되었는지 확인
-      const isProfileComplete = userProfile.nickname && 
-                               userProfile.region && 
-                               userProfile.vehicle && 
-                               userProfile.phone;
+      // 필수 필드가 모두 설정되었는지 엄격하게 확인
+      const isProfileComplete = Boolean(
+        userProfile.nickname && 
+        userProfile.nickname.trim() && 
+        userProfile.region && 
+        userProfile.region.trim() && 
+        userProfile.vehicle && 
+        userProfile.vehicle.trim() && 
+        userProfile.phone && 
+        userProfile.phone.trim()
+      );
       
       if (!isProfileComplete) {
         // 현재 경로가 허용된 경로인지 확인
         const currentPath = window.location.pathname;
-        const isAllowedPath = allowedPaths.some(path => currentPath.startsWith(path));
+        const isAllowedPath = allowedPaths.some(path => currentPath.startsWith(path)) || 
+                             currentPath === '/profile-setup' ||
+                             currentPath === '/settings'; // 설정 페이지는 항상 허용
         
         if (!isAllowedPath) {
+          console.log('프로필 설정이 완료되지 않아 프로필 설정 페이지로 이동합니다.');
           router.push('/profile-setup');
           return;
         }
@@ -63,14 +72,22 @@ const ProtectedRoute = ({ children, requireProfile = true, allowedPaths = [] }: 
       return <Loading />; // userProfile 로딩 중
     }
     
-    const isProfileComplete = userProfile.nickname && 
-                             userProfile.region && 
-                             userProfile.vehicle && 
-                             userProfile.phone;
+    const isProfileComplete = Boolean(
+      userProfile.nickname && 
+      userProfile.nickname.trim() && 
+      userProfile.region && 
+      userProfile.region.trim() && 
+      userProfile.vehicle && 
+      userProfile.vehicle.trim() && 
+      userProfile.phone && 
+      userProfile.phone.trim()
+    );
     
     if (!isProfileComplete) {
       const currentPath = window.location.pathname;
-      const isAllowedPath = allowedPaths.some(path => currentPath.startsWith(path));
+      const isAllowedPath = allowedPaths.some(path => currentPath.startsWith(path)) || 
+                           currentPath === '/profile-setup' ||
+                           currentPath === '/settings'; // 설정 페이지는 항상 허용
       
       if (!isAllowedPath) {
         return null; // 프로필 설정 페이지로 리다이렉트 중

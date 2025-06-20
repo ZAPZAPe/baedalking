@@ -29,6 +29,8 @@ export default function ProfileSetupPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState('');
+  const [nicknameError, setNicknameError] = useState('');
+  const [isCheckingNickname, setIsCheckingNickname] = useState(false);
   
   const [formData, setFormData] = useState({
     nickname: '',
@@ -95,6 +97,74 @@ export default function ProfileSetupPage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setError('');
+    
+    // 닉네임 변경 시 에러 초기화
+    if (name === 'nickname') {
+      setNicknameError('');
+    }
+  };
+
+  // 닉네임 중복 검사
+  const checkNicknameDuplicate = async (nickname: string) => {
+    if (!nickname || nickname.length < 2) {
+      setNicknameError('닉네임은 2글자 이상이어야 합니다.');
+      return false;
+    }
+
+    if (nickname.length > 10) {
+      setNicknameError('닉네임은 10글자 이하여야 합니다.');
+      return false;
+    }
+
+    // 특수문자 검사
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+    if (specialCharRegex.test(nickname)) {
+      setNicknameError('닉네임에는 특수문자를 사용할 수 없습니다.');
+      return false;
+    }
+
+    setIsCheckingNickname(true);
+    setNicknameError('');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return false;
+
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('nickname', nickname)
+        .neq('id', session.user.id)
+        .single();
+
+      if (existingUser) {
+        setNicknameError('이미 사용 중인 닉네임입니다.');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('닉네임 중복 확인 오류:', error);
+      return true; // 오류 시 통과
+    } finally {
+      setIsCheckingNickname(false);
+    }
+  };
+
+  // 닉네임 변경 핸들러 (디바운스 적용)
+  const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setFormData(prev => ({ ...prev, nickname: value }));
+    setNicknameError('');
+    
+    // 디바운스: 500ms 후에 중복 검사 실행
+    if (value.trim()) {
+      const timeoutId = setTimeout(() => {
+        checkNicknameDuplicate(value.trim());
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,7 +217,13 @@ export default function ProfileSetupPage() {
     e.preventDefault();
     
     if (!formData.nickname || !formData.region || !formData.vehicle || !formData.phone) {
-      setError('모든 필드를 입력해주세요.');
+      setError('모든 필수 항목을 입력해주세요.');
+      return;
+    }
+
+    // 닉네임 에러가 있으면 제출 불가
+    if (nicknameError) {
+      setError('닉네임을 확인해주세요.');
       return;
     }
 
@@ -162,16 +238,9 @@ export default function ProfileSetupPage() {
         return;
       }
 
-      // 닉네임 중복 체크 (본인 제외)
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('nickname', formData.nickname)
-        .neq('id', session.user.id)
-        .single();
-
-      if (existingUser) {
-        setError('이미 사용 중인 닉네임입니다.');
+      // 최종 닉네임 중복 체크
+      const isNicknameValid = await checkNicknameDuplicate(formData.nickname);
+      if (!isNicknameValid) {
         setSaving(false);
         return;
       }
@@ -231,15 +300,31 @@ export default function ProfileSetupPage() {
     <div className="min-h-screen bg-gradient-to-r from-purple-600 via-pink-600 to-purple-800 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
         {/* 헤더 */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-pink-200 bg-clip-text text-transparent mb-2">
-            프로필 설정
-          </h1>
-          <p className="text-white/80">배달킹 서비스 이용을 위한 추가 정보를 입력해주세요</p>
+        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden mb-6">
+          {/* 배경 애니메이션 효과 */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
+          
+          <div className="relative z-10">
+            {/* 헤더 - 실시간 Top 3 스타일 */}
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <FaUser className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+                <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
+                  프로필 설정
+                </h1>
+                <FaUser className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+              </div>
+              <p className="text-purple-200 text-xs">배달킹 서비스 이용을 위한 추가 정보를 입력해주세요!</p>
+            </div>
+          </div>
         </div>
 
         {/* 폼 */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-white/20">
+        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
+          {/* 배경 애니메이션 효과 */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
+          
+          <div className="relative z-10">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* 프로필 사진 */}
             <div className="flex justify-center mb-6">
@@ -286,13 +371,23 @@ export default function ProfileSetupPage() {
                   type="text"
                   name="nickname"
                   value={formData.nickname}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all"
+                  onChange={handleNicknameChange}
+                  className={`block w-full pl-10 pr-3 py-3 bg-white/10 border rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:bg-white/15 transition-all ${
+                    nicknameError 
+                      ? 'border-red-400/50 focus:ring-red-400/50' 
+                      : 'border-white/20 focus:ring-purple-400/50'
+                  }`}
                   placeholder="닉네임을 입력하세요"
                   required
                 />
               </div>
-              {userInfo?.nickname && (
+              {nicknameError && (
+                <p className="mt-1 text-xs text-red-400">{nicknameError}</p>
+              )}
+              {isCheckingNickname && (
+                <p className="mt-1 text-xs text-blue-400">닉네임 확인 중...</p>
+              )}
+              {userInfo?.nickname && !nicknameError && !isCheckingNickname && (
                 <p className="mt-1 text-xs text-white/60">카카오톡 닉네임: {userInfo.nickname}</p>
               )}
             </div>
@@ -394,7 +489,7 @@ export default function ProfileSetupPage() {
             {/* 제출 버튼 */}
             <button
               type="submit"
-              disabled={saving || uploadingImage}
+              disabled={saving || uploadingImage || isCheckingNickname || !!nicknameError}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-4 rounded-xl font-bold hover:shadow-lg hover:shadow-purple-500/25 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {saving ? (
@@ -407,6 +502,7 @@ export default function ProfileSetupPage() {
               )}
             </button>
           </form>
+          </div>
         </div>
 
         {/* 안내 메시지 */}
