@@ -45,25 +45,25 @@ export const shareToKakao = () => {
       content: {
         title: '배달킹 - 실시간 배달 랭킹',
         description: '배달 라이더들의 실시간 랭킹을 확인하고 경쟁해보세요!',
-        imageUrl: 'https://www.baedalrank.com/baedalking-logo.png',
+        imageUrl: 'https://baedalking.vercel.app/baedalking-logo.png',
         link: {
-          mobileWebUrl: 'https://baedalrank.com',
-          webUrl: 'https://baedalrank.com',
+          mobileWebUrl: 'https://baedalking.vercel.app',
+          webUrl: 'https://baedalking.vercel.app',
         },
       },
       buttons: [
         {
           title: '앱으로 보기',
           link: {
-            mobileWebUrl: 'https://baedalrank.com',
-            webUrl: 'https://baedalrank.com',
+            mobileWebUrl: 'https://baedalking.vercel.app',
+            webUrl: 'https://baedalking.vercel.app',
           },
         },
       ],
     });
   } catch (error) {
     console.error('카카오 공유 중 오류 발생:', error);
-    fallbackShare('배달킹 - 실시간 배달 랭킹', 'https://baedalrank.com');
+    fallbackShare('배달킹 - 실시간 배달 랭킹', 'https://baedalking.vercel.app');
   }
 };
 
@@ -71,19 +71,19 @@ export const shareToKakao = () => {
 export const inviteFriends = async (inviteCode?: string) => {
   if (!window.Kakao) {
     console.error('카카오 SDK가 로드되지 않았습니다.');
-    const inviteUrl = inviteCode ? `https://baedalrank.com?invite=${inviteCode}` : 'https://baedalrank.com';
+    const inviteUrl = inviteCode ? `https://baedalking.vercel.app?invite=${inviteCode}` : 'https://baedalking.vercel.app';
     fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', inviteUrl);
     return;
   }
 
-  const inviteUrl = inviteCode ? `https://baedalrank.com?invite=${inviteCode}` : 'https://baedalrank.com';
+  const inviteUrl = inviteCode ? `https://baedalking.vercel.app?invite=${inviteCode}` : 'https://baedalking.vercel.app';
 
   try {
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
       content: {
-        title: '배달킹에서 진짜 배달왕에 도전하세요! 🚀',
-        description: '친구 초대로 가입하면 300P 즉시 지급! 나도 500P 받고 함께 실시간 랭킹 경쟁해요.',
+        title: '배달킹 함께 도전하세요! 👑',
+        description: '가입하면 300P 즉시 지급! 함께 랭킹 경쟁해요!',
         imageUrl: 'https://k.kakaocdn.net/14/dn/btsOCCP8KCJ/uPlo3tMwq4eHi8USTFrLkk/o.jpg',
         link: {
           mobileWebUrl: inviteUrl,
@@ -156,15 +156,30 @@ export const shareRanking = ({ rank, totalAmount, deliveryCount, platform, perio
     }
   }
 
-  const title = `${period} 배달킹 ${rank}위 달성! 🏆`;
-  const description = `
-${region} ${platform} 기준
-🏃 ${rank}위
-💰 ${totalAmount.toLocaleString()}원
-📦 ${deliveryCount}건
-  `.trim();
+  // 랭킹에 따른 이모지와 메시지 설정
+  let emoji = '🏆';
+  let achievementText = '';
+  
+  if (rank === 1) {
+    emoji = '👑';
+    achievementText = '최고의 배달킹!';
+  } else if (rank <= 3) {
+    emoji = '🥇';
+    achievementText = '상위 랭커!';
+  } else if (rank <= 10) {
+    emoji = '🏅';
+    achievementText = 'TOP 10 진입!';
+  } else {
+    emoji = '🚀';
+    achievementText = '배달킹 도전 중!';
+  }
 
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://www.baedalrank.com';
+  const title = `${region} 랭킹 ${rank}위 달성! ${emoji}`;
+  const description = `${achievementText}
+
+배달킹에서 나도 도전해보세요!`;
+
+  const currentUrl = 'https://baedalking.vercel.app';
 
   console.log('카카오톡 공유 시도:', { title, description });
 
@@ -174,7 +189,7 @@ ${region} ${platform} 기준
       content: {
         title: title,
         description: description,
-        imageUrl: 'https://www.baedalrank.com/baedalking-logo.png',
+        imageUrl: 'https://baedalking.vercel.app/baedalking-logo.png',
         link: {
           mobileWebUrl: currentUrl,
           webUrl: currentUrl,
@@ -182,7 +197,7 @@ ${region} ${platform} 기준
       },
       buttons: [
         {
-          title: '배달킹 순위보기',
+          title: '내 순위 확인하기',
           link: {
             mobileWebUrl: currentUrl,
             webUrl: currentUrl,

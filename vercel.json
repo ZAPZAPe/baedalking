@@ -9,6 +9,19 @@
       "maxDuration": 30
     }
   },
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "baedalrank.com"
+        }
+      ],
+      "destination": "https://baedalking.vercel.app/$1",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

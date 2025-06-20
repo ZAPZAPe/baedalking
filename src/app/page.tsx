@@ -7,7 +7,7 @@ import { UserProfile } from '@/components/home/UserProfile';
 import { TopRankers } from '@/components/home/TopRankers';
 import Link from 'next/link';
 import { FaCrown, FaTrophy, FaUpload, FaUsers, FaStar, FaMedal, FaChartLine, FaFireAlt, FaBell, FaGift, FaCamera, FaSignInAlt, FaRocket, FaShieldAlt, FaCoins, FaArrowRight, FaPlay, FaHeart, FaBolt, FaStore, FaUserFriends, FaShare, FaComment, FaCalendarCheck, FaMapMarker } from 'react-icons/fa';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { initKakaoShare, inviteFriends } from '@/services/kakaoShare';
 import { generateInviteCode } from '@/services/inviteService';
 import Loading from '@/components/Loading';
@@ -198,6 +198,7 @@ export default function Home() {
   const [hasLoadedRanking, setHasLoadedRanking] = useState(false);
   const [rankingError, setRankingError] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const searchParams = useSearchParams();
 
   const fetchRanking = useCallback(async (retryCount = 0) => {
     const MAX_RETRIES = 0; // 재시도 비활성화로 무한 루프 방지
@@ -237,12 +238,32 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // 페이지 로드 시 한 번만 랭킹 데이터 로드
     if (!hasLoadedRanking && !isRetrying) {
       console.log('🏠 메인 페이지 초기 랭킹 로드');
       fetchRanking();
     }
   }, [fetchRanking, hasLoadedRanking, isRetrying]);
+
+  // 초대 코드 처리
+  useEffect(() => {
+    const inviteCode = searchParams.get('invite');
+    if (inviteCode) {
+      console.log('🎁 초대 코드 발견:', inviteCode);
+      // 초대 코드를 localStorage에 저장
+      localStorage.setItem('inviteCode', inviteCode);
+      
+      // URL에서 invite 파라미터 제거 (깔끔한 URL 유지)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('invite');
+      window.history.replaceState({}, '', url.toString());
+      
+      // 로그인 페이지로 리다이렉트 (비로그인 시)
+      if (!user) {
+        console.log('🔐 초대 코드와 함께 로그인 페이지로 이동');
+        router.push('/login');
+      }
+    }
+  }, [searchParams, user, router]);
 
   // 에러 발생 시 재시도 함수
   const handleRetryRanking = useCallback(() => {

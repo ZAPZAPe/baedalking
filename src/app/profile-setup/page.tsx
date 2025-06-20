@@ -80,15 +80,30 @@ export default function ProfileSetupPage() {
           // 카카오 닉네임이 있으면 기본값으로 설정
           const defaultNickname = userData.nickname || '';
           
+          // localStorage에서 초대 코드 확인
+          const savedInviteCode = localStorage.getItem('inviteCode') || '';
+          if (savedInviteCode) {
+            console.log('🎁 저장된 초대 코드 발견:', savedInviteCode);
+            // 사용 후 localStorage에서 제거
+            localStorage.removeItem('inviteCode');
+          }
+          
           setFormData({
             nickname: defaultNickname,
             region: userData.region || '',
             vehicle: userData.vehicle || '',
             phone: userData.phone ? formatPhoneNumber(userData.phone) : '',
             profile_image: userData.profile_image || '',
-            invite_code: ''
+            invite_code: savedInviteCode
           });
           setUserInfo(userData);
+          
+          // 초대 코드가 있으면 자동으로 검증
+          if (savedInviteCode && savedInviteCode.length === 5) {
+            setTimeout(() => {
+              checkInviteCodeValid(savedInviteCode);
+            }, 1000);
+          }
           
           // 카카오 닉네임이 있고 유효하면 자동으로 중복 검사
           if (defaultNickname && validateNickname(defaultNickname).isValid) {
