@@ -13,9 +13,11 @@ export const supabaseAdmin = supabaseUrl && supabaseServiceKey
       },
       global: {
         headers: {
-          'Accept': 'application/json',
+          'Accept': 'application/vnd.pgrst.object+json',
           'Content-Type': 'application/json',
-          'Accept-Profile': 'public'
+          'Accept-Profile': 'public',
+          'Content-Profile': 'public',
+          'Prefer': 'return=minimal'
         }
       },
       db: {

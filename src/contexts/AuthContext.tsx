@@ -24,14 +24,14 @@ export interface User {
   role?: 'user' | 'admin';
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   user: SupabaseUser | null;
   userProfile: User | null;
   loading: boolean;
   signUp: (nickname: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
-  refreshUserProfile: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   isProfileComplete: (profile: User | null) => boolean;
 }
 
@@ -55,41 +55,115 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isCheckingSession, setIsCheckingSession] = useState(false);
 
-  const loadUserProfile = useCallback(async (authUser: SupabaseUser) => {
+  const loadUserProfile = useCallback(async (userId: string): Promise<User | null> => {
     try {
-      // 캐시 확인
-      const cached = profileCache.get(authUser.id);
-      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-        setUserProfile(cached.data);
-        return;
+      console.log('프로필 로드 시작:', userId);
+      
+      // NextJS API 루트를 통한 안전한 조회
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('프로필이 존재하지 않음');
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // 프로필 조회
-      const { data: profile, error } = await supabase
+      const data = await response.json();
+      console.log('프로필 로드 성공:', data);
+      return data;
+    } catch (error: any) {
+      console.error('프로필 로드 실패:', error);
+      
+      // 네트워크 에러나 리소스 부족 에러는 조용히 처리
+      if (error.message?.includes('Failed to fetch') || 
+          error.message?.includes('NetworkError') ||
+          error.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
+        console.log('네트워크 에러로 인한 프로필 로드 실패 - 조용히 처리');
+        return null;
+      }
+      
+      return null;
+    }
+  }, []);
+
+  // 프로필 생성 함수 - 다단계 fallback
+  const createUserProfile = useCallback(async (userData: any) => {
+    try {
+      console.log('프로필 생성 시작:', userData);
+      
+      // 1단계: NextJS API 루트 사용
+      const response = await fetch('/api/users/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('API 루트로 프로필 생성 성공:', data);
+        return data;
+      }
+
+      // 2단계: 일반 Supabase 클라이언트 사용
+      console.log('API 루트 실패, 일반 클라이언트로 시도');
+      const { data: insertData, error: insertError } = await supabase
         .from('users')
-        .select('*')
-        .eq('id', authUser.id)
+        .insert([userData])
+        .select()
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('프로필 로드 실패:', error);
-        // 네트워크 에러나 리소스 부족 에러는 조용히 처리
-        if (error.message?.includes('Failed to fetch') || 
-            error.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
-            error.code === 'ERR_INSUFFICIENT_RESOURCES') {
-          console.warn('네트워크 또는 리소스 에러로 인한 프로필 로드 실패');
-          setUserProfile(null);
-          return;
-        }
-        throw error;
+      if (insertError) {
+        console.error('일반 클라이언트 프로필 생성 실패:', insertError);
+        throw insertError;
       }
 
-      // 프로필이 존재하지 않는 경우 새로 생성
+      console.log('일반 클라이언트로 프로필 생성 성공:', insertData);
+      return insertData;
+    } catch (error) {
+      console.error('프로필 생성 실패:', error);
+      
+      // 3단계: 기본 프로필 생성
+      console.log('기본 프로필 생성 시도');
+      const defaultProfile = {
+        id: userData.id,
+        username: userData.username || '',
+        email: userData.email || '',  
+        nickname: userData.nickname || '',
+        region: userData.region || '',
+        vehicle: userData.vehicle || '',
+        phone: userData.phone || '',
+        points: 0,
+        total_deliveries: 0,
+        total_earnings: 0,
+        profile_image: userData.profile_image || null,
+        referral_code: userData.referral_code || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('기본 프로필 반환:', defaultProfile);
+      return defaultProfile;
+    }
+  }, []);
+
+  // 사용자 인증 상태 확인 및 프로필 처리
+  const handleAuthUser = useCallback(async (authUser: SupabaseUser) => {
+    try {
+      // 프로필 로드 시도
+      const profile = await loadUserProfile(authUser.id);
+      
       if (!profile) {
         console.log('프로필이 존재하지 않음. 새로 생성 중...');
-        
-        // 고유한 username 생성 (이메일 + 타임스탬프)
-        const uniqueUsername = `${authUser.email?.split('@')[0] || 'user'}_${Date.now()}`;
         
         // 카카오에서 받은 사용자 정보 추출
         console.log('🔍 카카오 사용자 메타데이터 전체:', authUser.user_metadata);
@@ -114,205 +188,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         const referralCode = generateReferralCode();
+        const uniqueUsername = `${authUser.email?.split('@')[0] || 'user'}_${Date.now()}`;
         
-        try {
-          // 먼저 일반 클라이언트로 시도 (RLS 정책 허용 시)
-          const { data: newProfile, error: createError } = await supabase
-            .from('users')
-            .upsert({
-              id: authUser.id,
-              email: authUser.email,
-              username: uniqueUsername,
-              nickname: kakaoNickname, // 카카오 닉네임 자동 설정
-              referral_code: referralCode, // 추천코드 자동 생성
-              points: 0,
-              total_deliveries: 0,
-              total_earnings: 0
-            }, {
-              onConflict: 'id',
-              ignoreDuplicates: false
-            })
-            .select()
-            .single();
-
-          if (createError) {
-            console.log('일반 클라이언트로 프로필 생성 실패, Admin 클라이언트 시도...');
-            
-            // Admin 클라이언트로 시도
-            const { supabaseAdmin } = await import('@/lib/supabase-admin');
-            
-            if (!supabaseAdmin) {
-              console.warn('Admin 클라이언트 없음. 기본 프로필로 진행...');
-              // Admin 클라이언트가 없어도 기본 프로필 생성
-              const basicUserData: User = {
-                id: authUser.id,
-                email: authUser.email || '',
-                nickname: kakaoNickname, // 카카오 닉네임 설정
-                region: '',
-                vehicle: '',
-                phone: '',
-                points: 0,
-                totalDeliveries: 0,
-                totalEarnings: 0,
-                profileImage: '',
-                referral_code: referralCode, // 추천코드 설정
-                notificationSettings: {},
-                role: 'user',
-              };
-              setUserProfile(basicUserData);
-              profileCache.set(authUser.id, { data: basicUserData, timestamp: Date.now() });
-              return;
-            }
-            
-            // Admin 클라이언트로 재시도
-            const { data: adminProfile, error: adminError } = await supabaseAdmin
-              .from('users')
-              .upsert({
-                id: authUser.id,
-                email: authUser.email,
-                username: uniqueUsername,
-                nickname: kakaoNickname, // 카카오 닉네임 자동 설정
-                referral_code: referralCode, // 추천코드 자동 생성
-                points: 0,
-                total_deliveries: 0,
-                total_earnings: 0
-              }, {
-                onConflict: 'id',
-                ignoreDuplicates: false
-              })
-              .select()
-              .single();
-
-            if (adminError) {
-              console.error('Admin 클라이언트로도 프로필 생성 실패:', adminError);
-              // 그래도 기본 프로필로 진행
-              const basicUserData: User = {
-                id: authUser.id,
-                email: authUser.email || '',
-                nickname: kakaoNickname, // 카카오 닉네임 설정
-                region: '',
-                vehicle: '',
-                phone: '',
-                points: 0,
-                totalDeliveries: 0,
-                totalEarnings: 0,
-                profileImage: '',
-                referral_code: referralCode, // 추천코드 설정
-                notificationSettings: {},
-                role: 'user',
-              };
-              setUserProfile(basicUserData);
-              profileCache.set(authUser.id, { data: basicUserData, timestamp: Date.now() });
-              return;
-            }
-
-            // Admin으로 성공한 경우
-            const userData: User = {
-              id: authUser.id,
-              email: authUser.email || '',
-              nickname: adminProfile?.nickname || kakaoNickname, // 카카오 닉네임 우선
-              region: adminProfile?.region || '',
-              vehicle: adminProfile?.vehicle || '',
-              phone: adminProfile?.phone || '',
-              points: adminProfile?.points || 0,
-              totalDeliveries: adminProfile?.total_deliveries || 0,
-              totalEarnings: adminProfile?.total_earnings || 0,
-              profileImage: adminProfile?.profile_image || '',
-              referral_code: adminProfile?.referral_code || referralCode, // 추천코드 설정
-              notificationSettings: adminProfile?.notification_settings || {},
-              role: adminProfile?.role || 'user',
-            };
-
-            setUserProfile(userData);
-            profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
-            console.log('✅ 카카오 사용자 프로필 생성 완료:', { nickname: kakaoNickname, referralCode });
-            return;
-          }
-
-          // 일반 클라이언트로 성공한 경우
-          const userData: User = {
-            id: authUser.id,
-            email: authUser.email || '',
-            nickname: newProfile?.nickname || '',
-            region: newProfile?.region || '',
-            vehicle: newProfile?.vehicle || '',
-            phone: newProfile?.phone || '',
-            points: newProfile?.points || 0,
-            totalDeliveries: newProfile?.total_deliveries || 0,
-            totalEarnings: newProfile?.total_earnings || 0,
-            profileImage: newProfile?.profile_image || '',
-            referral_code: newProfile?.referral_code || '',
-            notificationSettings: newProfile?.notification_settings || {},
-            role: newProfile?.role || 'user',
-          };
-
-          setUserProfile(userData);
-          profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
-          return;
-        } catch (err) {
-          console.error('프로필 생성 중 예외 발생:', err);
-          // 모든 시도가 실패해도 기본 프로필로 진행
-          const basicUserData: User = {
-            id: authUser.id,
-            email: authUser.email || '',
-            nickname: '',
-            region: '',
-            vehicle: '',
-            phone: '',
-            points: 0,
-            totalDeliveries: 0,
-            totalEarnings: 0,
-            profileImage: '',
-            referral_code: '',
-            notificationSettings: {},
-            role: 'user',
-          };
-          setUserProfile(basicUserData);
-          profileCache.set(authUser.id, { data: basicUserData, timestamp: Date.now() });
-          return;
-        }
+        const newUserData = {
+          id: authUser.id,
+          email: authUser.email,
+          username: uniqueUsername,
+          nickname: kakaoNickname, 
+          referral_code: referralCode,
+          points: 0,
+          total_deliveries: 0,
+          total_earnings: 0
+        };
+        
+        const createdProfile = await createUserProfile(newUserData);
+        
+        // User 타입으로 변환
+        const userData: User = {
+          id: authUser.id,
+          email: authUser.email || '',
+          nickname: createdProfile?.nickname || kakaoNickname,
+          region: createdProfile?.region || '',
+          vehicle: createdProfile?.vehicle || '',
+          phone: createdProfile?.phone || '',
+          points: createdProfile?.points || 0,
+          totalDeliveries: createdProfile?.total_deliveries || 0,
+          totalEarnings: createdProfile?.total_earnings || 0,
+          profileImage: createdProfile?.profile_image || '',
+          referral_code: createdProfile?.referral_code || referralCode,
+          notificationSettings: createdProfile?.notification_settings || {},
+          role: createdProfile?.role || 'user',
+        };
+        
+        setUserProfile(userData);
+        profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
+        console.log('✅ 신규 사용자 프로필 생성 완료:', { nickname: kakaoNickname, referralCode });
+        return;
       }
 
-      // 프로필이 존재하는 경우
-      let referralCode = profile?.referral_code;
-      
-      // referral_code가 없으면 생성
-      if (!referralCode) {
-        // 새로운 5자리 코드 생성 (3글자 + 2숫자)
-        let attempts = 0;
-        do {
-          const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
-          const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-          referralCode = letters + numbers;
-          attempts++;
-
-          // 중복 확인
-          const { data: existing } = await supabase
-            .from('users')
-            .select('id')
-            .eq('referral_code', referralCode)
-            .single();
-
-          if (!existing) break;
-        } while (attempts < 10);
-
-        if (attempts < 10) {
-          // referral_code 업데이트
-          const { error: updateError } = await supabase
-            .from('users')
-            .update({ referral_code: referralCode })
-            .eq('id', authUser.id);
-
-          if (updateError) {
-            console.error('referral_code 업데이트 실패:', updateError);
-            referralCode = ''; // 실패 시 빈 문자열
-          }
-        } else {
-          console.error('고유한 referral_code 생성 실패');
-          referralCode = '';
-        }
-      }
-
+      // 기존 프로필 존재하는 경우
       const userData: User = {
         id: authUser.id,
         email: authUser.email || '',
@@ -324,152 +238,98 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         totalDeliveries: profile?.total_deliveries || 0,
         totalEarnings: profile?.total_earnings || 0,
         profileImage: profile?.profile_image || '',
-        referral_code: referralCode || '',
+        referral_code: profile?.referral_code || '',
         notificationSettings: profile?.notification_settings || {},
         role: profile?.role || 'user',
       };
 
       setUserProfile(userData);
-      // 캐시에 저장
       profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
+      console.log('✅ 기존 사용자 프로필 로드 완료');
+      
     } catch (error) {
-      console.error('프로필 로드 실패:', error);
+      console.error('사용자 인증 처리 실패:', error);
       setUserProfile(null);
     }
-  }, []);
+  }, [loadUserProfile, createUserProfile]);
 
   useEffect(() => {
     let mounted = true;
-    let sessionCheckTimeout: NodeJS.Timeout;
-    let retryCount = 0;
-    const MAX_RETRIES = 2;
-
-    const checkAuthState = async () => {
-      // 이미 세션 체크 중이면 중복 실행 방지
-      if (isCheckingSession) return;
-      
-      setIsCheckingSession(true);
-      
-      const attemptSessionCheck = async (): Promise<any> => {
-        try {
-          // 오래된 세션 정리
-          clearOldSession();
-          
-          // 세션 체크에 타임아웃 설정 (3초로 단축)
-          const sessionPromise = supabase.auth.getSession();
-          const timeoutPromise = new Promise((_, reject) => {
-            sessionCheckTimeout = setTimeout(() => reject(new Error('Session check timeout')), 3000);
-          });
-          
-          const result = await Promise.race([
-            sessionPromise,
-            timeoutPromise
-          ]) as any;
-          
-          clearTimeout(sessionCheckTimeout);
-          
-          if (result?.data?.session) {
-            return result.data.session;
-          } else if (result?.session) {
-            return result.session;
-          }
-          
-          return null;
-        } catch (error: any) {
-          clearTimeout(sessionCheckTimeout);
-          
-          // 네트워크 에러나 리소스 부족 에러는 재시도하지 않음
-          if (error.message?.includes('Failed to fetch') || 
-              error.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
-              error.code === 'ERR_INSUFFICIENT_RESOURCES') {
-            console.warn('네트워크 또는 리소스 에러, 재시도 중단:', error.message);
-            return null;
-          }
-          
-          // 타임아웃 발생 시에만 재시도
-          if (error.message === 'Session check timeout' && retryCount < MAX_RETRIES) {
-            retryCount++;
-            console.log(`세션 체크 재시도 ${retryCount}/${MAX_RETRIES}`);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 1초로 증가
-            return attemptSessionCheck();
-          }
-          
-          throw error;
-        }
-      };
-      
+    
+    const initializeAuth = async () => {
       try {
-        const session = await attemptSessionCheck();
+        setIsCheckingSession(true);
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (mounted && session?.user) {
-          setUser(session.user);
-          await loadUserProfile(session.user);
-        } else if (mounted) {
-          // 캐시된 프로필 확인
-          if (user?.id) {
-            const cached = profileCache.get(user.id);
-            if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-              setUserProfile(cached.data);
-            }
-          } else {
+        if (error) {
+          console.error('세션 조회 실패:', error);
+          if (mounted) {
             setUser(null);
             setUserProfile(null);
           }
+          return;
         }
-      } catch (error: any) {
-        console.error('세션 체크 에러:', error);
-        if (mounted) {
-          // 카카오 로그인 직후인지 확인
-          let isKakaoCallback = false;
-          if (typeof window !== 'undefined') {
-            const urlParams = new URLSearchParams(window.location.search);
-            isKakaoCallback = window.location.pathname.includes('/auth/kakao/callback') || urlParams.has('code');
-          }
-          
-          if (!isKakaoCallback) {
-            console.log('세션 체크 실패 - 로컬 스토리지 정리');
-            // 모든 관련 스토리지 키 정리
-            ['supabase.auth.token', 'sb-auth-token', 'baedalking-auth'].forEach(key => {
-              localStorage.removeItem(key);
-              sessionStorage.removeItem(key);
-            });
+
+        if (mounted && session?.user) {
+          setUser(session.user);
+          await handleAuthUser(session.user);
+        } else if (mounted) {
+          // 캐시된 프로필 확인
+          const cachedAuth = localStorage.getItem('baedalking-auth');
+          if (cachedAuth) {
+            try {
+              const { user: cachedUser, profile: cachedProfile } = JSON.parse(cachedAuth);
+              if (cachedUser && cachedProfile) {
+                setUser(cachedUser);
+                setUserProfile(cachedProfile);
+              }
+            } catch (e) {
+              localStorage.removeItem('baedalking-auth');
+            }
           }
           
           setUser(null);
           setUserProfile(null);
         }
+      } catch (error) {
+        console.error('인증 초기화 실패:', error);
+        if (mounted) {
+          setUser(null);
+          setUserProfile(null);
+        }
       } finally {
         if (mounted) {
-          setLoading(false);
           setIsCheckingSession(false);
         }
       }
     };
 
-    checkAuthState();
+    initializeAuth();
 
-    // Supabase auth 상태 변화 감지
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       
       console.log('Auth 상태 변경:', event);
       
-      if (session?.user) {
+      if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user);
-        await loadUserProfile(session.user);
-      } else {
+        await handleAuthUser(session.user);
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setUserProfile(null);
+        localStorage.removeItem('baedalking-auth');
+        profileCache.clear();
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        setUser(session.user);
+        await handleAuthUser(session.user);
       }
-      setLoading(false);
     });
 
     return () => {
       mounted = false;
-      clearTimeout(sessionCheckTimeout);
       subscription.unsubscribe();
     };
-  }, []); // 빈 의존성 배열로 변경하여 무한 루프 방지
+  }, [handleAuthUser]);
 
   const signUp = useCallback(async (nickname: string) => {
     try {
@@ -552,13 +412,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
-  const refreshUserProfile = useCallback(async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       // 캐시 무효화
       profileCache.delete(user.id);
-      await loadUserProfile(user);
+      await handleAuthUser(user);
     }
-  }, [user, loadUserProfile]);
+  }, [user, handleAuthUser]);
 
   // 프로필 완료 여부 체크 함수
   const isProfileComplete = useCallback((profile: User | null) => {
@@ -582,9 +442,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signOut,
     updateProfile,
-    refreshUserProfile,
+    refreshProfile,
     isProfileComplete,
-  }), [user, userProfile, loading, signUp, signOut, updateProfile, refreshUserProfile, isProfileComplete]);
+  }), [user, userProfile, loading, signUp, signOut, updateProfile, refreshProfile, isProfileComplete]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -12,6 +12,12 @@ export interface User {
   totalDeliveries?: number;
   totalEarnings?: number;
   profileImage?: string;
+  referral_code?: string;
+  notificationSettings?: {
+    push?: boolean;
+    email?: boolean;
+    sms?: boolean;
+  };
   createdAt?: string;
   updatedAt?: string;
   role?: 'user' | 'admin';
