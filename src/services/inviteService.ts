@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import { addPoints } from './pointService';
 
 // 초대 코드 생성 (users 테이블의 referral_code 사용)
 export const generateInviteCode = async (userId: string) => {
@@ -57,69 +56,31 @@ export const generateInviteCode = async (userId: string) => {
 // 초대 코드 검증 및 포인트 지급 (users 테이블의 referral_code 사용)
 export const validateInviteCode = async (code: string, newUserId: string) => {
   try {
-    // 초대 코드로 초대자 찾기 (users 테이블에서)
-    const { data: inviter, error: codeError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('referral_code', code)
-      .single();
+    const response = await fetch('/api/invite/validate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        code,
+        newUserId
+      }),
+    });
 
-    if (codeError || !inviter) {
-      throw new Error('유효하지 않은 초대 코드입니다.');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '초대 코드 검증 API 호출 실패');
     }
 
-    // 자기 자신의 코드는 사용할 수 없음
-    if (inviter.id === newUserId) {
-      throw new Error('자신의 초대 코드는 사용할 수 없습니다.');
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || '초대 코드 검증 실패');
     }
-
-    // 이미 사용된 코드인지 확인
-    const { data: existingInvite, error: inviteError } = await supabase
-      .from('invites')
-      .select('id')
-      .eq('invite_code', code)
-      .eq('invited_user_id', newUserId)
-      .single();
-
-    if (existingInvite) {
-      throw new Error('이미 사용된 초대 코드입니다.');
-    }
-
-    // 초대 기록 저장
-    const { error: recordError } = await supabase
-      .from('invites')
-      .insert({
-        inviter_id: inviter.id,
-        invited_user_id: newUserId,
-        invite_code: code,
-        created_at: new Date().toISOString(),
-      });
-
-    if (recordError) throw recordError;
-
-    // 초대자에게 포인트 지급 (500P)
-    const inviterSuccess = await addPoints(
-      inviter.id, 
-      500, 
-      'friend_invite', 
-      '친구 초대 보상'
-    );
-
-    if (!inviterSuccess) throw new Error('초대자 포인트 지급 실패');
-
-    // 초대받은 사용자에게 포인트 지급 (300P)
-    const invitedSuccess = await addPoints(
-      newUserId,
-      300,
-      'invite_used',
-      '초대 코드 사용 보상'
-    );
-
-    if (!invitedSuccess) throw new Error('초대받은 사용자 포인트 지급 실패');
 
     return {
-      inviterPoints: 500,
-      invitedPoints: 300
+      inviterPoints: result.inviterPoints,
+      invitedPoints: result.invitedPoints
     };
   } catch (error) {
     console.error('초대 코드 검증 실패:', error);

@@ -30,42 +30,41 @@ export const addPoints = async (
   description: string
 ): Promise<boolean> => {
   try {
-    // 1. point_history 테이블에 기록 추가
-    const { error: historyError } = await supabase
-      .from('point_history')
-      .insert({
-        user_id: userId,
-        points: amount,
-        reason: description
-      });
-
-    if (historyError) throw historyError;
-
-    // 2. users 테이블의 포인트 업데이트
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('points')
-      .eq('id', userId)
-      .single();
-
-    if (userError) throw userError;
-
-    const newPoints = (userData.points || 0) + amount;
-
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ points: newPoints })
-      .eq('id', userId);
-
-    if (updateError) throw updateError;
-
-    // 3. 포인트 지급 알림 생성
-    await createNotification({
-      user_id: userId,
-      type: 'point',
-      title: '포인트 지급',
-      message: `${description} +${amount}P가 지급되었습니다.`
+    const response = await fetch('/api/points/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        amount,
+        reason,
+        description
+      }),
     });
+
+    if (!response.ok) {
+      throw new Error('포인트 추가 API 호출 실패');
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || '포인트 추가 실패');
+    }
+
+    // 포인트 지급 알림 생성
+    try {
+      await createNotification({
+        user_id: userId,
+        type: 'point',
+        title: '포인트 지급',
+        message: `${description} ${amount > 0 ? '+' : ''}${amount}P가 지급되었습니다.`
+      });
+    } catch (notificationError) {
+      console.error('알림 생성 실패:', notificationError);
+      // 알림 실패는 전체 프로세스를 중단시키지 않음
+    }
 
     return true;
   } catch (error) {

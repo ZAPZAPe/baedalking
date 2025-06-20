@@ -218,7 +218,11 @@ function CallbackContent() {
                     .single();
                   
                                 if (!existingProfile) {
-                const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
+                // 새로운 5자리 추천인 코드 생성 (3글자 + 2숫자)
+                const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
+                const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+                const referralCode = letters + numbers;
+                
                 const { error: profileError } = await supabase
                   .from('users')
                   .insert({
@@ -287,7 +291,11 @@ function CallbackContent() {
                 .single();
               
               if (!existingProfile) {
-                const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
+                // 새로운 5자리 추천인 코드 생성 (3글자 + 2숫자)
+                const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
+                const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+                const referralCode = letters + numbers;
+                
                 const { error: profileError } = await supabase
                   .from('users')
                   .insert({
@@ -345,9 +353,11 @@ function CallbackContent() {
               updated_at: new Date().toISOString(),
             };
             
-            // 추천 코드가 없으면 추가
+            // 추천 코드가 없으면 추가 (새로운 5자리 형식)
             if (!existingUser.referral_code) {
-              updateData.referral_code = `BK${Date.now().toString(36).toUpperCase()}`;
+              const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
+              const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+              updateData.referral_code = letters + numbers;
             }
             
             const { error: updateError } = await supabase
@@ -360,7 +370,11 @@ function CallbackContent() {
             }
           } else {
             // 신규 사용자 프로필 생성 (처음 가입하는 경우)
-            const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
+            // 새로운 5자리 추천인 코드 생성 (3글자 + 2숫자)
+            const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
+            const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+            const referralCode = letters + numbers;
+            
             const { error: createError } = await supabase
               .from('users')
               .insert({

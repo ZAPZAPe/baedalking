@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
   try {
@@ -12,8 +12,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // 서버 사이드에서 사용할 수 있는 service role 클라이언트 생성
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     // 현재 사용자를 제외하고 닉네임 중복 검사
-    let query = supabase
+    let query = supabaseAdmin
       .from('users')
       .select('id')
       .eq('nickname', nickname);
