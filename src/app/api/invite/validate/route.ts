@@ -91,6 +91,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: inviter.id,
         points: 500,
+        point_type: 'invite',
         reason: '친구 초대 보상'
       });
 
@@ -121,6 +122,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: newUserId,
         points: 300,
+        point_type: 'invite',
         reason: '초대 코드 사용 보상'
       });
 

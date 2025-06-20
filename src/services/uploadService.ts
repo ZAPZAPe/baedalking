@@ -310,7 +310,7 @@ export const checkDuplicateUpload = async (
         .from('point_history')
         .select('*')
         .eq('user_id', userId)
-        .eq('type', 'upload')
+        .eq('point_type', 'upload')
         .gte('created_at', date)
         .lt('created_at', new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000).toISOString())
         .limit(1);

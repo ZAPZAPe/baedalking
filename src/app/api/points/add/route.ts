@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: userId,
         points: points,
+        point_type: 'admin', // 관리자에 의한 수동 지급
         reason: reason
       });
 

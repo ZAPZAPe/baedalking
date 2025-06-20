@@ -120,12 +120,12 @@ WHERE profile_image IS NOT NULL;
 -- 중복 포인트 기록 확인
 SELECT 
     user_id, 
-    type, 
+    point_type, 
     reason, 
     points, 
     COUNT(*) as duplicates
 FROM point_history
-GROUP BY user_id, type, reason, points, DATE(created_at)
+GROUP BY user_id, point_type, reason, points, DATE(created_at)
 HAVING COUNT(*) > 1;
 
 -- ====================================================================

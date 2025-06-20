@@ -25,6 +25,9 @@ interface DeliveryRecordWithUser {
 // 오늘 랭킹 조회 - 최적화 버전
 export const getTodayRanking = async (region?: string): Promise<RankingData[]> => {
   try {
+    console.log('🔍 오늘 랭킹 조회 시작');
+    console.log('🌍 지역 필터:', region || 'all');
+    
     // today_rankings_realtime 뷰에서 이미 계산된 랭킹 가져오기
     let query = supabase
       .from('today_rankings_realtime')
@@ -36,19 +39,24 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
       query = query.eq('region', region);
     }
 
+    console.log('📤 Supabase 쿼리 실행 중...');
     const { data, error } = await query;
 
     if (error) {
-      console.error('랭킹 조회 오류:', error);
+      console.error('❌ 랭킹 조회 오류:', error);
+      console.error('오류 상세:', JSON.stringify(error, null, 2));
       return [];
     }
 
+    console.log('✅ 랭킹 데이터 조회 성공:', data?.length || 0, '개');
+
     if (!data || data.length === 0) {
+      console.log('📊 랭킹 데이터가 없습니다.');
       return [];
     }
 
     // 뷰에서 가져온 데이터를 RankingData 형식으로 변환
-    return data.map(row => ({
+    const result = data.map(row => ({
       userId: row.user_id,
       nickname: row.nickname,
       region: row.region,
@@ -57,8 +65,13 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
       rank: row.rank,
       platform: row.platform
     }));
+    
+    console.log('🎯 변환된 랭킹 데이터:', result.length, '개');
+    
+    return result;
   } catch (error) {
-    console.error('오늘 랭킹 조회 오류:', error);
+    console.error('💥 오늘 랭킹 조회 오류:', error);
+    console.error('오류 스택:', (error as Error)?.stack);
     return [];
   }
 };

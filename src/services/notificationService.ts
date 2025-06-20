@@ -16,7 +16,10 @@ export async function createNotification(noti: Omit<Notification, 'id' | 'read' 
   const { error } = await supabase
     .from('notifications')
     .insert({
-      ...noti,
+      user_id: noti.user_id,
+      notification_type: noti.type, // type -> notification_type로 매핑
+      title: noti.title,
+      message: noti.message,
       read: false
     });
 
@@ -29,7 +32,7 @@ export async function createNotification(noti: Omit<Notification, 'id' | 'read' 
 export async function getNotifications(userId: string) {
   const { data, error } = await supabase
     .from('notifications')
-    .select('*')
+    .select('id, user_id, notification_type, title, message, created_at, read')
     .or(`user_id.is.null,user_id.eq.${userId}`)
     .order('created_at', { ascending: false });
 
@@ -37,7 +40,11 @@ export async function getNotifications(userId: string) {
     throw error;
   }
 
-  return data as Notification[];
+  // notification_type을 type으로 매핑하여 반환
+  return data?.map(item => ({
+    ...item,
+    type: item.notification_type
+  })) as Notification[];
 }
 
 // 알림 읽음 처리

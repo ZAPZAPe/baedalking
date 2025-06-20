@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS point_history (
   
   -- 포인트 정보
   points INTEGER NOT NULL, -- 양수: 적립, 음수: 차감
-  type VARCHAR(50) NOT NULL, -- 'upload', 'ranking', 'invite', 'admin', 'spend'
+  point_type VARCHAR(50) NOT NULL, -- 'upload', 'ranking', 'invite', 'admin', 'spend'
   reason TEXT NOT NULL,
   description TEXT,
   
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   -- 알림 내용
   title VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
-  type VARCHAR(50) NOT NULL, -- 'info', 'success', 'warning', 'error'
+  notification_type VARCHAR(50) NOT NULL, -- 'info', 'success', 'warning', 'error'
   
   -- 상태
   read BOOLEAN DEFAULT false,
@@ -181,7 +181,7 @@ CREATE INDEX IF NOT EXISTS idx_delivery_records_created_at ON delivery_records(c
 
 -- 포인트 내역 테이블 인덱스
 CREATE INDEX IF NOT EXISTS idx_point_history_user_id ON point_history(user_id);
-CREATE INDEX IF NOT EXISTS idx_point_history_type ON point_history(type);
+CREATE INDEX IF NOT EXISTS idx_point_history_type ON point_history(point_type);
 CREATE INDEX IF NOT EXISTS idx_point_history_created_at ON point_history(created_at);
 
 -- 알림 테이블 인덱스
