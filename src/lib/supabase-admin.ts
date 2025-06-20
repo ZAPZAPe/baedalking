@@ -11,9 +11,11 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   }
 })
 
-// 환경 변수 검증
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('⚠️ Supabase Admin 환경 변수가 설정되지 않았습니다:');
-  console.error('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✅' : '❌');
-  console.error('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✅' : '❌');
+// 런타임에서만 환경 변수 검증 (빌드 시점에는 체크하지 않음)
+if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('⚠️ Supabase Admin 환경 변수가 설정되지 않았습니다:');
+    console.error('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✅' : '❌');
+    console.error('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✅' : '❌');
+  }
 } 

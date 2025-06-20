@@ -12,7 +12,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 환경 변수 검증
+    // 런타임에서만 환경 변수 검증
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('Supabase 환경 변수가 설정되지 않았습니다.');
       return NextResponse.json(

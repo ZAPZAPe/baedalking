@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase, clearOldSession } from '../lib/supabase';
-import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { logoutKakao } from '@/services/kakaoAuth';
 
@@ -54,17 +53,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isCheckingSession, setIsCheckingSession] = useState(false);
 
-  const loadUserProfile = useCallback(async (authUser: SupabaseUser) => {
+  const loadUserProfile = async (authUser: SupabaseUser) => {
     try {
-      setUser(authUser);
-      
       // 캐시 확인
       const cached = profileCache.get(authUser.id);
       if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
         setUserProfile(cached.data);
         return;
       }
-      
+
       // 프로필 조회
       const { data: profile, error } = await supabase
         .from('users')
@@ -83,6 +80,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // 고유한 username 생성 (이메일 + 타임스탬프)
         const uniqueUsername = `${authUser.email?.split('@')[0] || 'user'}_${Date.now()}`;
+        
+        // 런타임에서만 supabaseAdmin import
+        const { supabaseAdmin } = await import('@/lib/supabase-admin');
         
         // supabaseAdmin을 사용하여 RLS 정책 우회
         const { data: newProfile, error: createError } = await supabaseAdmin
@@ -189,14 +189,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
     } catch (error) {
       console.error('프로필 로드 실패:', error);
-      // 프로필 로드 실패해도 기본 사용자 정보는 설정
-      const basicUser = {
-        id: authUser.id,
-        email: authUser.email || '',
-      };
-      setUserProfile(basicUser);
+      setUserProfile(null);
     }
-  }, []);
+  };
 
   useEffect(() => {
     let mounted = true;
