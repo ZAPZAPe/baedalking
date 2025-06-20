@@ -29,6 +29,19 @@ const nextConfig = {
       // 서버사이드에서 tesseract.js 제외
       config.externals.push('tesseract.js');
     }
+    
+    // Supabase realtime 관련 경고 필터링
+    const originalWarnings = config.stats?.warnings || [];
+    config.stats = {
+      ...config.stats,
+      warnings: false,
+      warningsFilter: [
+        /Critical dependency: the request of a dependency is an expression/,
+        /Module not found: Can't resolve 'punycode'/,
+        ...originalWarnings
+      ]
+    };
+    
     return config;
   },
   // 환경 변수 검증 (빌드 시)
