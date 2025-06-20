@@ -30,7 +30,7 @@ const Loading: React.FC<LoadingProps> = ({ type = 'default', rows = 3 }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center z-50">
       <div className="text-center">
         <div className="relative">
           <div className="w-24 h-24 mx-auto mb-8">

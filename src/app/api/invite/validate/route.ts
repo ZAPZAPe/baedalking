@@ -68,40 +68,64 @@ export async function POST(request: Request) {
     if (recordError) throw recordError;
 
     // 초대자 포인트 지급 (500P)
-    const inviterResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/points/add`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        userId: inviter.id,
-        amount: 500,
-        reason: 'friend_invite',
-        description: '친구 초대 보상'
-      }),
-    });
+    // 1. point_history 테이블에 기록 추가
+    const { error: inviterHistoryError } = await supabaseAdmin
+      .from('point_history')
+      .insert({
+        user_id: inviter.id,
+        points: 500,
+        reason: '친구 초대 보상'
+      });
 
-    if (!inviterResponse.ok) {
-      throw new Error('초대자 포인트 지급 실패');
-    }
+    if (inviterHistoryError) throw new Error('초대자 포인트 기록 실패');
+
+    // 2. 초대자 포인트 업데이트
+    const { data: inviterData, error: inviterUserError } = await supabaseAdmin
+      .from('users')
+      .select('points')
+      .eq('id', inviter.id)
+      .single();
+
+    if (inviterUserError) throw new Error('초대자 정보 조회 실패');
+
+    const inviterNewPoints = (inviterData.points || 0) + 500;
+
+    const { error: inviterUpdateError } = await supabaseAdmin
+      .from('users')
+      .update({ points: inviterNewPoints })
+      .eq('id', inviter.id);
+
+    if (inviterUpdateError) throw new Error('초대자 포인트 업데이트 실패');
 
     // 초대받은 사용자 포인트 지급 (300P)
-    const invitedResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/points/add`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        userId: newUserId,
-        amount: 300,
-        reason: 'invite_used',
-        description: '초대 코드 사용 보상'
-      }),
-    });
+    // 1. point_history 테이블에 기록 추가
+    const { error: invitedHistoryError } = await supabaseAdmin
+      .from('point_history')
+      .insert({
+        user_id: newUserId,
+        points: 300,
+        reason: '초대 코드 사용 보상'
+      });
 
-    if (!invitedResponse.ok) {
-      throw new Error('초대받은 사용자 포인트 지급 실패');
-    }
+    if (invitedHistoryError) throw new Error('초대받은 사용자 포인트 기록 실패');
+
+    // 2. 초대받은 사용자 포인트 업데이트
+    const { data: invitedData, error: invitedUserError } = await supabaseAdmin
+      .from('users')
+      .select('points')
+      .eq('id', newUserId)
+      .single();
+
+    if (invitedUserError) throw new Error('초대받은 사용자 정보 조회 실패');
+
+    const invitedNewPoints = (invitedData.points || 0) + 300;
+
+    const { error: invitedUpdateError } = await supabaseAdmin
+      .from('users')
+      .update({ points: invitedNewPoints })
+      .eq('id', newUserId);
+
+    if (invitedUpdateError) throw new Error('초대받은 사용자 포인트 업데이트 실패');
 
     return NextResponse.json({
       success: true,
