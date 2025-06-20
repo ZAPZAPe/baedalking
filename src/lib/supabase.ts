@@ -28,11 +28,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'Accept': 'application/vnd.pgrst.object+json',
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
       'Accept-Profile': 'public',
-      'Content-Profile': 'public',
-      'Prefer': 'return=minimal'
+      'Content-Profile': 'public'
     }
   },
   db: {
