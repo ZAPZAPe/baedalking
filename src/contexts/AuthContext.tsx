@@ -114,21 +114,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return data;
       }
 
-      // 2단계: 일반 Supabase 클라이언트 사용
-      console.log('API 루트 실패, 일반 클라이언트로 시도');
-      const { data: insertData, error: insertError } = await supabase
-        .from('users')
-        .insert([userData])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('일반 클라이언트 프로필 생성 실패:', insertError);
-        throw insertError;
-      }
-
-      console.log('일반 클라이언트로 프로필 생성 성공:', insertData);
-      return insertData;
+      // 2단계: API 루트 실패 시 바로 기본 프로필로 진행
+      console.log('API 루트 실패, 기본 프로필로 진행');
     } catch (error) {
       console.error('프로필 생성 실패:', error);
       

@@ -54,64 +54,86 @@ function CallbackContent() {
         if (session) {
           console.log('로그인 성공, 프로필 완료 여부 확인 중...');
           
-          // 프로필 완료 여부 확인
-          const { data: userProfile } = await supabase
-            .from('users')
-            .select('nickname, region, vehicle, phone')
-            .eq('id', session.user.id)
-            .single();
-          
-          // 프로필이 완료되었는지 확인
-          const isProfileComplete = userProfile && 
-            userProfile.nickname && userProfile.nickname.trim() &&
-            userProfile.region && userProfile.region.trim() &&
-            userProfile.vehicle && userProfile.vehicle.trim() &&
-            userProfile.phone && userProfile.phone.trim();
-          
-          // AuthContext가 세션을 인식할 때까지 추가 대기
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          if (isProfileComplete) {
-            console.log('프로필 완료됨, 홈으로 이동');
-            router.push('/');
-          } else {
-            console.log('프로필 미완료, 프로필 설정으로 이동');
+          // API 루트를 통한 프로필 확인
+          try {
+            const response = await fetch(`/api/users/${session.user.id}`, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+              const userProfile = await response.json();
+              
+              // 프로필이 완료되었는지 확인
+              const isProfileComplete = userProfile && 
+                userProfile.nickname && userProfile.nickname.trim() &&
+                userProfile.region && userProfile.region.trim() &&
+                userProfile.vehicle && userProfile.vehicle.trim() &&
+                userProfile.phone && userProfile.phone.trim();
+              
+              // AuthContext가 세션을 인식할 때까지 추가 대기
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+              if (isProfileComplete) {
+                console.log('프로필 완료됨, 홈으로 이동');
+                router.push('/');
+              } else {
+                console.log('프로필 미완료, 프로필 설정으로 이동');
+                router.push('/profile-setup');
+              }
+            } else {
+              console.log('프로필 없음, 프로필 설정으로 이동');
+              router.push('/profile-setup');
+            }
+          } catch (error) {
+            console.error('프로필 확인 중 에러:', error);
             router.push('/profile-setup');
           }
         } else {
           console.log('세션 없음, 2초 후 재확인');
-                      setTimeout(async () => {
-              const { data: { session: retrySession } } = await supabase.auth.getSession();
-              if (retrySession) {
-                // 프로필 완료 여부 확인
-                const { data: userProfile } = await supabase
-                  .from('users')
-                  .select('nickname, region, vehicle, phone')
-                  .eq('id', retrySession.user.id)
-                  .single();
+          setTimeout(async () => {
+            const { data: { session: retrySession } } = await supabase.auth.getSession();
+            if (retrySession) {
+              // API 루트를 통한 프로필 확인
+              try {
+                const response = await fetch(`/api/users/${retrySession.user.id}`, {
+                  method: 'GET',
+                  headers: { 'Content-Type': 'application/json' }
+                });
                 
-                // 프로필이 완료되었는지 확인
-                const isProfileComplete = userProfile && 
-                  userProfile.nickname && userProfile.nickname.trim() &&
-                  userProfile.region && userProfile.region.trim() &&
-                  userProfile.vehicle && userProfile.vehicle.trim() &&
-                  userProfile.phone && userProfile.phone.trim();
-                
-                // AuthContext가 세션을 인식할 때까지 추가 대기
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                if (isProfileComplete) {
-                  console.log('프로필 완료됨, 홈으로 이동');
-                  router.push('/');
+                if (response.ok) {
+                  const userProfile = await response.json();
+                  
+                  // 프로필이 완료되었는지 확인
+                  const isProfileComplete = userProfile && 
+                    userProfile.nickname && userProfile.nickname.trim() &&
+                    userProfile.region && userProfile.region.trim() &&
+                    userProfile.vehicle && userProfile.vehicle.trim() &&
+                    userProfile.phone && userProfile.phone.trim();
+                  
+                  // AuthContext가 세션을 인식할 때까지 추가 대기
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  
+                  if (isProfileComplete) {
+                    console.log('프로필 완료됨, 홈으로 이동');
+                    router.push('/');
+                  } else {
+                    console.log('프로필 미완료, 프로필 설정으로 이동');
+                    router.push('/profile-setup');
+                  }
                 } else {
-                  console.log('프로필 미완료, 프로필 설정으로 이동');
+                  console.log('프로필 없음, 프로필 설정으로 이동');
                   router.push('/profile-setup');
                 }
-              } else {
-                console.log('재확인 후에도 세션 없음, 로그인 페이지로 이동');
-                router.push('/login?error=session_not_found');
+              } catch (error) {
+                console.error('프로필 확인 중 에러:', error);
+                router.push('/profile-setup');
               }
-            }, 2000);
+            } else {
+              console.log('재확인 후에도 세션 없음, 로그인 페이지로 이동');
+              router.push('/login?error=session_not_found');
+            }
+          }, 2000);
         }
       } catch (error) {
         console.error('카카오 로그인 콜백 처리 중 에러:', error);
@@ -164,7 +186,7 @@ function CallbackContent() {
         });
 
         // Supabase에 사용자 생성 또는 로그인
-                    const email = userData.kakao_account?.email || `kakao_${userData.id}@baedalrank.com`;
+        const email = userData.kakao_account?.email || `kakao_${userData.id}@baedalrank.com`;
         const password = `kakao_${userData.id}_secret`;
 
         // 먼저 로그인 시도
@@ -210,50 +232,9 @@ function CallbackContent() {
                   // 세션이 완전히 설정될 때까지 대기
                   await new Promise(resolve => setTimeout(resolve, 1000));
                   
-                  // users 테이블에 프로필 생성 (신규 사용자만)
-                  const { data: existingProfile } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('id', retrySignInData.user.id)
-                    .single();
+                  // API 루트를 통한 프로필 생성
+                  await createUserProfileViaAPI(retrySignInData.user.id, userData, email);
                   
-                                if (!existingProfile) {
-                // 새로운 5자리 추천인 코드 생성 (3글자 + 2숫자)
-                const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
-                const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-                const referralCode = letters + numbers;
-                
-                const { error: profileError } = await supabase
-                  .from('users')
-                  .insert({
-                    id: retrySignInData.user.id,
-                    username: `kakao_${userData.id}`,
-                    email: email,
-                    nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
-                    kakao_id: userData.id.toString(),
-                    profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-                    points: 300,
-                    referral_code: referralCode,
-                    created_at: new Date().toISOString(),
-                  });
-
-                if (profileError) {
-                  console.error('프로필 생성 에러:', profileError);
-                }
-
-                // 초대 코드 확인 및 처리
-                const inviteCode = sessionStorage.getItem('inviteCode');
-                if (inviteCode) {
-                  try {
-                    await validateInviteCode(inviteCode, retrySignInData.user.id);
-                    console.log('초대 코드 처리 성공');
-                    sessionStorage.removeItem('inviteCode'); // 사용 후 삭제
-                  } catch (error) {
-                    console.error('초대 코드 처리 실패:', error);
-                  }
-                }
-              }
-
                   // AuthContext가 세션을 인식할 때까지 추가 대기
                   await new Promise(resolve => setTimeout(resolve, 500));
                   router.push('/profile-setup');
@@ -283,49 +264,8 @@ function CallbackContent() {
               // 세션이 완전히 설정될 때까지 대기
               await new Promise(resolve => setTimeout(resolve, 1000));
               
-              // users 테이블에 프로필 생성 (신규 사용자만)
-              const { data: existingProfile } = await supabase
-                .from('users')
-                .select('id')
-                .eq('id', newSignInData.user.id)
-                .single();
-              
-              if (!existingProfile) {
-                // 새로운 5자리 추천인 코드 생성 (3글자 + 2숫자)
-                const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
-                const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-                const referralCode = letters + numbers;
-                
-                const { error: profileError } = await supabase
-                  .from('users')
-                  .insert({
-                    id: newSignInData.user.id,
-                    username: `kakao_${userData.id}`,
-                    email: email,
-                    nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
-                    kakao_id: userData.id.toString(),
-                    profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-                    points: 300,
-                    referral_code: referralCode,
-                    created_at: new Date().toISOString(),
-                  });
-
-                if (profileError) {
-                  console.error('프로필 생성 에러:', profileError);
-                }
-
-                // 초대 코드 확인 및 처리
-                const inviteCode = sessionStorage.getItem('inviteCode');
-                if (inviteCode) {
-                  try {
-                    await validateInviteCode(inviteCode, newSignInData.user.id);
-                    console.log('초대 코드 처리 성공');
-                    sessionStorage.removeItem('inviteCode'); // 사용 후 삭제
-                  } catch (error) {
-                    console.error('초대 코드 처리 실패:', error);
-                  }
-                }
-              }
+              // API 루트를 통한 프로필 생성
+              await createUserProfileViaAPI(newSignInData.user.id, userData, email);
 
               // AuthContext가 세션을 인식할 때까지 추가 대기
               await new Promise(resolve => setTimeout(resolve, 500));
@@ -338,73 +278,8 @@ function CallbackContent() {
           // 세션이 완전히 설정될 때까지 대기
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // 기존 사용자 정보 확인
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('id, referral_code, nickname')
-            .eq('id', signInData.user.id)
-            .single();
-          
-          if (existingUser) {
-            // 기존 사용자 - 닉네임은 업데이트하지 않음
-            const updateData: any = {
-              kakao_id: userData.id.toString(),
-              profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-              updated_at: new Date().toISOString(),
-            };
-            
-            // 추천 코드가 없으면 추가 (새로운 5자리 형식)
-            if (!existingUser.referral_code) {
-              const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
-              const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-              updateData.referral_code = letters + numbers;
-            }
-            
-            const { error: updateError } = await supabase
-              .from('users')
-              .update(updateData)
-              .eq('id', signInData.user.id);
-
-            if (updateError) {
-              console.error('프로필 업데이트 에러:', updateError);
-            }
-          } else {
-            // 신규 사용자 프로필 생성 (처음 가입하는 경우)
-            // 새로운 5자리 추천인 코드 생성 (3글자 + 2숫자)
-            const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
-            const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-            const referralCode = letters + numbers;
-            
-            const { error: createError } = await supabase
-              .from('users')
-              .insert({
-                id: signInData.user.id,
-                username: `kakao_${userData.id}`,
-                email: email,
-                nickname: userData.properties?.nickname || userData.kakao_account?.profile?.nickname || '카카오유저',
-                kakao_id: userData.id.toString(),
-                profile_image: userData.properties?.profile_image || userData.kakao_account?.profile?.profile_image_url,
-                points: 300,
-                referral_code: referralCode,
-                created_at: new Date().toISOString(),
-              });
-
-            if (createError) {
-              console.error('프로필 생성 에러:', createError);
-            }
-
-            // 초대 코드 확인 및 처리
-            const inviteCode = sessionStorage.getItem('inviteCode');
-            if (inviteCode) {
-              try {
-                await validateInviteCode(inviteCode, signInData.user.id);
-                console.log('초대 코드 처리 성공');
-                sessionStorage.removeItem('inviteCode'); // 사용 후 삭제
-              } catch (error) {
-                console.error('초대 코드 처리 실패:', error);
-              }
-            }
-          }
+          // API 루트를 통한 프로필 업데이트
+          await updateUserProfileViaAPI(signInData.user.id, userData, email);
 
           // AuthContext가 세션을 인식할 때까지 추가 대기
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -413,6 +288,110 @@ function CallbackContent() {
       } catch (error) {
         console.error('카카오 코드 교환 에러:', error);
         router.push('/login?error=kakao_exchange_error');
+      }
+    };
+
+    // API 루트를 통한 프로필 생성
+    const createUserProfileViaAPI = async (userId: string, kakaoData: any, email: string) => {
+      try {
+        // 새로운 5자리 추천인 코드 생성 (3글자 + 2숫자)
+        const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
+        const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+        const referralCode = letters + numbers;
+        
+        const profileData = {
+          id: userId,
+          username: `kakao_${kakaoData.id}`,
+          email: email,
+          nickname: kakaoData.properties?.nickname || kakaoData.kakao_account?.profile?.nickname || '카카오유저',
+          kakao_id: kakaoData.id.toString(),
+          profile_image: kakaoData.properties?.profile_image || kakaoData.kakao_account?.profile?.profile_image_url,
+          points: 300,
+          referral_code: referralCode,
+        };
+
+        const response = await fetch('/api/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData)
+        });
+
+        if (!response.ok) {
+          console.error('프로필 생성 실패:', await response.text());
+        } else {
+          console.log('프로필 생성 성공');
+        }
+
+        // 초대 코드 확인 및 처리
+        const inviteCode = sessionStorage.getItem('inviteCode');
+        if (inviteCode) {
+          try {
+            await validateInviteCode(inviteCode, userId);
+            console.log('초대 코드 처리 성공');
+            sessionStorage.removeItem('inviteCode');
+          } catch (error) {
+            console.error('초대 코드 처리 실패:', error);
+          }
+        }
+      } catch (error) {
+        console.error('프로필 생성 API 호출 실패:', error);
+      }
+    };
+
+    // API 루트를 통한 프로필 업데이트
+    const updateUserProfileViaAPI = async (userId: string, kakaoData: any, email: string) => {
+      try {
+        // 기존 프로필 확인
+        const checkResponse = await fetch(`/api/users/${userId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (checkResponse.ok) {
+          const existingUser = await checkResponse.json();
+          
+          // 기존 사용자 - 닉네임은 업데이트하지 않음
+          const updateData: any = {
+            kakao_id: kakaoData.id.toString(),
+            profile_image: kakaoData.properties?.profile_image || kakaoData.kakao_account?.profile?.profile_image_url,
+          };
+          
+          // 추천 코드가 없으면 추가 (새로운 5자리 형식)
+          if (!existingUser.referral_code) {
+            const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
+            const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+            updateData.referral_code = letters + numbers;
+          }
+          
+          const updateResponse = await fetch(`/api/users/${userId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+          });
+
+          if (!updateResponse.ok) {
+            console.error('프로필 업데이트 실패:', await updateResponse.text());
+          } else {
+            console.log('프로필 업데이트 성공');
+          }
+        } else {
+          // 신규 사용자 프로필 생성
+          await createUserProfileViaAPI(userId, kakaoData, email);
+        }
+
+        // 초대 코드 확인 및 처리
+        const inviteCode = sessionStorage.getItem('inviteCode');
+        if (inviteCode) {
+          try {
+            await validateInviteCode(inviteCode, userId);
+            console.log('초대 코드 처리 성공');
+            sessionStorage.removeItem('inviteCode');
+          } catch (error) {
+            console.error('초대 코드 처리 실패:', error);
+          }
+        }
+      } catch (error) {
+        console.error('프로필 업데이트 API 호출 실패:', error);
       }
     };
 
