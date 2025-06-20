@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { FaUpload, FaCamera, FaCheckCircle, FaExclamationTriangle, FaImage, FaArrowRight, FaCoins, FaTimes, FaClipboardList } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
@@ -456,7 +457,7 @@ export default function UploadPage() {
                       onClick={() => openExampleModal('배민커넥트')}
                     >
                       <div className="flex flex-col items-center justify-center h-full w-full">
-                        <img src="/baemin-logo.svg" alt="배민커넥트 로고" className="w-10 h-10 mb-2 group-hover:scale-110 transition-transform" />
+                        <Image src="/baemin-logo.svg" alt="배민커넥트 로고" width={40} height={40} className="w-10 h-10 mb-2 group-hover:scale-110 transition-transform" />
                         <p className="text-white font-medium text-sm text-center">배민커넥트</p>
                       </div>
                     </button>
@@ -465,7 +466,7 @@ export default function UploadPage() {
                       onClick={() => openExampleModal('쿠팡이츠')}
                     >
                       <div className="flex flex-col items-center justify-center h-full w-full">
-                        <img src="/coupang-logo.svg" alt="쿠팡이츠 로고" className="w-10 h-10 mb-2 group-hover:scale-110 transition-transform" />
+                        <Image src="/coupang-logo.svg" alt="쿠팡이츠 로고" width={40} height={40} className="w-10 h-10 mb-2 group-hover:scale-110 transition-transform" />
                         <p className="text-white font-medium text-sm text-center">쿠팡이츠</p>
                       </div>
                     </button>
@@ -622,9 +623,11 @@ export default function UploadPage() {
                     {/* 기존 배민커넥트 화면 (오늘 배달 내역) */}
                     <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 space-y-2 border border-white/20">
                       <div className="aspect-[9/16] bg-white/5 rounded-lg overflow-hidden">
-                        <img 
+                        <Image 
                           src="/baemin-example.svg" 
                           alt="배민커넥트 기존 예시" 
+                          width={320}
+                          height={568}
                           className="w-full h-full object-contain"
                         />
                       </div>
@@ -638,9 +641,11 @@ export default function UploadPage() {
                     {/* 새로운 배민커넥트 화면 (배달 실적 요약) */}
                     <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 space-y-2 border border-white/20">
                       <div className="aspect-[9/16] bg-white/5 rounded-lg overflow-hidden">
-                        <img 
+                        <Image 
                           src="/baemin-connect-example.svg" 
                           alt="배민커넥트 신규 예시" 
+                          width={320}
+                          height={568}
                           className="w-full h-full object-contain"
                         />
                       </div>
@@ -654,9 +659,11 @@ export default function UploadPage() {
                 ) : (
                   <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 space-y-2 border border-white/20">
                     <div className="aspect-[9/16] bg-white/5 rounded-lg overflow-hidden">
-                      <img 
+                      <Image 
                         src="/coupang-example.svg" 
                         alt="쿠팡이츠 예시" 
+                        width={320}
+                        height={568}
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -680,15 +687,15 @@ export default function UploadPage() {
                         <p className="font-medium text-cyan-300 mb-2">📱 두 가지 화면 형태 모두 가능합니다:</p>
                         <div className="space-y-2 ml-2">
                           <div>
-                            <p className="text-cyan-300 font-medium">▪ "오늘 배달 내역"</p>
+                            <p className="text-cyan-300 font-medium">▪ &ldquo;오늘 배달 내역&rdquo;</p>
                             <p className="ml-2">1. 배민커넥트 앱 → 마이페이지</p>
-                            <p className="ml-2">2. "오늘 배달 내역" 클릭</p>
-                            <p className="ml-2">3. "배달료 합계"가 보이는 화면 캡처</p>
+                            <p className="ml-2">2. &ldquo;오늘 배달 내역&rdquo; 클릭</p>
+                            <p className="ml-2">3. &ldquo;배달료 합계&rdquo;가 보이는 화면 캡처</p>
                           </div>
                           <div>
-                            <p className="text-orange-300 font-medium">▪ "오늘의 기록"</p>
+                            <p className="text-orange-300 font-medium">▪ &ldquo;오늘의 기록&rdquo;</p>
                             <p className="ml-2">1. 배민커넥트 앱 → 마이페이지</p>
-                            <p className="ml-2">2. "오늘 배달 내역" 클릭</p>
+                            <p className="ml-2">2. &ldquo;오늘 배달 내역&rdquo; 클릭</p>
                             <p className="ml-2">3. 사진 촬영</p>
                             <p className="ml-2 text-green-300">💡 검은색 배경이면 인식 잘됩니다!</p>
                           </div>
