@@ -11,12 +11,16 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "배달킹 - 실시간 배달 랭킹 서비스",
-  description: "전국 배달 라이더들의 실시간 랭킹을 확인하고, 포인트를 적립하세요!",
-  keywords: "배달킹, 배달, 랭킹, 라이더, 배민, 쿠팡이츠, 포인트",
+  metadataBase: new URL("https://www.baedalrank.com"),
+  title: {
+    default: "배달킹",
+    template: "%s | 배달킹"
+  },
+  description: "전국 배달 라이더들의 실시간 랭킹 및 경쟁 서비스",
+  keywords: ["배달", "랭킹", "라이더", "배달기사", "실적", "경쟁"],
   openGraph: {
-    title: "배달킹 - 실시간 배달 랭킹 서비스",
-    description: "전국 배달 라이더들의 실시간 랭킹을 확인하고, 포인트를 적립하세요!",
+    title: "배달킹 - 실시간 배달 랭킹",
+    description: "전국 배달 라이더들의 실시간 랭킹 및 경쟁 서비스",
     url: "https://www.baedalrank.com",
     siteName: "배달킹",
     images: [

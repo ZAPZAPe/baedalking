@@ -45,25 +45,25 @@ export const shareToKakao = () => {
       content: {
         title: '배달킹 - 실시간 배달 랭킹',
         description: '배달 라이더들의 실시간 랭킹을 확인하고 경쟁해보세요!',
-        imageUrl: 'https://baedalking.vercel.app/baedalking-logo.png',
+        imageUrl: 'https://www.baedalrank.com/baedalking-logo.png',
         link: {
-          mobileWebUrl: 'https://baedalking.vercel.app',
-          webUrl: 'https://baedalking.vercel.app',
+          mobileWebUrl: 'https://www.baedalrank.com',
+          webUrl: 'https://www.baedalrank.com',
         },
       },
       buttons: [
         {
           title: '앱으로 보기',
           link: {
-            mobileWebUrl: 'https://baedalking.vercel.app',
-            webUrl: 'https://baedalking.vercel.app',
+            mobileWebUrl: 'https://www.baedalrank.com',
+            webUrl: 'https://www.baedalrank.com',
           },
         },
       ],
     });
   } catch (error) {
     console.error('카카오 공유 중 오류 발생:', error);
-    fallbackShare('배달킹 - 실시간 배달 랭킹', 'https://baedalking.vercel.app');
+    fallbackShare('배달킹 - 실시간 배달 랭킹', 'https://www.baedalrank.com');
   }
 };
 
@@ -71,12 +71,12 @@ export const shareToKakao = () => {
 export const inviteFriends = async (inviteCode?: string) => {
   if (!window.Kakao) {
     console.error('카카오 SDK가 로드되지 않았습니다.');
-    const inviteUrl = inviteCode ? `https://baedalking.vercel.app?invite=${inviteCode}` : 'https://baedalking.vercel.app';
+    const inviteUrl = inviteCode ? `https://www.baedalrank.com?invite=${inviteCode}` : 'https://www.baedalrank.com';
     fallbackShare('배달킹에서 진짜 배달왕에 도전하세요! 🚀', inviteUrl);
     return;
   }
 
-  const inviteUrl = inviteCode ? `https://baedalking.vercel.app?invite=${inviteCode}` : 'https://baedalking.vercel.app';
+  const inviteUrl = inviteCode ? `https://www.baedalrank.com?invite=${inviteCode}` : 'https://www.baedalrank.com';
 
   try {
     window.Kakao.Share.sendDefault({
@@ -179,7 +179,7 @@ export const shareRanking = ({ rank, totalAmount, deliveryCount, platform, perio
 
 배달킹에서 나도 도전해보세요!`;
 
-  const currentUrl = 'https://baedalking.vercel.app';
+  const currentUrl = 'https://www.baedalrank.com';
 
   console.log('카카오톡 공유 시도:', { title, description });
 
@@ -189,7 +189,7 @@ export const shareRanking = ({ rank, totalAmount, deliveryCount, platform, perio
       content: {
         title: title,
         description: description,
-        imageUrl: 'https://baedalking.vercel.app/baedalking-logo.png',
+        imageUrl: 'https://www.baedalrank.com/baedalking-logo.png',
         link: {
           mobileWebUrl: currentUrl,
           webUrl: currentUrl,

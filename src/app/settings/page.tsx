@@ -687,33 +687,33 @@ export default function SettingsPage() {
                         window.Kakao.Share.sendDefault({
                           objectType: 'feed',
                           content: {
-                            title: '🚀 배달킹에서 함께 배달왕에 도전해요!',
-                            description: `${userProfile.nickname}님이 초대했어요! 지금 가입하면 500P 즉시 지급! 추천 코드: ${userProfile.referral_code}`,
+                            title: '배달킹 함께 도전하세요! 👑',
+                            description: '가입하면 300P 즉시 지급! 함께 랭킹 경쟁해요!',
                             imageUrl: 'https://www.baedalrank.com/baedalking-logo.png',
                             link: {
-                                                              mobileWebUrl: `https://www.baedalrank.com/invite/${userProfile.referral_code}`,
-                                  webUrl: `https://www.baedalrank.com/invite/${userProfile.referral_code}`,
+                              mobileWebUrl: `https://www.baedalrank.com?invite=${userProfile.referral_code}`,
+                              webUrl: `https://www.baedalrank.com?invite=${userProfile.referral_code}`,
                             },
                           },
                           buttons: [
                             {
-                              title: '지금 가입하기',
+                              title: '지금 가입하고 300P 받기',
                               link: {
-                                mobileWebUrl: `https://www.baedalrank.com/invite/${userProfile.referral_code}`,
-                                webUrl: `https://www.baedalrank.com/invite/${userProfile.referral_code}`,
+                                mobileWebUrl: `https://www.baedalrank.com?invite=${userProfile.referral_code}`,
+                                webUrl: `https://www.baedalrank.com?invite=${userProfile.referral_code}`,
                               },
                             },
                           ],
                         });
-                                            } else {
-                          // 카카오 SDK가 없으면 클립보드에 복사
-                          await navigator.clipboard.writeText(`https://www.baedalrank.com/invite/${userProfile.referral_code}`);
+                      } else {
+                        // 카카오 SDK가 없으면 클립보드에 복사
+                        await navigator.clipboard.writeText(`https://www.baedalrank.com?invite=${userProfile.referral_code}`);
                         toast.success('초대 링크가 복사되었습니다.');
                       }
                     } catch (error) {
-                                            console.error('공유 실패:', error);
-                        // 실패 시 클립보드에 복사
-                        await navigator.clipboard.writeText(`https://www.baedalrank.com/invite/${userProfile.referral_code}`);
+                      console.error('공유 실패:', error);
+                      // 실패 시 클립보드에 복사
+                      await navigator.clipboard.writeText(`https://www.baedalrank.com?invite=${userProfile.referral_code}`);
                       toast.success('초대 링크가 복사되었습니다.');
                     }
                   }}

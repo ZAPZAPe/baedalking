@@ -13,7 +13,7 @@ const getRedirectUrl = (path: string = '/auth/callback'): string => {
   }
   
   // 기본값
-      return `https://www.baedalrank.com${path}`;
+  return `https://www.baedalrank.com${path}`;
 };
 
 // 회원가입
