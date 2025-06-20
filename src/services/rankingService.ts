@@ -109,8 +109,8 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
           passed: hasAmount && hasOrders && hasNickname
         });
         
-        // 더 관대한 필터링: 닉네임만 있으면 포함 (개발/테스트용)
-        return hasNickname;
+        // 실제 배달 기록이 있는 사용자만 포함 (0건 0원 제외)
+        return hasAmount && hasOrders && hasNickname;
       })
       .map((row: any) => ({
         userId: row.user_id || '',
@@ -224,8 +224,8 @@ export const getWeeklyRanking = async (region?: string): Promise<RankingData[]> 
         if (b.totalOrders !== a.totalOrders) {
           return b.totalOrders - a.totalOrders;
         }
-        // 금액과 건수가 모두 같은 경우 공동 순위 (이름순)
-        return a.nickname.localeCompare(b.nickname);
+        // 금액과 건수가 모두 같은 경우 공동 순위 (랜덤 배치)
+        return Math.random() - 0.5;
       })
       .reduce((acc: RankingData[], curr, idx, arr) => {
         if (idx === 0) {
@@ -298,8 +298,8 @@ export const getMonthlyRanking = async (region?: string): Promise<RankingData[]>
         if (b.totalOrders !== a.totalOrders) {
           return b.totalOrders - a.totalOrders;
         }
-        // 금액과 건수가 모두 같은 경우 공동 순위 (이름순)
-        return a.nickname.localeCompare(b.nickname);
+        // 금액과 건수가 모두 같은 경우 공동 순위 (랜덤 배치)
+        return Math.random() - 0.5;
       })
       .reduce((acc: RankingData[], curr, idx, arr) => {
         if (idx === 0) {
@@ -377,8 +377,14 @@ export const getPlatformTopRankers = async (): Promise<{
       return { baemin: [], coupang: [] };
     }
 
-    // 기본 랭킹 데이터를 플랫폼별로 분할 (임시로 홀수/짝수 인덱스로 분할)
-    const baeminRankers = data
+    // 실제 배달 기록이 있는 데이터만 필터링 후 플랫폼별로 분할
+    const validData = data.filter(row => 
+      (row.today_earnings || 0) > 0 && 
+      (row.today_deliveries || 0) > 0 && 
+      row.nickname && row.nickname.trim()
+    );
+    
+    const baeminRankers = validData
       .filter((_, index) => index % 2 === 0) // 홀수 인덱스 (0, 2, 4...)
       .slice(0, 3)
       .map(row => ({
@@ -391,7 +397,7 @@ export const getPlatformTopRankers = async (): Promise<{
         platform: '배민커넥트' // 임시로 배민커넥트로 설정
       }));
 
-    const coupangRankers = data
+    const coupangRankers = validData
       .filter((_, index) => index % 2 === 1) // 짝수 인덱스 (1, 3, 5...)
       .slice(0, 3)
       .map(row => ({
