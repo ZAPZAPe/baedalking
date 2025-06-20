@@ -8,7 +8,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // 타임아웃이 있는 fetch 함수
-const fetchWithTimeout = (timeout = 5000) => {
+const fetchWithTimeout = (timeout = 10000) => {
   return async (input: RequestInfo | URL, options?: RequestInit) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -16,7 +16,12 @@ const fetchWithTimeout = (timeout = 5000) => {
     try {
       const response = await fetch(input, {
         ...options,
-        signal: controller.signal
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...options?.headers
+        }
       });
       clearTimeout(timeoutId);
       return response;
@@ -38,6 +43,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    flowType: 'pkce', // PKCE 플로우 사용
     debug: process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SUPABASE_DEBUG === 'true'
   },
   global: {
@@ -46,7 +52,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'Accept': 'application/json',
       'apikey': supabaseAnonKey || 'placeholder-key'
     },
-    fetch: fetchWithTimeout(5000) // 5초 타임아웃 설정
+    fetch: fetchWithTimeout(10000) // 10초 타임아웃 설정
   },
   db: {
     schema: 'public'
