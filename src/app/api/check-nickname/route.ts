@@ -60,14 +60,14 @@ export async function GET(request: Request) {
       query = query.neq('id', currentUserId);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query;
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('닉네임 확인 쿼리 오류:', error);
       throw error;
     }
 
-    const available = !data;
+    const available = !data || data.length === 0;
 
     return NextResponse.json({ 
       available,
@@ -134,14 +134,14 @@ export async function POST(request: Request) {
       query = query.neq('id', currentUserId);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query;
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('닉네임 확인 쿼리 오류:', error);
       throw error;
     }
 
-    const isAvailable = !data;
+    const isAvailable = !data || data.length === 0;
 
     return NextResponse.json({ isAvailable });
   } catch (error) {

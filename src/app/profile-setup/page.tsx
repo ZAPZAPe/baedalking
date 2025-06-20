@@ -207,12 +207,11 @@ export default function ProfileSetupPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return false;
 
-      const { data: existingUser, error } = await supabase
+      const { data: existingUsers, error } = await supabase
         .from('users')
         .select('id')
         .eq('nickname', nickname)
-        .neq('id', session.user.id)
-        .single();
+        .neq('id', session.user.id);
 
       // 네트워크 에러나 리소스 부족 에러는 조용히 처리
       if (error && (error.message?.includes('Failed to fetch') || 
@@ -223,7 +222,7 @@ export default function ProfileSetupPage() {
         return false;
       }
 
-      if (existingUser) {
+      if (existingUsers && existingUsers.length > 0) {
         setNicknameError('이미 사용 중인 닉네임입니다.');
         return false;
       }
@@ -408,17 +407,18 @@ export default function ProfileSetupPage() {
       if (!session) return;
 
       // 추천코드 존재 여부 확인
-      const { data: inviter, error } = await supabase
+      const { data: inviters, error } = await supabase
         .from('users')
         .select('id, nickname')
-        .eq('referral_code', code)
-        .single();
+        .eq('referral_code', code);
 
-      if (error || !inviter) {
+      if (error || !inviters || inviters.length === 0) {
         setInviteCodeError('존재하지 않는 추천코드입니다.');
         setInviteCodeValid(false);
         return;
       }
+
+      const inviter = inviters[0];
 
       // 자기 자신의 코드인지 확인
       if (inviter.id === session.user.id) {
@@ -428,14 +428,13 @@ export default function ProfileSetupPage() {
       }
 
       // 이미 사용한 코드인지 확인
-      const { data: existingInvite } = await supabase
+      const { data: existingInvites } = await supabase
         .from('invites')
         .select('id')
         .eq('invite_code', code)
-        .eq('invited_user_id', session.user.id)
-        .single();
+        .eq('invited_user_id', session.user.id);
 
-      if (existingInvite) {
+      if (existingInvites && existingInvites.length > 0) {
         setInviteCodeError('이미 사용된 추천코드입니다.');
         setInviteCodeValid(false);
         return;
