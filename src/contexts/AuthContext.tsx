@@ -128,6 +128,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // 프로필이 존재하는 경우
+      let referralCode = profile?.referral_code;
+      
+      // referral_code가 없으면 생성
+      if (!referralCode) {
+        // 새로운 5자리 코드 생성 (3글자 + 2숫자)
+        let attempts = 0;
+        do {
+          const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
+          const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+          referralCode = letters + numbers;
+          attempts++;
+
+          // 중복 확인
+          const { data: existing } = await supabase
+            .from('users')
+            .select('id')
+            .eq('referral_code', referralCode)
+            .single();
+
+          if (!existing) break;
+        } while (attempts < 10);
+
+        if (attempts < 10) {
+          // referral_code 업데이트
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ referral_code: referralCode })
+            .eq('id', authUser.id);
+
+          if (updateError) {
+            console.error('referral_code 업데이트 실패:', updateError);
+            referralCode = ''; // 실패 시 빈 문자열
+          }
+        } else {
+          console.error('고유한 referral_code 생성 실패');
+          referralCode = '';
+        }
+      }
+
       const userData: User = {
         id: authUser.id,
         email: authUser.email || '',
@@ -139,7 +178,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         totalDeliveries: profile?.total_deliveries || 0,
         totalEarnings: profile?.total_earnings || 0,
         profileImage: profile?.profile_image || '',
-        referral_code: profile?.referral_code || '',
+        referral_code: referralCode || '',
         notificationSettings: profile?.notification_settings || {},
         role: profile?.role || 'user',
       };
