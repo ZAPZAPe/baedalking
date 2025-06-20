@@ -210,7 +210,7 @@ export default function Navigation({ title }: NavigationProps) {
               pathname={pathname} 
               icon={FaCog} 
               label="설정" 
-              disabled={false} // 설정은 항상 접근 가능
+              disabled={isProfileIncomplete && !isInProfileSetup}
             />
           </div>
         </nav>

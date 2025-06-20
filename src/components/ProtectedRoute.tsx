@@ -47,8 +47,7 @@ const ProtectedRoute = ({ children, requireProfile = true, allowedPaths = [] }: 
         // 현재 경로가 허용된 경로인지 확인
         const currentPath = window.location.pathname;
         const isAllowedPath = allowedPaths.some(path => currentPath.startsWith(path)) || 
-                             currentPath === '/profile-setup' ||
-                             currentPath === '/settings'; // 설정 페이지는 항상 허용
+                             currentPath === '/profile-setup';
         
         if (!isAllowedPath) {
           console.log('프로필 설정이 완료되지 않아 프로필 설정 페이지로 이동합니다.');
@@ -86,8 +85,7 @@ const ProtectedRoute = ({ children, requireProfile = true, allowedPaths = [] }: 
     if (!isProfileComplete) {
       const currentPath = window.location.pathname;
       const isAllowedPath = allowedPaths.some(path => currentPath.startsWith(path)) || 
-                           currentPath === '/profile-setup' ||
-                           currentPath === '/settings'; // 설정 페이지는 항상 허용
+                           currentPath === '/profile-setup';
       
       if (!isAllowedPath) {
         return null; // 프로필 설정 페이지로 리다이렉트 중

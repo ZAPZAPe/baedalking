@@ -299,14 +299,14 @@ export default function ProfileSetupPage() {
   return (
     <div className="min-h-screen bg-gradient-to-r from-purple-600 via-pink-600 to-purple-800 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
-        {/* 헤더 */}
-        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden mb-6">
+        {/* 헤더와 폼을 하나의 컨테이너에 */}
+        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
           {/* 배경 애니메이션 효과 */}
           <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
           
           <div className="relative z-10">
             {/* 헤더 - 실시간 Top 3 스타일 */}
-            <div className="text-center">
+            <div className="text-center mb-6">
               <div className="flex items-center justify-center gap-2 mb-1">
                 <FaUser className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
                 <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
@@ -316,15 +316,6 @@ export default function ProfileSetupPage() {
               </div>
               <p className="text-purple-200 text-xs">배달킹 서비스 이용을 위한 추가 정보를 입력해주세요!</p>
             </div>
-          </div>
-        </div>
-
-        {/* 폼 */}
-        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
-          {/* 배경 애니메이션 효과 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
-          
-          <div className="relative z-10">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* 프로필 사진 */}
             <div className="flex justify-center mb-6">
