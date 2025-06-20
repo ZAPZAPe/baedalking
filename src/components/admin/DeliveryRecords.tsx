@@ -37,7 +37,6 @@ interface ExtendedDeliveryRecord {
   updatedAt?: string;
   userNickname?: string;
   userRegion?: string;
-  status?: 'pending' | 'verified' | 'rejected';
   imageUrl?: string;
 }
 
@@ -100,39 +99,32 @@ export default function DeliveryRecords() {
     switch (platform) {
       case 'baemin':
       case '배민커넥트':
-        return 'text-cyan-400';
+        return 'text-blue-600';
       case 'coupang':
       case '쿠팡이츠':
-        return 'text-green-400';
+        return 'text-green-600';
       case 'yogiyo':
       case '요기요':
-        return 'text-red-400';
+        return 'text-orange-600';
       default:
-        return 'text-gray-400';
+        return 'text-gray-600';
     }
   };
 
-  const getStatusBadge = (status: string | undefined, verified: boolean) => {
-    if (status === 'verified' || verified) {
+  const getStatusBadge = (verified: boolean) => {
+    if (verified) {
       return (
-        <div className="flex items-center gap-1 text-green-400">
-          <FaCheckCircle size={14} />
-          <span className="text-xs">인증됨</span>
-        </div>
-      );
-    } else if (status === 'rejected') {
-      return (
-        <div className="flex items-center gap-1 text-red-400">
-          <FaTimesCircle size={14} />
-          <span className="text-xs">반려됨</span>
-        </div>
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <FaCheckCircle size={12} className="mr-1" />
+          인증됨
+        </span>
       );
     } else {
       return (
-        <div className="flex items-center gap-1 text-yellow-400">
-          <FaClock size={14} />
-          <span className="text-xs">대기중</span>
-        </div>
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <FaClock size={12} className="mr-1" />
+                          미인증
+                        </span>
       );
     }
   };
@@ -144,9 +136,8 @@ export default function DeliveryRecords() {
                           record.userRegion?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPlatform = filterPlatform === 'all' || record.platform === filterPlatform;
       const matchesStatus = filterStatus === 'all' || 
-                          (filterStatus === 'verified' && (record.status === 'verified' || record.verified)) ||
-                          (filterStatus === 'pending' && (!record.status || record.status === 'pending') && !record.verified) ||
-                          (filterStatus === 'rejected' && record.status === 'rejected');
+                          (filterStatus === 'verified' && record.verified) ||
+                          (filterStatus === 'pending' && !record.verified);
       const matchesDate = !filterDate || record.date === filterDate;
       
       return matchesSearch && matchesPlatform && matchesStatus && matchesDate;
@@ -194,14 +185,14 @@ export default function DeliveryRecords() {
       {/* 헤더 */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h3 className="text-2xl font-bold text-white">배달 기록 관리</h3>
-          <p className="text-zinc-400 mt-1">총 {records.length}개의 배달 기록</p>
+          <h3 className="text-2xl font-bold text-gray-900">배달 기록 관리</h3>
+          <p className="text-gray-600">총 {records.length}개의 배달 기록</p>
         </div>
         <button
           onClick={() => {/* TODO: 엑셀 다운로드 기능 */}}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm"
         >
-          <FaDownload size={18} />
+          <FaDownload size={16} />
           <span className="font-medium">엑셀 다운로드</span>
         </button>
       </div>
@@ -209,30 +200,30 @@ export default function DeliveryRecords() {
       {/* 검색 및 필터 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="relative">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400" />
+          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="사용자 이름 또는 지역..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none text-sm"
           />
         </div>
 
         <div className="relative">
-          <FaCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400" />
+          <FaCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="date"
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 focus:border-blue-500 focus:outline-none text-sm"
           />
         </div>
 
         <select
           value={filterPlatform}
           onChange={(e) => setFilterPlatform(e.target.value)}
-          className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+          className="px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 focus:border-blue-500 focus:outline-none text-sm"
         >
           <option value="all">모든 플랫폼</option>
           {platforms.map(platform => (
@@ -243,12 +234,11 @@ export default function DeliveryRecords() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+          className="px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 focus:border-blue-500 focus:outline-none text-sm"
         >
           <option value="all">모든 상태</option>
           <option value="verified">인증됨</option>
-          <option value="pending">대기중</option>
-          <option value="rejected">반려됨</option>
+                      <option value="pending">미인증</option>
         </select>
 
         <select
@@ -258,7 +248,7 @@ export default function DeliveryRecords() {
             setSortBy(field);
             setSortOrder(order);
           }}
-          className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+          className="px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 focus:border-blue-500 focus:outline-none text-sm"
         >
           <option value="date-desc">날짜 (최신순)</option>
           <option value="date-asc">날짜 (오래된순)</option>
@@ -270,48 +260,48 @@ export default function DeliveryRecords() {
       </div>
 
       {/* 배달 기록 테이블 */}
-      <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-white/5 border-b border-white/10">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">날짜</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">사용자</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">플랫폼</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">배달 건수</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">금액</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">상태</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">제출일</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-zinc-400">작업</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사용자</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">플랫폼</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">배달 건수</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">금액</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제출일</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="bg-white divide-y divide-gray-200">
               {filteredAndSortedRecords.map((record) => (
-                <tr key={record.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 text-white font-medium">
+                <tr key={record.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-gray-900 font-medium">
                     {format(new Date(record.date), 'yyyy.MM.dd', { locale: ko })}
                   </td>
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-white font-medium">{record.userNickname || '알 수 없음'}</div>
-                      <div className="text-zinc-400 text-sm">{record.userRegion || '지역 미설정'}</div>
+                      <div className="text-gray-900 font-medium">{record.userNickname || '알 수 없음'}</div>
+                      <div className="text-gray-500 text-sm">{record.userRegion || '지역 미설정'}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`font-medium ${getPlatformColor(record.platform)}`}>
+                    <span className={`font-medium px-2 py-1 rounded-full text-xs bg-gray-100 ${getPlatformColor(record.platform)}`}>
                       {record.platform}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-white">
+                  <td className="px-6 py-4 text-gray-900">
                     {record.deliveryCount}건
                   </td>
-                  <td className="px-6 py-4 text-white font-medium">
+                  <td className="px-6 py-4 text-gray-900 font-medium">
                     {record.amount.toLocaleString()}원
                   </td>
                   <td className="px-6 py-4">
-                    {getStatusBadge(record.status, record.verified)}
+                    {getStatusBadge(record.verified)}
                   </td>
-                  <td className="px-6 py-4 text-zinc-400 text-sm">
+                  <td className="px-6 py-4 text-gray-500 text-sm">
                     {format(new Date(record.createdAt || record.date), 'yyyy-MM-dd HH:mm', { locale: ko })}
                   </td>
                   <td className="px-6 py-4">
@@ -321,35 +311,35 @@ export default function DeliveryRecords() {
                           setSelectedRecord(record);
                           setShowDetailModal(true);
                         }}
-                        className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                         title="상세 보기"
                       >
-                        <FaEye size={16} />
+                        <FaEye size={14} />
                       </button>
-                      {(!record.status || record.status === 'pending') && !record.verified && (
+                      {!record.verified && (
                         <>
                           <button
                             onClick={() => handleStatusUpdate(record.id, 'verified')}
-                            className="p-2 text-green-400 hover:bg-green-500/20 rounded-lg transition-colors"
+                            className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
                             title="승인"
                           >
-                            <FaCheckCircle size={16} />
+                            <FaCheckCircle size={14} />
                           </button>
                           <button
                             onClick={() => handleStatusUpdate(record.id, 'rejected')}
-                            className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                             title="반려"
                           >
-                            <FaTimesCircle size={16} />
+                            <FaTimesCircle size={14} />
                           </button>
                         </>
                       )}
                       <button
                         onClick={() => handleDelete(record.id, record.userId)}
-                        className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                        className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                         title="삭제"
                       >
-                        <FaExclamationTriangle size={16} />
+                        <FaExclamationTriangle size={14} />
                       </button>
                     </div>
                   </td>
@@ -362,13 +352,13 @@ export default function DeliveryRecords() {
 
       {/* 상세 보기 모달 */}
       {showDetailModal && selectedRecord && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 w-full max-w-2xl border border-purple-500/20 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">배달 기록 상세</h3>
+              <h3 className="text-xl font-bold text-gray-900">배달 기록 상세</h3>
               <button
                 onClick={() => setShowDetailModal(false)}
-                className="text-zinc-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <FaTimesCircle size={24} />
               </button>
@@ -377,53 +367,53 @@ export default function DeliveryRecords() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-zinc-400">날짜</label>
-                  <p className="text-white font-medium">
+                  <label className="text-sm font-medium text-gray-600">날짜</label>
+                  <p className="text-gray-900 font-medium mt-1">
                     {format(new Date(selectedRecord.date), 'yyyy년 MM월 dd일', { locale: ko })}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-zinc-400">사용자</label>
-                  <p className="text-white font-medium">
+                  <label className="text-sm font-medium text-gray-600">사용자</label>
+                  <p className="text-gray-900 font-medium mt-1">
                     {selectedRecord.userNickname} ({selectedRecord.userRegion})
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-zinc-400">플랫폼</label>
-                  <p className={`font-medium ${getPlatformColor(selectedRecord.platform)}`}>
+                  <label className="text-sm font-medium text-gray-600">플랫폼</label>
+                  <p className={`font-medium mt-1 ${getPlatformColor(selectedRecord.platform)}`}>
                     {selectedRecord.platform}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-zinc-400">상태</label>
+                  <label className="text-sm font-medium text-gray-600">상태</label>
                   <div className="mt-1">
-                    {getStatusBadge(selectedRecord.status, selectedRecord.verified)}
+                    {getStatusBadge(selectedRecord.verified)}
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-zinc-400">배달 건수</label>
-                  <p className="text-white font-medium text-xl">
+                  <label className="text-sm font-medium text-gray-600">배달 건수</label>
+                  <p className="text-gray-900 font-bold text-xl mt-1">
                     {selectedRecord.deliveryCount}건
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-zinc-400">총 금액</label>
-                  <p className="text-white font-medium text-xl">
+                  <label className="text-sm font-medium text-gray-600">총 금액</label>
+                  <p className="text-gray-900 font-bold text-xl mt-1">
                     {selectedRecord.amount.toLocaleString()}원
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-zinc-400">건당 평균</label>
-                  <p className="text-purple-400 font-medium">
+                  <label className="text-sm font-medium text-gray-600">건당 평균</label>
+                  <p className="text-blue-600 font-medium mt-1">
                     {Math.round(selectedRecord.amount / selectedRecord.deliveryCount).toLocaleString()}원
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-zinc-400">제출 시간</label>
-                  <p className="text-white">
+                  <label className="text-sm font-medium text-gray-600">제출 시간</label>
+                  <p className="text-gray-900 mt-1">
                     {format(new Date(selectedRecord.createdAt || selectedRecord.date), 'yyyy년 MM월 dd일 HH:mm', { locale: ko })}
                   </p>
                 </div>
@@ -432,8 +422,8 @@ export default function DeliveryRecords() {
 
             {selectedRecord.imageUrl && (
               <div className="mt-6">
-                <label className="text-sm text-zinc-400 block mb-2">업로드된 이미지</label>
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <label className="text-sm font-medium text-gray-600 block mb-2">업로드된 이미지</label>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <Image 
                     src={selectedRecord.imageUrl} 
                     alt="배달 기록 이미지"
@@ -446,14 +436,14 @@ export default function DeliveryRecords() {
             )}
 
             <div className="mt-6 flex gap-3">
-              {(!selectedRecord.status || selectedRecord.status === 'pending') && !selectedRecord.verified && (
+              {!selectedRecord.verified && (
                 <>
                   <button
                     onClick={() => {
                       handleStatusUpdate(selectedRecord.id, 'verified');
                       setShowDetailModal(false);
                     }}
-                    className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-medium"
+                    className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium"
                   >
                     승인하기
                   </button>
@@ -462,7 +452,7 @@ export default function DeliveryRecords() {
                       handleStatusUpdate(selectedRecord.id, 'rejected');
                       setShowDetailModal(false);
                     }}
-                    className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 transition-all font-medium"
+                    className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-medium"
                   >
                     반려하기
                   </button>
@@ -470,7 +460,7 @@ export default function DeliveryRecords() {
               )}
               <button
                 onClick={() => setShowDetailModal(false)}
-                className="flex-1 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all font-medium"
+                className="flex-1 py-3 bg-gray-200 text-gray-900 rounded-lg hover:bg-gray-300 transition-all font-medium"
               >
                 닫기
               </button>

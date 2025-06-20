@@ -618,17 +618,36 @@ export default function UploadPage() {
               {/* 예시 이미지 */}
               <div className="mb-3 sm:mb-4">
                 {selectedExampleApp === '배민커넥트' ? (
-                  <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 space-y-2 border border-white/20">
-                    <div className="aspect-[9/16] bg-white/5 rounded-lg overflow-hidden">
-                      <img 
-                        src="/baemin-example.svg" 
-                        alt="배민커넥트 예시" 
-                        className="w-full h-full object-contain"
-                      />
+                  <div className="space-y-3">
+                    {/* 기존 배민커넥트 화면 (오늘 배달 내역) */}
+                    <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 space-y-2 border border-white/20">
+                      <div className="aspect-[9/16] bg-white/5 rounded-lg overflow-hidden">
+                        <img 
+                          src="/baemin-example.svg" 
+                          alt="배민커넥트 기존 예시" 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="text-center">
+                        <div className="inline-flex items-center gap-1 bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded-full text-[10px]">
+                          <span>기존 형태: 오늘 배달 내역</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <div className="inline-flex items-center gap-1 bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded-full text-[10px]">
-                        <span>오늘의 배달 수익</span>
+                    
+                    {/* 새로운 배민커넥트 화면 (배달 실적 요약) */}
+                    <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 space-y-2 border border-white/20">
+                      <div className="aspect-[9/16] bg-white/5 rounded-lg overflow-hidden">
+                        <img 
+                          src="/baemin-connect-example.svg" 
+                          alt="배민커넥트 신규 예시" 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="text-center">
+                        <div className="inline-flex items-center gap-1 bg-orange-500/20 text-orange-300 px-2 py-1 rounded-full text-[10px]">
+                          <span>신규 형태: 배달 실적 요약</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -658,9 +677,22 @@ export default function UploadPage() {
                   <div className="text-purple-200 text-[11px] space-y-1">
                     {selectedExampleApp === '배민커넥트' ? (
                       <>
-                        <p>1. 배민커넥트 앱 실행</p>
-                        <p>2. 마이페이지 → 오늘 배달 내역 클릭</p>
-                        <p>3. 전체 화면이 보이도록 스크린샷</p>
+                        <p className="font-medium text-cyan-300 mb-2">📱 두 가지 화면 형태 모두 가능합니다:</p>
+                        <div className="space-y-2 ml-2">
+                          <div>
+                            <p className="text-cyan-300 font-medium">▪ "오늘 배달 내역"</p>
+                            <p className="ml-2">1. 배민커넥트 앱 → 마이페이지</p>
+                            <p className="ml-2">2. "오늘 배달 내역" 클릭</p>
+                            <p className="ml-2">3. "배달료 합계"가 보이는 화면 캡처</p>
+                          </div>
+                          <div>
+                            <p className="text-orange-300 font-medium">▪ "오늘의 기록"</p>
+                            <p className="ml-2">1. 배민커넥트 앱 → 마이페이지</p>
+                            <p className="ml-2">2. "오늘 배달 내역" 클릭</p>
+                            <p className="ml-2">3. 사진 촬영</p>
+                            <p className="ml-2 text-green-300">💡 검은색 배경이면 인식 잘됩니다!</p>
+                          </div>
+                        </div>
                       </>
                     ) : (
                       <>

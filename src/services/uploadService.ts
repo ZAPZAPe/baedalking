@@ -48,8 +48,7 @@ export async function uploadDeliveryData(
         platform,
         image_url: imageUrl,
         date: date.toISOString(),
-        is_verified: false,
-        is_manual_entry: !imageFile
+        verified: false
       })
       .select()
       .single();
@@ -214,14 +213,11 @@ export const addManualDeliveryRecord = async (
       .from('delivery_records')
       .insert({
         user_id: recordData.userId,
-        user_nickname: recordData.userNickname,
-        user_region: recordData.userRegion,
         platform: recordData.platform,
         amount: recordData.amount,
         delivery_count: recordData.deliveryCount,
         date: recordData.date,
-        is_manual_entry: true,
-        is_verified: false
+        verified: false
       })
       .select()
       .single();
@@ -390,15 +386,12 @@ export const uploadDeliveryRecord = async (
       .from('delivery_records')
       .insert({
         user_id: recordData.userId,
-        user_nickname: recordData.userNickname,
-        user_region: recordData.userRegion,
         platform: recordData.platform,
         amount: recordData.amount,
         delivery_count: recordData.deliveryCount,
         date: recordData.date,
         image_url: imageUrl,
-        is_manual_entry: false,
-        is_verified: false
+        verified: false
       })
       .select()
       .single();

@@ -26,7 +26,7 @@ export default function AdminGroupLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-gray-50">
       {children}
     </div>
   );

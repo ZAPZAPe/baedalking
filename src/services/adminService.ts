@@ -5,6 +5,7 @@ import { FraudRecord } from '@/types/fraud';
 interface ExtendedDeliveryRecord extends DeliveryRecord {
   userNickname?: string;
   userRegion?: string;
+  imageUrl?: string;
 }
 
 interface DashboardStats {
@@ -253,7 +254,8 @@ export const getAllDeliveryRecords = async (): Promise<ExtendedDeliveryRecord[]>
       createdAt: record.created_at,
       updatedAt: record.updated_at,
       userNickname: record.users?.nickname,
-      userRegion: record.users?.region
+      userRegion: record.users?.region,
+      imageUrl: record.image_url
     }));
   } catch (error) {
     console.error('배달 기록 가져오기 오류:', error);
@@ -270,8 +272,8 @@ export const verifyDeliveryRecord = async (
     const { error } = await supabase
       .from('delivery_records')
       .update({
-        status: 'verified',
-        verified_at: new Date().toISOString()
+        verified: true,
+        updated_at: new Date().toISOString()
       })
       .eq('id', recordId);
 
@@ -466,10 +468,11 @@ export const updateDeliveryStatus = async (
   status: 'pending' | 'verified' | 'rejected'
 ): Promise<void> => {
   try {
+    const verified = status === 'verified';
     const { error } = await supabase
       .from('delivery_records')
       .update({
-        status,
+        verified,
         updated_at: new Date().toISOString()
       })
       .eq('id', recordId);
@@ -561,6 +564,46 @@ export const updateUserData = async (
     }
   } catch (error) {
     console.error('사용자 데이터 업데이트 오류:', error);
+    throw error;
+  }
+};
+
+// 사용자 프로필 정보 업데이트
+export const updateUserProfile = async (
+  userId: string,
+  data: {
+    nickname?: string;
+    region?: string;
+    vehicle?: string;
+    phone?: string;
+  }
+): Promise<void> => {
+  try {
+    const updates: any = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (data.nickname !== undefined) {
+      updates.nickname = data.nickname;
+    }
+    if (data.region !== undefined) {
+      updates.region = data.region;
+    }
+    if (data.vehicle !== undefined) {
+      updates.vehicle = data.vehicle;
+    }
+    if (data.phone !== undefined) {
+      updates.phone = data.phone;
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', userId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('사용자 프로필 업데이트 오류:', error);
     throw error;
   }
 };

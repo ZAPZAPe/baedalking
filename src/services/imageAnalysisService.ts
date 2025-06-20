@@ -143,8 +143,8 @@ export class ImageAnalysisService {
       
       if (detectedPlatform === 'baemin') {
         analysisResult = this.analyzeBaeminScreen(text);
-        // 실제 화면이 배민이 아닌 경우
-        if (analysisResult.isValidScreen && this.detectActualPlatform(text) !== 'baemin') {
+        // 새로운 배민커넥트 화면으로 확정된 경우가 아니라면 플랫폼 검증 실행
+        if (analysisResult.isValidScreen && analysisResult.screenType !== '배달 실적 요약' && this.detectActualPlatform(text) !== 'baemin') {
           analysisResult.isValidScreen = false;
           analysisResult.errorMessage = '배민커넥트 화면이 아닙니다. 배민커넥트를 선택했다면 배민커넥트 앱의 "오늘 배달 내역" 화면을 캡처해주세요.';
         }
@@ -217,6 +217,9 @@ export class ImageAnalysisService {
     if (text.includes('배달건')) baeminScore += 2;
     if (text.includes('배달의민족')) baeminScore += 1;
     if (text.includes('배민')) baeminScore += 1;
+    
+    // OCR 오류로 인한 배민커넥트 패턴
+    if (/배민.*커넥트|배민커넥트|배만.*커넥트|배만커넥트|배만\\커넥트/i.test(text)) baeminScore += 3;
     
     // 배민 날짜 패턴 (월 일)
     if (/\d{1,2}월\s*\d{1,2}일/.test(text)) baeminScore += 2;
@@ -346,8 +349,189 @@ export class ImageAnalysisService {
       };
     }
     
+    // 배민커넥트 화면 유형 감지 - 기존 화면을 우선적으로 체크
+    const isClassicScreen = /배\s*달\s*료\s*합\s*계|배달료합계/.test(text);
+    const isNewScreen = this.detectBaeminConnectNewScreen(text);
+    
+    console.log('화면 유형 감지:', { isClassicScreen, isNewScreen });
+    
+    // 기존 화면을 우선적으로 처리 (기존 사용자 호환성 보장)
+    if (isClassicScreen) {
+      return this.analyzeClassicBaeminScreen(text);
+    } else if (isNewScreen) {
+      // 새로운 배민커넥트 화면으로 확정된 경우 플랫폼 검증 없이 진행
+      const result = this.analyzeNewBaeminConnectScreen(text);
+      console.log('새로운 배민커넥트 화면으로 확정 - 플랫폼 검증 생략');
+      return result;
+    } else {
+      return {
+        amount: 0,
+        deliveryCount: 0,
+        platform: 'baemin',
+        date: new Date().toISOString().split('T')[0],
+        confidence: 0.2,
+        rawText: text,
+        analysisTime: 0,
+        isValidScreen: false,
+        errorMessage: '배민커넥트 화면을 인식할 수 없습니다. "오늘 배달 내역" 화면이나 배달 실적 요약 화면을 캡처해주세요.'
+      };
+    }
+  }
+
+  /**
+   * 새로운 배민커넥트 화면 감지 (배달건, 배달료, 운행거리 형태)
+   */
+  private detectBaeminConnectNewScreen(text: string): boolean {
+    // 기존 화면 패턴이 있으면 새로운 화면이 아님
+    if (/배\s*달\s*료\s*합\s*계|배달료합계/.test(text)) {
+      return false;
+    }
+    
+    console.log('새로운 배민커넥트 화면 감지 시작');
+    
+         // 더 유연한 패턴들 - 각 요소가 서로 다른 줄에 있을 수 있음
+     const patterns = {
+       deliveryCount: /배달건|iH\s*\d+|배.*건/, // "배달건" 텍스트 (OCR 오류 포함)
+       deliveryAmount: /배달료|EE|배.*료/, // "배달료" 텍스트 (OCR 오류 포함)
+       distance: /운행거리/, // "운행거리" 텍스트만 확인
+       dateTime: /\d{4}\.\d{1,2}\.\d{1,2}\s*오[전후]\s*\d{1,2}:\d{2}/, // "2025.06.20 오전 3:12"
+       baeminConnect: /배민.*커넥트|배민커넥트|배만.*커넥트|배만커넥트|배만\\커넥트|HHS\s*=?/i, // "배민커넥트" 로고 (OCR 오류 포함)
+     };
+    
+    // 숫자 패턴들 (OCR 오류 고려)
+    const numberPatterns = {
+      countNumber: /\d+\s*건|\d+건/, // "44건", "0건"
+      amountNumber: /\d{1,3}(?:,\d{3})*\s*원|\d+\s*원|\d+원|^\d+$/, // "183,760원", "0원", "03" 등
+      distanceNumber: /\d+\.\d+\s*km|\d+\.?\d*\s*km/, // "93.6km", "0.0km"
+    };
+    
+    let patternScore = 0;
+    let numberScore = 0;
+    
+    // 텍스트 패턴 확인
+    for (const [key, pattern] of Object.entries(patterns)) {
+      if (pattern.test(text)) {
+        patternScore++;
+        console.log(`✓ ${key} 패턴 발견`);
+      } else {
+        console.log(`✗ ${key} 패턴 미발견`);
+      }
+    }
+    
+    // 숫자 패턴 확인
+    for (const [key, pattern] of Object.entries(numberPatterns)) {
+      if (pattern.test(text)) {
+        numberScore++;
+        console.log(`✓ ${key} 숫자 패턴 발견`);
+      } else {
+        console.log(`✗ ${key} 숫자 패턴 미발견`);
+      }
+    }
+    
+    console.log(`패턴 점수: ${patternScore}/5, 숫자 점수: ${numberScore}/3`);
+    
+    // 조건 1: 기본 조건 (높은 OCR 품질)
+    const basicRequirement = patternScore >= 4 && numberScore >= 2;
+    
+    // 조건 2: 운행거리 기반 조건 (중간 OCR 품질)  
+    const hasDistance = /운행거리/.test(text) && /\d+\.\d+\s*km/.test(text);
+    const distanceRequirement = hasDistance && patternScore >= 3 && numberScore >= 1;
+    
+    // 조건 3: 최소 조건 (낮은 OCR 품질) - 운행거리 + 날짜시간 + 모든 숫자패턴
+    const hasDateTime = /\d{4}\.\d{1,2}\.\d{1,2}\s*오[전후]\s*\d{1,2}:\d{2}/.test(text);
+    const minimumRequirement = hasDistance && hasDateTime && numberScore >= 3;
+    
+    const isNewScreen = basicRequirement || distanceRequirement || minimumRequirement;
+    console.log(`새로운 화면 감지 결과: ${isNewScreen} (거리패턴: ${hasDistance}, 날짜패턴: ${hasDateTime}, 최소조건: ${minimumRequirement})`);
+    
+    return isNewScreen;
+  }
+
+  /**
+   * 새로운 배민커넥트 화면 분석
+   */
+  private analyzeNewBaeminConnectScreen(text: string): AnalysisResult {
+    console.log('=== 새로운 배민커넥트 화면 분석 ===');
+    
+    // 필수 요소 확인 (OCR 오류 고려)
+    const requiredElements = {
+      '배달건패턴': /배달건.*\d+.*건|배달건.*\d+건|\d+.*건|iH\s*\d+|배.*건/,
+      '배달료패턴': /배달료.*\d{1,3}(?:,\d{3})*.*원|\d{1,3}(?:,\d{3})*.*원|EE|배.*료/,
+      '날짜시간패턴': /\d{4}\.\d{2}\.\d{2}.*오전|오후.*\d{1,2}:\d{2}|\d{4}\.\d{1,2}\.\d{1,2}/,
+      '배민커넥트패턴': /배민.*커넥트|배민커넥트|배만.*커넥트|배만커넥트|배만\\커넥트|HHS\s*=?/i,
+      '운행거리패턴': /운행거리/,
+    };
+    
+    let validElements = 0;
+    const missingElements: string[] = [];
+    
+    for (const [element, pattern] of Object.entries(requiredElements)) {
+      if (pattern.test(text)) {
+        validElements++;
+        console.log(`✓ ${element} 발견`);
+      } else {
+        missingElements.push(element);
+        console.log(`✗ ${element} 미발견`);
+      }
+    }
+    
+    // OCR 품질이 낮은 경우를 고려하여 조건 완화: 날짜시간 + 운행거리 + 1개 이상
+    const hasDateTime = /\d{4}\.\d{1,2}\.\d{1,2}\s*오[전후]\s*\d{1,2}:\d{2}/.test(text);
+    const hasDistance = /운행거리/.test(text);
+    const hasNumbers = /\d+\s*건|\d+\s*원|\d+\.\d+\s*km/.test(text);
+    
+    if (hasDateTime && hasDistance && hasNumbers) {
+      console.log('OCR 품질 낮음 - 최소 조건으로 통과 (날짜+거리+숫자)');
+    } else if (validElements < 2) {
+      return {
+        amount: 0,
+        deliveryCount: 0,
+        platform: 'baemin',
+        date: new Date().toISOString().split('T')[0],
+        confidence: 0.3,
+        rawText: text,
+        analysisTime: 0,
+        isValidScreen: false,
+        errorMessage: '배민커넥트 배달 실적 화면이 아닙니다. 올바른 화면을 캡처해주세요.'
+      };
+    }
+    
+    // 날짜 추출 (새로운 형태)
+    const dateInfo = this.extractNewBaeminDate(text);
+    if (!dateInfo.date) {
+      dateInfo.date = new Date().toISOString().split('T')[0];
+      console.log('날짜를 찾을 수 없어 오늘 날짜로 설정:', dateInfo.date);
+    }
+    
+    // 금액 추출 (새로운 형태)
+    const amount = this.extractNewBaeminAmount(text);
+    
+    // 건수 추출 (새로운 형태)
+    const deliveryCount = this.extractNewBaeminDeliveryCount(text);
+    
+    // 신뢰도 계산
+    const confidence = this.calculateBaeminConfidence(text, validElements);
+    
+    return {
+      amount,
+      deliveryCount,
+      platform: 'baemin',
+      date: dateInfo.date,
+      confidence,
+      rawText: text,
+      analysisTime: 0,
+      isValidScreen: true,
+      screenType: '배달 실적 요약'
+    };
+  }
+
+  /**
+   * 기존 배민커넥트 화면 분석 (배달료 합계 형태)
+   */  
+  private analyzeClassicBaeminScreen(text: string): AnalysisResult {
+    console.log('=== 기존 배민커넥트 화면 분석 ===');
+    
     // 필수 요소 확인 (배민커넥트 "오늘 배달 내역" 화면)
-    // 한글이 제대로 인식 안될 수 있으므로 숫자 패턴도 확인
     const requiredElements = {
       '배달료합계': /배\s*달\s*료\s*합\s*계|배달료합계/,
       '날짜패턴': /\d{1,2}월\s*\d{1,2}일|\d{4}\.\d{1,2}\.\d{1,2}|\d{1,2}\.\d{1,2}/,
@@ -356,7 +540,6 @@ export class ImageAnalysisService {
     };
     
     let hasDeliveryFeeTotal = false;
-
     let validElements = 0;
     const missingElements: string[] = [];
 
@@ -406,16 +589,8 @@ export class ImageAnalysisService {
     // 날짜 추출
     const dateInfo = this.extractBaeminDate(text);
     if (!dateInfo.date) {
-      // 날짜를 못 찾으면 오늘 날짜로 설정
       dateInfo.date = new Date().toISOString().split('T')[0];
       console.log('날짜를 찾을 수 없어 오늘 날짜로 설정:', dateInfo.date);
-    }
-
-    // 오늘 날짜인지 확인
-    const today = new Date().toISOString().split('T')[0];
-    if (dateInfo.date !== today) {
-      // 오늘이 아니어도 분석은 계속 진행
-      console.log(`날짜가 오늘(${today})이 아님: ${dateInfo.date}`);
     }
 
     // 금액 추출
@@ -427,7 +602,6 @@ export class ImageAnalysisService {
     // 신뢰도 계산
     const confidence = this.calculateBaeminConfidence(text, validElements);
 
-    // 모든 결과를 그대로 반환 (날짜 관계없이)
     return {
       amount,
       deliveryCount,
@@ -439,6 +613,306 @@ export class ImageAnalysisService {
       isValidScreen: true,
       screenType: '오늘 배달 내역'
     };
+  }
+
+  /**
+   * 새로운 배민커넥트 날짜 추출 (2025.06.20 오전 3:12 형태)
+   */
+  private extractNewBaeminDate(text: string): { date?: string } {
+    console.log('새 배민 날짜 추출 시작');
+    
+    // 새로운 형태의 날짜 패턴
+    const patterns = [
+      /(\d{4})\.(\d{1,2})\.(\d{1,2})\s*오전|오후\s*\d{1,2}:\d{2}/,  // 2025.06.20 오전 3:12
+      /(\d{4})\.(\d{1,2})\.(\d{1,2})/,                               // 2025.06.20
+    ];
+    
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match) {
+        const year = parseInt(match[1]);
+        const month = parseInt(match[2]);
+        const day = parseInt(match[3]);
+        
+        // 유효한 날짜인지 확인
+        if (year >= 2020 && year <= 2030 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+          const date = new Date(year, month - 1, day);
+          console.log(`새 배민 날짜 발견: ${year}.${month}.${day}`);
+          return {
+            date: this.formatDate(date)
+          };
+        }
+      }
+    }
+    
+    console.log('새 배민 날짜를 찾을 수 없음');
+    return { date: undefined };
+  }
+
+  /**
+   * 새로운 배민커넥트 금액 추출 (배달료 181,710원 형태)
+   */
+  private extractNewBaeminAmount(text: string): number {
+    console.log('새 배민 금액 추출 시작');
+    
+    const lines = text.split('\n');
+    
+    // "배달료" 텍스트 찾기 (OCR 오류 패턴 포함)
+    let deliveryFeeLineIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (/배달료|EE|배.*료/.test(line)) {
+        deliveryFeeLineIndex = i;
+        console.log(`"배달료" 발견 - 라인 ${i+1}: ${line}`);
+        break;
+      }
+    }
+    
+    // "배달료" 근처에서 금액 찾기 (더 넓은 범위로 확장)
+    if (deliveryFeeLineIndex >= 0) {
+      // 같은 줄에서 먼저 찾기
+      const deliveryLine = lines[deliveryFeeLineIndex];
+      const sameLine = deliveryLine.match(/배달료.*?(\d{1,3}(?:,\d{3})*)\s*원|(\d{5,})\s*원/);
+      if (sameLine) {
+        const cleanValue = (sameLine[1] || sameLine[2]).replace(/,/g, '');
+        const amount = parseInt(cleanValue, 10);
+        if (amount >= 0 && amount <= 1000000) {
+          console.log(`같은 줄에서 금액 발견: ${amount}원`);
+          return amount;
+        }
+      }
+      
+      // 다음 5줄에서 금액 찾기
+      for (let i = deliveryFeeLineIndex + 1; i < Math.min(deliveryFeeLineIndex + 6, lines.length); i++) {
+        const line = lines[i].trim();
+        
+        // 금액만 있는 줄 찾기 (183,760원, 205,010원 등, OCR 오류 포함)
+        const amountPatterns = [
+          /^(\d{1,3}(?:,\d{3})*)\s*원$/,   // "183,760원" (줄 전체가 금액)
+          /^(\d{1,3}(?:,\d{3})*)원$/,      // "183,760원" (공백 없음)
+          /^(\d{5,})\s*원$/,               // "181710원" (콤마 없음)
+          /^(\d{5,})원$/,                  // "181710원" (콤마 없음, 공백 없음)
+          /(\d{1,3}(?:,\d{3})*)\s*원/,     // "183,760원" (다른 텍스트와 함께)
+          /(\d{5,})\s*원/,                 // "181710원" (다른 텍스트와 함께)
+          /^(\d{1,2})$/,                   // "03" → "0원" (OCR 오류)
+          /^0(\d)$/,                       // "03" → "0원" (OCR 오류)
+        ];
+        
+        for (const pattern of amountPatterns) {
+          const match = line.match(pattern);
+          if (match) {
+            let cleanValue = match[1].replace(/,/g, '');
+            
+            // OCR 오류 처리: "03" → "0"
+            if (pattern.toString().includes('0(\\d)') && match[1] === '3') {
+              cleanValue = '0';
+            } else if (pattern.toString().includes('(\\d{1,2})') && cleanValue.length <= 2 && parseInt(cleanValue) <= 10) {
+              // "03", "02" 등을 "0"으로 처리
+              cleanValue = '0';
+            }
+            
+            const amount = parseInt(cleanValue, 10);
+            
+            if (amount >= 0 && amount <= 1000000) {
+              console.log(`"배달료" 근처 ${i-deliveryFeeLineIndex}줄 후에서 금액 발견: ${amount}원 (라인 ${i+1}: "${line}")`);
+              return amount;
+            }
+          }
+        }
+      }
+    }
+    
+    // "배달료"를 못 찾은 경우 전체에서 가장 큰 금액 찾기
+    console.log('"배달료"를 찾지 못해 전체에서 큰 금액 검색');
+    
+    const candidates: number[] = [];
+    
+    // 각 줄을 확인하여 금액 패턴 찾기
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // 금액 패턴 (OCR 오류 포함)
+      const amountPatterns = [
+        /^(\d{1,3}(?:,\d{3})*)\s*원$/,   // "183,760원" (줄 전체가 금액)
+        /^(\d{1,3}(?:,\d{3})*)원$/,      // "183,760원" (공백 없음)
+        /^(\d{5,})\s*원$/,               // "181710원" (콤마 없음)
+        /^(\d{5,})원$/,                  // "181710원" (콤마 없음, 공백 없음)
+        /(\d{1,3}(?:,\d{3})*)\s*원/,     // "183,760원" (다른 텍스트와 함께)
+        /(\d{5,})\s*원/,                 // "181710원" (다른 텍스트와 함께)
+        /^(\d{1,2})$/,                   // "03" → "0원" (OCR 오류)
+        /^0(\d)$/,                       // "03" → "0원" (OCR 오류)
+      ];
+      
+      for (const pattern of amountPatterns) {
+        const match = line.match(pattern);
+        if (match) {
+          let cleanValue = match[1].replace(/,/g, '');
+          
+          // OCR 오류 처리: "03" → "0"
+          if (pattern.toString().includes('0(\\d)') && match[1] === '3') {
+            cleanValue = '0';
+          } else if (pattern.toString().includes('(\\d{1,2})') && cleanValue.length <= 2 && parseInt(cleanValue) <= 10) {
+            // "03", "02" 등을 "0"으로 처리
+            cleanValue = '0';
+          }
+          
+          const amount = parseInt(cleanValue, 10);
+          
+          if (amount >= 0 && amount <= 1000000) {
+            candidates.push(amount);
+            console.log(`금액 후보: ${amount}원 (라인 ${i+1}: "${line}", 원본: "${match[1]}", 변환: "${cleanValue}")`);
+          }
+        }
+      }
+    }
+    
+    if (candidates.length > 0) {
+      // 중복 제거 후 가장 큰 금액 선택
+      const uniqueAmounts = [...new Set(candidates)];
+      
+      // 0원도 유효한 경우로 처리
+      if (uniqueAmounts.includes(0)) {
+        console.log('0원 발견 - 배달 수익 없음');
+        return 0;
+      }
+      
+      // 가장 큰 금액 선택 (일반적으로 총 배달료가 가장 클 것)
+      const maxAmount = Math.max(...uniqueAmounts);
+      console.log(`최종 금액: ${maxAmount}원`);
+      return maxAmount;
+    }
+    
+    console.log('금액을 찾을 수 없음');
+    return 0;
+  }
+
+  /**
+   * 새로운 배민커넥트 건수 추출 (배달건 39건 형태)
+   */
+  private extractNewBaeminDeliveryCount(text: string): number {
+    console.log('새 배민 건수 추출 시작');
+    
+    const lines = text.split('\n');
+    
+    // "배달건" 텍스트 찾기 (OCR 오류 패턴 포함)
+    let deliveryCountLineIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (/배달건|iH\s*\d+|배.*건/.test(line)) {
+        deliveryCountLineIndex = i;
+        console.log(`"배달건" 발견 - 라인 ${i+1}: ${line}`);
+        break;
+      }
+    }
+    
+    // "배달건" 근처에서 건수 찾기 (더 넓은 범위로 확장)
+    if (deliveryCountLineIndex >= 0) {
+      // 같은 줄에서 먼저 찾기
+      const deliveryLine = lines[deliveryCountLineIndex];
+      const sameLine = deliveryLine.match(/배달건.*?(\d+).*?건|(\d+)\s*건/);
+      if (sameLine) {
+        const count = parseInt(sameLine[1] || sameLine[2], 10);
+        if (count >= 0 && count <= 200) {
+          console.log(`같은 줄에서 건수 발견: ${count}건`);
+          return count;
+        }
+      }
+      
+      // 다음 5줄에서 건수 찾기
+      for (let i = deliveryCountLineIndex + 1; i < Math.min(deliveryCountLineIndex + 6, lines.length); i++) {
+        const line = lines[i].trim();
+        
+        // 건수만 있는 줄 찾기 (44건, 39건 등, OCR 오류 포함)
+        const countPatterns = [
+          /^(\d+)\s*건$/,        // "44건" (줄 전체가 건수)
+          /^(\d+)건$/,           // "44건" (공백 없음)
+          /(\d+)\s*건/,          // "44건" (다른 텍스트와 함께)
+          /(\d+)건/,             // "44건" (다른 텍스트와 함께)
+          /iH\s*(\d+)/,          // "iH 2" → "0건" (OCR 오류)
+          /^(\d+)$/,             // "0" (단순 숫자)
+        ];
+        
+        for (const pattern of countPatterns) {
+          const match = line.match(pattern);
+          if (match) {
+            const count = parseInt(match[1], 10);
+            
+            if (count >= 0 && count <= 200) {
+              console.log(`"배달건" 근처 ${i-deliveryCountLineIndex}줄 후에서 건수 발견: ${count}건 (라인 ${i+1}: "${line}")`);
+              return count;
+            }
+          }
+        }
+      }
+    }
+    
+    // "배달건"을 못 찾은 경우 전체에서 건수 찾기
+    console.log('"배달건"을 찾지 못해 전체에서 건수 검색');
+    
+    const candidates: number[] = [];
+    
+    // 각 줄을 확인하여 건수 패턴 찾기
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // 건수 패턴 (OCR 오류 포함)
+      const countPatterns = [
+        /^(\d+)\s*건$/,        // "44건" (줄 전체가 건수)
+        /^(\d+)건$/,           // "44건" (공백 없음)
+        /(\d+)\s*건/,          // "44건" (다른 텍스트와 함께)
+        /(\d+)건/,             // "44건" (다른 텍스트와 함께)
+        /iH\s*(\d+)/,          // "iH 2" → "0건" (OCR 오류)
+        /^(\d+)$/,             // "0" (단순 숫자)
+      ];
+      
+              for (const pattern of countPatterns) {
+          const match = line.match(pattern);
+          if (match) {
+            let count = parseInt(match[1], 10);
+            
+            // OCR 오류 처리: "iH 2" → "0건"
+            if (pattern.toString().includes('iH') && count === 2) {
+              count = 0;
+            } else if (pattern.toString().includes('^(\\d+)$') && count <= 5 && line.length <= 2) {
+              // 단순 숫자 "0", "1", "2" 등을 건수로 처리
+              // 하지만 너무 작은 숫자는 0으로 보정
+              if (count <= 2) count = 0;
+            }
+            
+            if (count >= 0 && count <= 200) {
+              candidates.push(count);
+              console.log(`건수 후보: ${count}건 (라인 ${i+1}: "${line}", 원본: "${match[1]}")`);
+            }
+          }
+        }
+    }
+    
+    if (candidates.length > 0) {
+      // 중복 제거 후 가장 합리적인 건수 선택
+      const uniqueCounts = [...new Set(candidates)];
+      
+      // 0건도 유효한 경우로 처리
+      if (uniqueCounts.includes(0)) {
+        console.log('0건 발견 - 배달 실적 없음');
+        return 0;
+      }
+      
+      // 1건 이상의 합리적인 건수 찾기
+      const validCounts = uniqueCounts.filter(c => c >= 1 && c <= 100);
+      if (validCounts.length > 0) {
+        const finalCount = validCounts[0];
+        console.log(`최종 건수: ${finalCount}건`);
+        return finalCount;
+      }
+      
+      // 그 외의 경우 첫 번째 후보
+      const finalCount = uniqueCounts[0];
+      console.log(`최종 건수 (전체에서): ${finalCount}건`);
+      return finalCount;
+    }
+    
+    console.log('건수를 찾을 수 없음');
+    return 0;
   }
 
   /**
@@ -589,16 +1063,8 @@ export class ImageAnalysisService {
     // 날짜 추출
     const dateInfo = this.extractCoupangDate(text);
     if (!dateInfo.date) {
-      // 날짜를 못 찾으면 오늘 날짜로 설정
-      dateInfo.date = new Date().toISOString().split('T')[0];
+      dateInfo.date = this.formatDate(new Date());
       console.log('날짜를 찾을 수 없어 오늘 날짜로 설정:', dateInfo.date);
-    }
-
-    // 오늘 날짜인지 확인
-    const today = new Date().toISOString().split('T')[0];
-    if (dateInfo.date !== today) {
-      // 오늘이 아니어도 분석은 계속 진행
-      console.log(`날짜가 오늘(${today})이 아님: ${dateInfo.date}`);
     }
 
     // 금액 추출 - 쿠팡이츠는 보통 화면 상단에 큰 금액이 표시됨
@@ -610,7 +1076,6 @@ export class ImageAnalysisService {
     // 신뢰도 계산
     const confidence = this.calculateCoupangConfidence(text, validElements);
 
-    // 모든 결과를 그대로 반환 (날짜 관계없이)
     return {
       amount,
       deliveryCount,
@@ -625,70 +1090,125 @@ export class ImageAnalysisService {
   }
 
   /**
-   * 배민커넥트 날짜 추출
+   * 기존 배민커넥트 날짜 추출
    */
   private extractBaeminDate(text: string): { date?: string } {
     console.log('배민 날짜 추출 시작');
     const today = new Date();
     const currentYear = today.getFullYear();
     
-    // 배민커넥트 날짜 패턴
-    const lines = text.split('\n');
-    
-    // 전체 텍스트에서 날짜 찾기
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      const patterns = [
-        // 운행일 6월 16일
-        /운행일\s*(\d{1,2})월\s*(\d{1,2})일/,
-        // 6월 16일
-        /(\d{1,2})월\s*(\d{1,2})일/,
-        // 2025.6.16
-        /(\d{4})\.(\d{1,2})\.(\d{1,2})/,
-        // 06/16
-        /(\d{1,2})\/(\d{1,2})/,
-        // 6 16 (공백으로 구분)
-        /\b(\d{1,2})\s+(\d{1,2})\b/
-      ];
+    // 배민 날짜 패턴
+    const patterns = [
+      /운행일\s*(\d{1,2})월\s*(\d{1,2})일/,
+      /(\d{1,2})월\s*(\d{1,2})일/,
+      /(\d{4})\.(\d{1,2})\.(\d{1,2})/,
+      /(\d{1,2})\/(\d{1,2})/,
+    ];
 
-      for (const pattern of patterns) {
-        const match = line.match(pattern);
-        if (match) {
-          let date: Date;
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match) {
+        let date: Date;
 
-          if (match.length === 3 && !pattern.source.includes('\\d{4}')) {
-            // 월/일 형식
-            const month = parseInt(match[1]);
-            const day = parseInt(match[2]);
+        if (match.length === 3 && !pattern.source.includes('\\d{4}')) {
+          const month = parseInt(match[1]);
+          const day = parseInt(match[2]);
+          
+          if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            date = new Date(currentYear, month - 1, day);
             
-            // 유효한 월/일인지 확인
-            if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-              date = new Date(currentYear, month - 1, day);
-              
-              // 미래 날짜인 경우 작년으로 처리
-              if (date > today) {
-                date.setFullYear(currentYear - 1);
-              }
-              
-              console.log(`라인 ${i+1}에서 날짜 발견: ${month}월 ${day}일`);
-              return {
-                date: this.formatDate(date)
-              };
+            if (date > today) {
+              date.setFullYear(currentYear - 1);
             }
-          } else if (match.length === 4) {
-            // 연도 포함
-            date = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
-            return {
-              date: this.formatDate(date)
-            };
+            
+            return { date: this.formatDate(date) };
           }
+        } else if (match.length === 4) {
+          date = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+          return { date: this.formatDate(date) };
         }
       }
     }
 
-    console.log('날짜를 찾을 수 없음');
     return { date: undefined };
+  }
+
+  /**
+   * 기존 배민커넥트 금액 추출
+   */
+  private extractBaeminAmount(text: string): number {
+    console.log('배민 금액 추출 시작');
+    
+    const lines = text.split('\n');
+    
+    // "배달료 합계" 텍스트 찾기
+    let totalFeeLineIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/배\s*달\s*료\s*합\s*계|배달료합계/.test(line)) {
+        totalFeeLineIndex = i;
+        console.log(`"배달료 합계" 발견 - 라인 ${i+1}: ${line}`);
+        break;
+      }
+    }
+    
+    // "배달료 합계" 근처에서 금액 찾기
+    if (totalFeeLineIndex >= 0) {
+      for (let i = totalFeeLineIndex; i < Math.min(totalFeeLineIndex + 3, lines.length); i++) {
+        const line = lines[i];
+        
+        const amountPatterns = [
+          /(\d{1,3}(?:,\d{3})*)\s*원/,
+          /(\d{5,})\s*원/,
+          /(\d{1,3}(?:,\d{3})+)/,
+        ];
+        
+        for (const pattern of amountPatterns) {
+          const match = line.match(pattern);
+          if (match) {
+            const cleanValue = match[1].replace(/,/g, '');
+            const amount = parseInt(cleanValue, 10);
+            
+            if (amount >= 0 && amount <= 1000000) {
+              console.log(`"배달료 합계" 근처에서 금액 발견: ${amount}원`);
+              return amount;
+            }
+          }
+        }
+      }
+    }
+    
+    return 0;
+  }
+
+  /**
+   * 기존 배민커넥트 건수 추출
+   */
+  private extractBaeminDeliveryCount(text: string): number {
+    console.log('배민 건수 추출 시작');
+    
+    const patterns = [
+      /(\d+)\s*건/g,
+      /(\d+)건/g,
+    ];
+
+    const counts: number[] = [];
+    
+    for (const pattern of patterns) {
+      const matches = text.matchAll(pattern);
+      for (const match of matches) {
+        const count = parseInt(match[1], 10);
+        if (count >= 0 && count <= 200) {
+          counts.push(count);
+        }
+      }
+    }
+
+    if (counts.length > 0) {
+      return counts[0];
+    }
+
+    return 0;
   }
 
   /**
@@ -728,128 +1248,8 @@ export class ImageAnalysisService {
       }
     }
     
-    // 줄 단위로도 검색
-    const lines = text.split('\n');
-    
-    // 상단 10줄 내에서 날짜 찾기
-    for (let i = 0; i < Math.min(lines.length, 10); i++) {
-      const line = lines[i];
-      
-      // 쿠팡이츠 날짜 패턴들
-      const patterns = [
-        // 05/29 목
-        /(\d{1,2})\/(\d{1,2})\s*[월화수목금토일]/,
-        // 05/29
-        /(\d{1,2})\/(\d{1,2})/,
-        // 5월 29일
-        /(\d{1,2})월\s*(\d{1,2})일/,
-      ];
-
-      for (const pattern of patterns) {
-        const match = line.match(pattern);
-        if (match) {
-          const month = parseInt(match[1]);
-          const day = parseInt(match[2]);
-          
-          // 유효한 월/일인지 확인
-          if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-            const date = new Date(currentYear, month - 1, day);
-            
-            // 미래 날짜인 경우 작년으로 처리
-            if (date > today) {
-              date.setFullYear(currentYear - 1);
-            }
-            
-            console.log(`라인 ${i+1}에서 날짜 발견: ${month}/${day}`);
-            return {
-              date: this.formatDate(date)
-            };
-          }
-        }
-      }
-    }
-
     console.log('날짜를 찾을 수 없음');
     return { date: undefined };
-  }
-
-  /**
-   * 배민커넥트 금액 추출
-   */
-  private extractBaeminAmount(text: string): number {
-    console.log('배민 금액 추출 시작');
-    
-    // 텍스트를 줄 단위로 분리
-    const lines = text.split('\n');
-    
-    // "배달료 합계" 텍스트 찾기
-    let totalFeeLineIndex = -1;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      // 배달료 합계 패턴 (띄어쓰기, OCR 오류 고려)
-      if (/배\s*달\s*료\s*합\s*계|배달료합계/.test(line)) {
-        totalFeeLineIndex = i;
-        console.log(`"배달료 합계" 발견 - 라인 ${i+1}: ${line}`);
-        break;
-      }
-    }
-    
-    // "배달료 합계" 근처에서 금액 찾기
-    if (totalFeeLineIndex >= 0) {
-      // 해당 라인부터 아래 3줄까지 검색 (배민은 보통 바로 아래에 금액이 있음)
-      for (let i = totalFeeLineIndex; i < Math.min(totalFeeLineIndex + 3, lines.length); i++) {
-        const line = lines[i];
-        
-        // 금액 패턴
-        const amountPatterns = [
-          /(\d{1,3}(?:,\d{3})*)\s*원/,   // 12,345원
-          /(\d{1,3}(?:,\d{3})*)\s*¢/,    // 12,345¢
-          /(\d{5,})\s*원/,               // 12345원
-          /(\d{1,3}(?:,\d{3})+)/,        // 12,345 (원 없음)
-        ];
-        
-        for (const pattern of amountPatterns) {
-          const match = line.match(pattern);
-          if (match) {
-            const cleanValue = match[1].replace(/,/g, '');
-            const amount = parseInt(cleanValue, 10);
-            
-            if (amount >= 0 && amount <= 1000000) {  // 0원도 허용 (실적 없는 날)
-              console.log(`"배달료 합계" 근처에서 금액 발견: ${amount}원 (라인 ${i+1})`);
-              return amount;
-            }
-          }
-        }
-      }
-    }
-    
-    // "배달료 합계"를 못 찾은 경우 전체에서 가장 큰 금액 찾기
-    console.log('"배달료 합계"를 찾지 못해 전체에서 큰 금액 검색');
-    let maxAmount = 0;
-    
-    const patterns = [
-      /(\d{1,3}(?:,\d{3})*)\s*원/g,
-      /(\d{1,3}(?:,\d{3})*)\s*¢/g,
-      /(\d{5,})/g
-    ];
-
-    for (const pattern of patterns) {
-      const matches = text.matchAll(pattern);
-      for (const match of matches) {
-        const value = match[1].replace(/,/g, '');
-        const amount = parseInt(value, 10);
-        
-        if (amount >= 1000 && amount <= 1000000) {
-          console.log(`금액 후보 발견: ${amount}원`);
-          if (amount > maxAmount) {
-            maxAmount = amount;
-          }
-        }
-      }
-    }
-
-    console.log(`최종 추출 금액: ${maxAmount}원`);
-    return maxAmount;
   }
 
   /**
@@ -893,127 +1293,7 @@ export class ImageAnalysisService {
       return largestAmount;
     }
     
-    // 텍스트를 줄 단위로 분리
-    const lines = text.split('\n');
-    
-    // "총 배달 수수료" 텍스트 찾기
-    let totalFeeLineIndex = -1;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      // 총 배달 수수료 패턴 (띄어쓰기, OCR 오류 고려)
-      if (/총\s*배\s*달\s*수\s*수\s*료|총배달수수료|배달\s*수수료/.test(line)) {
-        totalFeeLineIndex = i;
-        console.log(`"총 배달 수수료" 발견 - 라인 ${i+1}: ${line}`);
-        break;
-      }
-    }
-    
-    // "총 배달 수수료" 근처에서 금액 찾기
-    if (totalFeeLineIndex >= 0) {
-      // 해당 라인부터 아래 5줄까지 검색
-      for (let i = totalFeeLineIndex; i < Math.min(totalFeeLineIndex + 5, lines.length); i++) {
-        const line = lines[i];
-        
-        // 금액 패턴
-        const amountPatterns = [
-          /(\d{1,3},\d{3})\s*[원¢]/,     // 53,920원
-          /(\d{1,3}\.\d{3})\s*[원¢]/,    // 53.920원
-          /(\d{5,})\s*[원¢]/,            // 53920원
-          /(\d{1,3}(?:[,\.]\d{3})+)/,    // 53,920 (원 없음)
-        ];
-        
-        for (const pattern of amountPatterns) {
-          const match = line.match(pattern);
-          if (match) {
-            const cleanValue = match[1].replace(/[,\.]/g, '');
-            const amount = parseInt(cleanValue, 10);
-            
-            if (amount >= 10000 && amount <= 1000000) {
-              console.log(`"총 배달 수수료" 근처에서 금액 발견: ${amount}원 (라인 ${i+1})`);
-              return amount;
-            }
-          }
-        }
-      }
-    }
-    
-    // "총 배달 수수료"를 못 찾은 경우 전체에서 가장 큰 금액 찾기
-    console.log('"총 배달 수수료"를 찾지 못해 전체에서 큰 금액 검색');
-    let secondMaxAmount = 0;
-    
-    for (let i = 0; i < Math.min(lines.length, 15); i++) {
-      const line = lines[i];
-      
-      const patterns = [
-        /(\d{1,3},\d{3})\s*[원¢]/,
-        /(\d{1,3}\.\d{3})\s*[원¢]/,
-        /(\d{5,})\s*[원¢]/,
-        /(\d{1,3}(?:[,\.]\d{3})+)/,
-      ];
-      
-      for (const pattern of patterns) {
-        const match = line.match(pattern);
-        if (match) {
-          const cleanValue = match[1].replace(/[,\.]/g, '');
-          const amount = parseInt(cleanValue, 10);
-          
-          if (amount >= 10000 && amount <= 1000000) {
-            console.log(`금액 후보 발견: ${amount}원 (라인 ${i+1})`);
-            if (amount > secondMaxAmount) {
-              secondMaxAmount = amount;
-            }
-          }
-        }
-      }
-    }
-    
-    console.log(`최종 추출된 총 금액: ${secondMaxAmount}원`);
-    return secondMaxAmount;
-  }
-
-  /**
-   * 쿠팡이츠 금액 추출
-   */
-  private extractCoupangAmount(text: string): number {
-    // extractCoupangTotalAmount 사용
-    return this.extractCoupangTotalAmount(text);
-  }
-
-  /**
-   * 배민커넥트 배달 건수 추출
-   */
-  private extractBaeminDeliveryCount(text: string): number {
-    console.log('배민 건수 추출 시작');
-    
-    // 배민커넥트 건수 패턴 - 더 유연하게
-    const patterns = [
-      /(\d+)\s*건/g,      // 숫자건
-      /(\d+)\s*3/g,       // 건이 3으로 인식될 수도 있음
-      /\b(\d{1,2})\b/g    // 독립된 1-2자리 숫자
-    ];
-
-    const counts: number[] = [];
-    
-    for (const pattern of patterns) {
-      const matches = text.matchAll(pattern);
-      for (const match of matches) {
-        const count = parseInt(match[1], 10);
-        // 합리적인 범위의 건수만 (0 ~ 200)
-        if (count >= 0 && count <= 200) {
-          console.log(`건수 후보 발견: ${count}건`);
-          counts.push(count);
-        }
-      }
-    }
-
-    // 금액 근처에 있는 숫자를 우선시
-    if (counts.length > 0) {
-      const result = counts[0];
-      console.log(`최종 추출 건수: ${result}건`);
-      return result;
-    }
-
-    console.log('건수를 찾을 수 없음');
+    console.log('금액을 찾을 수 없음');
     return 0;
   }
 
@@ -1040,7 +1320,6 @@ export class ImageAnalysisService {
         // HHS 1771 같은 경우 특별 처리
         if (pattern.toString().includes('HHS') && value.length >= 3) {
           // 1771의 경우 17을 추출
-          // 174의 경우 17을 추출
           if (value.startsWith('17')) {
             count = 17;
           } else if (value.length >= 2) {
@@ -1062,71 +1341,34 @@ export class ImageAnalysisService {
       }
     }
     
-    // 텍스트를 줄 단위로 분리
-    const lines = text.split('\n');
-    
-    // "총 배달 수수료" 또는 큰 금액 근처에서 건수 찾기
-    let targetLineIndex = -1;
-    
-    // 먼저 "총 배달 수수료" 찾기
-    for (let i = 0; i < lines.length; i++) {
-      if (/총\s*배\s*달\s*수\s*수\s*료|총배달수수료|배달\s*수수료/.test(lines[i])) {
-        targetLineIndex = i;
-        break;
-      }
-    }
-    
-    // 못 찾으면 큰 금액이 있는 라인 찾기
-    if (targetLineIndex === -1) {
-      for (let i = 0; i < Math.min(lines.length, 10); i++) {
-        if (/\d{2,3}[,\.]\d{3}/.test(lines[i])) {
-          targetLineIndex = i;
-          break;
-        }
-      }
-    }
-    
-    // 타겟 라인 근처에서 건수 찾기
-    if (targetLineIndex >= 0) {
-      const searchStart = Math.max(0, targetLineIndex - 2);
-      const searchEnd = Math.min(lines.length, targetLineIndex + 5);
-      
-      for (let i = searchStart; i < searchEnd; i++) {
-        const line = lines[i];
-        
-        // 건수 패턴들
-        const patterns = [
-          /배\s*달\s*(\d+)\s*건/,      // 배달 17건
-          /(\d+)\s*건/,                 // 17건
-          /배달\s*(\d+)/,               // 배달 17
-        ];
-        
-        for (const pattern of patterns) {
-          const match = line.match(pattern);
-          if (match) {
-            const count = parseInt(match[1], 10);
-            if (count >= 1 && count <= 200) {
-              console.log(`총액 근처에서 건수 발견: ${count}건 (라인 ${i+1})`);
-              return count;
-            }
-          }
-        }
-        
-        // "HiE 17" 같은 OCR 오류 패턴
-        const ocrPattern = /H[iIl1]E\s*(\d+)/i;
-        const ocrMatch = line.match(ocrPattern);
-        if (ocrMatch) {
-          const count = parseInt(ocrMatch[1], 10);
-          if (count >= 1 && count <= 200) {
-            console.log(`OCR 패턴으로 건수 발견: ${count}건 (라인 ${i+1})`);
-            return count;
-          }
-        }
-      }
-    }
-    
     console.log('건수를 찾을 수 없음');
     return 0;
+  }
+
+  /**
+   * 쿠팡이츠 신뢰도 계산
+   */
+  private calculateCoupangConfidence(text: string, validElements: number): number {
+    let confidence = 0.6; // 기본 신뢰도 (쿠팡은 패턴이 명확하므로 높게 시작)
+
+    // 필수 요소 개수에 따른 신뢰도
+    confidence += validElements * 0.1;
+
+    // 쿠팡 특징적인 패턴들
+    if (/\d{1,2}\/\d{1,2}/.test(text)) confidence += 0.1;  // 날짜 패턴
+    if (/\d{2,3}[,\.]\d{3}/.test(text)) confidence += 0.1;  // 큰 금액 패턴
+    if (/H[iIl1]E\s*\d+/i.test(text)) confidence += 0.1;    // HiE 패턴
+    if (/\d{1,2}:\d{2}/.test(text)) confidence += 0.05;     // 시간 패턴
+    
+    // 추가 키워드 확인
+    const bonusKeywords = ['쿠팡', '이츠', '수입', '프로모션', '인센티브'];
+    bonusKeywords.forEach(keyword => {
+      if (text.includes(keyword)) {
+        confidence += 0.03;
+      }
+    });
+
+    return Math.min(confidence, 0.95);
   }
 
   /**
@@ -1155,32 +1397,6 @@ export class ImageAnalysisService {
     if (/운행일\s*\d{1,2}월\s*\d{1,2}일/.test(text)) {
       confidence += 0.1;
     }
-
-    return Math.min(confidence, 0.95);
-  }
-
-  /**
-   * 쿠팡이츠 신뢰도 계산
-   */
-  private calculateCoupangConfidence(text: string, validElements: number): number {
-    let confidence = 0.6; // 기본 신뢰도 (쿠팡은 패턴이 명확하므로 높게 시작)
-
-    // 필수 요소 개수에 따른 신뢰도
-    confidence += validElements * 0.1;
-
-    // 쿠팡 특징적인 패턴들
-    if (/\d{1,2}\/\d{1,2}/.test(text)) confidence += 0.1;  // 날짜 패턴
-    if (/\d{2,3}[,\.]\d{3}/.test(text)) confidence += 0.1;  // 큰 금액 패턴
-    if (/H[iIl1]E\s*\d+/i.test(text)) confidence += 0.1;    // HiE 패턴
-    if (/\d{1,2}:\d{2}/.test(text)) confidence += 0.05;     // 시간 패턴
-    
-    // 추가 키워드 확인
-    const bonusKeywords = ['쿠팡', '이츠', '수입', '프로모션', '인센티브'];
-    bonusKeywords.forEach(keyword => {
-      if (text.includes(keyword)) {
-        confidence += 0.03;
-      }
-    });
 
     return Math.min(confidence, 0.95);
   }
@@ -1260,10 +1476,14 @@ export class ImageAnalysisService {
   }
 
   /**
-   * 날짜 포맷팅
+   * 날짜 포맷팅 (한국 시간대 기준)
    */
   private formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    // 로컬 시간대를 유지하여 YYYY-MM-DD 형식으로 변환
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   /**
