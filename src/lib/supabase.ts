@@ -19,30 +19,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Supabase 환경 변수가 설정되지 않았습니다. NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.')
 }
 
-// Supabase 클라이언트 생성 - 기본 설정 사용
+// Supabase 클라이언트 생성 - 단순화된 설정
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
-    storageKey: 'baedalking-auth',
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce', // PKCE 플로우 사용
-    debug: process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SUPABASE_DEBUG === 'true'
-  },
-  db: {
-    schema: 'public'
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
-  },
-  global: {
-    headers: {
-      'apikey': supabaseAnonKey,
-      'Authorization': `Bearer ${supabaseAnonKey}`
-    }
+    detectSessionInUrl: true
   }
 })
 

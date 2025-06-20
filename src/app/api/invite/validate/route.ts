@@ -4,6 +4,8 @@ export async function POST(request: Request) {
   try {
     const { code, newUserId } = await request.json();
 
+    console.log('🔍 초대 코드 검증 요청:', { code, newUserId });
+
     if (!code || !newUserId) {
       return NextResponse.json(
         { error: '초대 코드와 사용자 ID가 필요합니다.' },
@@ -12,8 +14,12 @@ export async function POST(request: Request) {
     }
 
     // 런타임에서만 환경 변수 검증
+    console.log('🔧 환경 변수 상태:');
+    console.log('NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ 설정됨' : '❌ 누락됨');
+    console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ 설정됨' : '❌ 누락됨');
+
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Supabase 환경 변수가 설정되지 않았습니다.');
+      console.error('❌ Supabase 환경 변수가 설정되지 않았습니다.');
       return NextResponse.json(
         { error: '서버 설정 오류입니다.' },
         { status: 500 }
@@ -24,22 +30,27 @@ export async function POST(request: Request) {
     const { supabaseAdmin } = await import('@/lib/supabase-admin');
 
     if (!supabaseAdmin) {
-      console.error('Supabase Admin 클라이언트를 생성할 수 없습니다.');
+      console.error('❌ Supabase Admin 클라이언트를 생성할 수 없습니다.');
       return NextResponse.json(
         { error: '서버 설정 오류입니다.' },
         { status: 500 }
       );
     }
 
+    console.log('✅ Supabase Admin 클라이언트 생성 성공');
+
     // 초대 코드로 초대자 찾기 (users 테이블에서)
+    console.log('🔍 초대 코드로 초대자 검색 중:', code);
     const { data: inviter, error: codeError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('referral_code', code)
       .single();
 
+    console.log('🔍 초대자 검색 결과:', { inviter, codeError });
+
     if (codeError || !inviter) {
-      console.log('초대 코드 검증 실패:', codeError);
+      console.log('❌ 초대 코드 검증 실패:', codeError);
       return NextResponse.json(
         { error: '유효하지 않은 초대 코드입니다.' },
         { status: 400 }
@@ -55,6 +66,7 @@ export async function POST(request: Request) {
     }
 
     // 이미 사용된 코드인지 확인
+    console.log('🔍 중복 초대 확인 중...');
     const { data: existingInvite } = await supabaseAdmin
       .from('invites')
       .select('id')
@@ -69,6 +81,8 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log('✅ 초대 코드 검증 완료, 포인트 지급 시작...');
+
     // 초대 기록 저장
     const { error: recordError } = await supabaseAdmin
       .from('invites')
@@ -80,7 +94,7 @@ export async function POST(request: Request) {
       });
 
     if (recordError) {
-      console.error('초대 기록 저장 실패:', recordError);
+      console.error('❌ 초대 기록 저장 실패:', recordError);
       throw recordError;
     }
 
