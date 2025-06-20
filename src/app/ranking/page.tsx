@@ -107,39 +107,49 @@ export default function RankingPage() {
     console.log('내 순위 자랑하기 버튼 클릭됨');
     
     if (!userProfile) {
-      toast.error('로그인이 필요한 기능입니다.');
+      toast.error('프로필 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
     }
     
     // 현재 필터 조건에서 내 순위 찾기
-    const myRank = rankings.find(r => r.userId === userProfile.id);
+    let myRank = rankings.find(r => r.userId === userProfile.id);
     
-    // 선택된 지역이 내 지역이 아닌 경우 공유 불가
-    if (region !== 'all' && userProfile.region !== region) {
-      toast.error('선택한 지역의 순위만 공유할 수 있습니다.');
-      return;
-    }
-
-    // 선택된 플랫폼이 내 플랫폼이 아닌 경우 공유 불가
-    if (platform !== 'all' && myRank?.platform !== platform) {
-      toast.error('선택한 플랫폼의 순위만 공유할 수 있습니다.');
-      return;
-    }
-    
+    // 현재 조건에서 내 순위를 찾지 못한 경우, 필터를 조정하여 다시 시도
     if (!myRank) {
-      toast.error('현재 조건에서의 순위 정보가 없습니다.');
+      // 지역 필터가 설정되어 있고 내 지역과 다른 경우
+      if (region !== 'all' && userProfile.region && region !== userProfile.region) {
+        setRegion('all');
+        toast('전체 지역으로 변경하여 내 순위를 확인합니다.');
+        return;
+      }
+      
+      // 플랫폼 필터가 설정되어 있는 경우
+      if (platform !== 'all') {
+        setPlatform('all');
+        toast('전체 플랫폼으로 변경하여 내 순위를 확인합니다.');
+        return;
+      }
+      
+      toast.error('아직 업로드된 배달 실적이 없습니다. 실적을 업로드해주세요!');
       return;
     }
 
+    // 순위 데이터 검증
     if (
-      myRank.rank !== undefined &&
-      myRank.totalAmount !== undefined &&
-      myRank.totalOrders !== undefined
+      myRank.rank === undefined ||
+      myRank.totalAmount === undefined ||
+      myRank.totalOrders === undefined
     ) {
-      // 동적 공유 메시지 생성
+      toast.error('순위 정보가 완전하지 않습니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    // 공유 실행
+    try {
       const periodText = period === 'today' ? '오늘' : period === 'week' ? '이번 주' : '이번 달';
       const regionText = region === 'all' ? '전국' : region;
       const platformText = platform === 'all' ? '전체 플랫폼' : platform;
+      
       shareRanking({
         rank: myRank.rank,
         totalAmount: myRank.totalAmount,
@@ -148,8 +158,11 @@ export default function RankingPage() {
         period: periodText,
         region: regionText
       });
-    } else {
-      toast.error('순위 정보가 없습니다.');
+      
+      toast.success('카카오톡으로 공유되었습니다! 🎉');
+    } catch (error) {
+      console.error('공유 중 오류:', error);
+      toast.error('공유 중 오류가 발생했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -253,13 +266,22 @@ export default function RankingPage() {
                 )}
 
                 {/* 자랑하기 버튼 */}
-                {user && (
+                {user && userProfile && (
                   <button
                     onClick={handleShareMyRank}
-                    className="w-full bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+                    disabled={!rankings.find(r => r.userId === userProfile.id)}
+                    className={`w-full ${
+                      rankings.find(r => r.userId === userProfile.id)
+                        ? 'bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600'
+                        : 'bg-gray-400 cursor-not-allowed'
+                    } text-white font-bold py-2.5 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] flex items-center justify-center gap-2`}
                   >
                     <FaShare className="text-white w-3.5 h-3.5" />
-                    <span className="text-sm">내 순위 자랑하기</span>
+                    <span className="text-sm">
+                      {rankings.find(r => r.userId === userProfile.id) 
+                        ? '내 순위 자랑하기' 
+                        : '순위 정보 없음'}
+                    </span>
                   </button>
                 )}
               </div>

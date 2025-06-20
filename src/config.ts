@@ -4,7 +4,7 @@ export const config = {
     anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
   },
   kakao: {
-    appKey: process.env.NEXT_PUBLIC_KAKAO_APP_KEY || '2a6e20ac0ba97afb3b35ecefb5e1f8ed',
+    appKey: process.env.NEXT_PUBLIC_KAKAO_JS_KEY || '',
   },
   app: {
     name: '배달킹',
