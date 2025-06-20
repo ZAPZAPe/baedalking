@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   FaUserPlus, 
   FaEdit, 
@@ -31,6 +31,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { addPoints } from '@/services/pointService';
+import { supabase } from '@/lib/supabase';
 
 export default function UserManagement() {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -47,6 +48,13 @@ export default function UserManagement() {
   const [pointAmount, setPointAmount] = useState('');
   const [pointReason, setPointReason] = useState('');
   const [todayDeliveryData, setTodayDeliveryData] = useState<Map<string, any>>(new Map());
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [deliveryData, setDeliveryData] = useState({
+    deliveryCount: 0,
+    earnings: 0,
+    verified: false,
+    platform: 'baemin_connect' as 'baemin_connect' | 'coupang_eats'
+  });
   
   // 새 사용자 추가 폼 상태
   const [newUser, setNewUser] = useState({
@@ -120,7 +128,7 @@ export default function UserManagement() {
 
     try {
       await addPoints(selectedUser.id, parseInt(pointAmount), 'admin', pointReason);
-      toast.success(`${selectedUser.nickname}님에게 ${pointAmount} 포인트가 지급되었습니다.`);
+      toast.success(`${selectedUser.nickname || '사용자'}님에게 ${pointAmount} 포인트가 지급되었습니다.`);
       setShowPointModal(false);
       setPointAmount('');
       setPointReason('');
@@ -157,27 +165,98 @@ export default function UserManagement() {
     }
   };
 
-  // 필터링 및 정렬
-  const filteredAndSortedUsers = users
-    .filter(user => {
-      const matchesSearch = (user.nickname?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                          (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-      const matchesRegion = filterRegion === 'all' || user.region === filterRegion;
-      const matchesVehicle = filterVehicle === 'all' || user.vehicle === filterVehicle;
-      return matchesSearch && matchesRegion && matchesVehicle;
-    })
-    .sort((a, b) => {
-      const aValue = a[sortBy] || 0;
-      const bValue = b[sortBy] || 0;
+  const handleAddDelivery = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      // 오늘 배달 데이터 업데이트
+      const newTodayData = new Map(todayDeliveryData);
+      const existingData = newTodayData.get(selectedUser.id) || { 
+        deliveryCount: 0, 
+        earnings: 0, 
+        verified: false, 
+        platforms: {} 
+      };
       
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
+      // 플랫폼별 데이터 업데이트
+      const platforms = {
+        ...existingData.platforms,
+        [deliveryData.platform]: {
+          deliveryCount: (existingData.platforms?.[deliveryData.platform]?.deliveryCount || 0) + deliveryData.deliveryCount,
+          earnings: (existingData.platforms?.[deliveryData.platform]?.earnings || 0) + deliveryData.earnings
+        }
+      };
 
-  const regions = Array.from(new Set(users.map(u => u.region).filter(Boolean)));
+      // 사용자 데이터 업데이트
+      const { error: userError } = await supabase
+        .from('users')
+        .update({
+          total_deliveries: (selectedUser.totalDeliveries || 0) + deliveryData.deliveryCount,
+          total_earnings: (selectedUser.totalEarnings || 0) + deliveryData.earnings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedUser.id);
+
+      if (userError) throw userError;
+
+      // 배달 기록 저장
+      const { error: historyError } = await supabase
+        .from('delivery_history')
+        .insert({
+          user_id: selectedUser.id,
+          delivery_count: deliveryData.deliveryCount,
+          earnings: deliveryData.earnings,
+          platform: deliveryData.platform,
+          verified: deliveryData.verified,
+          created_at: new Date().toISOString()
+        });
+
+      if (historyError) throw historyError;
+
+      // 로컬 상태 업데이트
+      newTodayData.set(selectedUser.id, {
+        deliveryCount: existingData.deliveryCount + deliveryData.deliveryCount,
+        earnings: existingData.earnings + deliveryData.earnings,
+        verified: deliveryData.verified,
+        platforms
+      });
+      setTodayDeliveryData(newTodayData);
+      
+      toast.success('배달 기록이 추가되었습니다.');
+      setShowDeliveryModal(false);
+      setDeliveryData({ deliveryCount: 0, earnings: 0, verified: false, platform: 'baemin_connect' });
+      await fetchUsers();
+    } catch (error) {
+      console.error('배달 기록 추가 오류:', error);
+      toast.error('배달 기록 추가에 실패했습니다.');
+    }
+  };
+
+  // 필터링 및 정렬
+  const filteredAndSortedUsers = useMemo(() => {
+    return users
+      .filter(user => {
+        const matchesSearch = (user.nickname?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                            (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+        const matchesRegion = filterRegion === 'all' || user.region === filterRegion;
+        const matchesVehicle = filterVehicle === 'all' || user.vehicle === filterVehicle;
+        return matchesSearch && matchesRegion && matchesVehicle;
+      })
+      .sort((a, b) => {
+        const aValue = a[sortBy] || 0;
+        const bValue = b[sortBy] || 0;
+        
+        if (sortOrder === 'asc') {
+          return aValue > bValue ? 1 : -1;
+        } else {
+          return aValue < bValue ? 1 : -1;
+        }
+      });
+  }, [users, searchTerm, filterRegion, filterVehicle, sortBy, sortOrder]);
+
+  const regions = useMemo(() => {
+    return Array.from(new Set(users.map(u => u.region).filter(Boolean)));
+  }, [users]);
   
   const getVehicleIcon = (vehicle: string) => {
     switch (vehicle) {
@@ -204,13 +283,15 @@ export default function UserManagement() {
           <h3 className="text-2xl font-bold text-white">사용자 관리</h3>
           <p className="text-zinc-400 mt-1">총 {users.length}명의 사용자</p>
         </div>
-        <button
-          onClick={() => setShowAddUserModal(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl"
-        >
-          <FaUserPlus size={18} />
-          <span className="font-medium">사용자 추가</span>
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowAddUserModal(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl"
+          >
+            <FaUserPlus size={18} />
+            <span className="font-medium">사용자 추가</span>
+          </button>
+        </div>
       </div>
 
       {/* 검색 및 필터 */}
@@ -287,17 +368,22 @@ export default function UserManagement() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredAndSortedUsers.map((user) => {
-                const todayData = todayDeliveryData.get(user.id) || { deliveryCount: 0, earnings: 0, verified: false };
+                const todayData = todayDeliveryData.get(user.id) || { 
+                  deliveryCount: 0, 
+                  earnings: 0, 
+                  verified: false,
+                  platforms: {}
+                };
                 
                 return (
                   <tr key={user.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white font-bold">
-                          {user.nickname.charAt(0).toUpperCase()}
+                          {(user.nickname || '?').charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div className="text-white font-medium">{user.nickname}</div>
+                          <div className="text-white font-medium">{user.nickname || '닉네임 없음'}</div>
                           <div className="text-zinc-400 text-sm">{user.email}</div>
                         </div>
                       </div>
@@ -309,28 +395,48 @@ export default function UserManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="text-white">
-                          {todayData.deliveryCount}건 / {todayData.earnings.toLocaleString()}원
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-white">
+                            {todayData.deliveryCount}건 / {todayData.earnings.toLocaleString()}원
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {todayData.verified ? (
+                              <>
+                                <FaCheckCircle className="text-green-400" size={14} />
+                                <span className="text-green-400 text-xs">인증됨</span>
+                              </>
+                            ) : todayData.deliveryCount > 0 ? (
+                              <>
+                                <FaClock className="text-yellow-400" size={14} />
+                                <span className="text-yellow-400 text-xs">대기중</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaTimesCircle className="text-zinc-500" size={14} />
+                                <span className="text-zinc-500 text-xs">미제출</span>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          {todayData.verified ? (
-                            <>
-                              <FaCheckCircle className="text-green-400" size={14} />
-                              <span className="text-green-400 text-xs">인증됨</span>
-                            </>
-                          ) : todayData.deliveryCount > 0 ? (
-                            <>
-                              <FaClock className="text-yellow-400" size={14} />
-                              <span className="text-yellow-400 text-xs">대기중</span>
-                            </>
-                          ) : (
-                            <>
-                              <FaTimesCircle className="text-zinc-500" size={14} />
-                              <span className="text-zinc-500 text-xs">미제출</span>
-                            </>
-                          )}
-                        </div>
+                        
+                        {/* 플랫폼별 실적 */}
+                        {Object.entries(todayData.platforms || {}).map(([platform, data]: [string, any]) => (
+                          <div key={platform} className="flex items-center justify-between text-sm">
+                            <span className={`${
+                              platform === 'baemin' ? 'text-blue-400' :
+                              platform === 'baemin_connect' ? 'text-green-400' :
+                              'text-red-400'
+                            }`}>
+                              {platform === 'baemin' ? '배민' :
+                               platform === 'baemin_connect' ? '배민커넥트' :
+                               '요기요'}
+                            </span>
+                            <span className="text-zinc-300">
+                              {data.deliveryCount}건 / {data.earnings.toLocaleString()}원
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -367,6 +473,16 @@ export default function UserManagement() {
                         <button
                           onClick={() => {
                             setSelectedUser(user);
+                            setShowDeliveryModal(true);
+                          }}
+                          className="p-2 text-green-400 hover:bg-green-500/20 rounded-lg transition-colors"
+                          title="배달 기록 추가"
+                        >
+                          <FaTruck size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedUser(user);
                             setShowUserModal(true);
                           }}
                           className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
@@ -400,6 +516,99 @@ export default function UserManagement() {
           </table>
         </div>
       </div>
+
+      {/* 배달 기록 추가 모달 */}
+      {showDeliveryModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 w-full max-w-md border border-purple-500/20">
+            <h3 className="text-xl font-bold text-white mb-4">배달 기록 추가</h3>
+            <p className="text-zinc-400 mb-4">{selectedUser.nickname || '사용자'}님의 배달 기록을 추가합니다</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-2">플랫폼</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setDeliveryData({ ...deliveryData, platform: 'baemin_connect' })}
+                    className={`p-3 rounded-xl border transition-all ${
+                      deliveryData.platform === 'baemin_connect'
+                        ? 'bg-green-500/20 border-green-500/50 text-green-300'
+                        : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                    }`}
+                  >
+                    배민커넥트
+                  </button>
+                  <button
+                    onClick={() => setDeliveryData({ ...deliveryData, platform: 'coupang_eats' })}
+                    className={`p-3 rounded-xl border transition-all ${
+                      deliveryData.platform === 'coupang_eats'
+                        ? 'bg-orange-500/20 border-orange-500/50 text-orange-300'
+                        : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                    }`}
+                  >
+                    쿠팡이츠
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-2">배달 건수</label>
+                <input
+                  type="number"
+                  value={deliveryData.deliveryCount}
+                  onChange={(e) => setDeliveryData({ ...deliveryData, deliveryCount: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-2">수익 금액</label>
+                <input
+                  type="number"
+                  value={deliveryData.earnings}
+                  onChange={(e) => setDeliveryData({ ...deliveryData, earnings: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="verified"
+                  checked={deliveryData.verified}
+                  onChange={(e) => setDeliveryData({ ...deliveryData, verified: e.target.checked })}
+                  className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                />
+                <label htmlFor="verified" className="text-sm text-zinc-400">
+                  인증 완료로 표시
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleAddDelivery}
+                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-medium"
+              >
+                추가하기
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeliveryModal(false);
+                  setDeliveryData({ deliveryCount: 0, earnings: 0, verified: false, platform: 'baemin_connect' });
+                }}
+                className="flex-1 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all font-medium"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 사용자 추가 모달 */}
       {showAddUserModal && (
@@ -513,7 +722,7 @@ export default function UserManagement() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 w-full max-w-md border border-purple-500/20">
             <h3 className="text-xl font-bold text-white mb-4">포인트 지급</h3>
-            <p className="text-zinc-400 mb-4">{selectedUser.nickname}님에게 포인트를 지급합니다</p>
+            <p className="text-zinc-400 mb-4">{selectedUser.nickname || '사용자'}님에게 포인트를 지급합니다</p>
             
             <div className="space-y-4">
               <div>
@@ -579,7 +788,7 @@ export default function UserManagement() {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm text-zinc-400">닉네임</label>
-                  <p className="text-white font-medium">{selectedUser.nickname}</p>
+                  <p className="text-white font-medium">{selectedUser.nickname || '닉네임 없음'}</p>
                 </div>
                 <div>
                   <label className="text-sm text-zinc-400">이메일</label>

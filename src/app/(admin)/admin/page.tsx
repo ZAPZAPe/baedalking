@@ -220,7 +220,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black flex">
       {/* 모바일 메뉴 오버레이 */}
       {mobileMenuOpen && (
         <div 
@@ -231,12 +231,13 @@ export default function AdminPage() {
 
       {/* 사이드바 */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-50
+        fixed lg:relative inset-y-0 left-0 z-50
         w-80 lg:w-64 xl:w-80
         bg-gradient-to-b from-zinc-900 to-black
         border-r border-purple-500/20
         transform transition-transform duration-300
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        flex-shrink-0
       `}>
         <div className="h-full flex flex-col p-6">
           {/* 헤더 */}
@@ -335,7 +336,7 @@ export default function AdminPage() {
       </aside>
 
       {/* 메인 컨텐츠 */}
-      <main className="min-h-screen bg-gradient-to-br from-zinc-900 to-black">
+      <main className="flex-1 min-h-screen bg-gradient-to-br from-zinc-900 to-black overflow-x-hidden">
         {/* 모바일 헤더 */}
         <header className="lg:hidden bg-zinc-900/80 backdrop-blur-lg border-b border-purple-500/20 sticky top-0 z-30">
           <div className="flex items-center justify-between p-4">
@@ -429,28 +430,26 @@ export default function AdminPage() {
         )}
 
         {/* 컨텐츠 영역 */}
-        <div className="ml-64">
-          <div className="p-6 lg:p-8">
-            <div className="bg-gradient-to-br from-zinc-900 to-black rounded-3xl border border-purple-500/20 shadow-2xl overflow-hidden">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-96">
-                  <Loading />
-                </div>
-              ) : (
-                <div className="p-6 lg:p-8">
-                  {/* 각 메뉴별 컨텐츠 렌더링 */}
-                  {activeMenu === 'dashboard' && <Dashboard />}
+        <div className="p-6 lg:p-8">
+          <div className="bg-gradient-to-br from-zinc-900 to-black rounded-3xl border border-purple-500/20 shadow-2xl overflow-hidden">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-96">
+                <Loading />
+              </div>
+            ) : (
+              <div className="p-6 lg:p-8">
+                {/* 각 메뉴별 컨텐츠 렌더링 */}
+                {activeMenu === 'dashboard' && <Dashboard />}
 
-                  {activeMenu === 'users' && <UserManagement />}
+                {activeMenu === 'users' && <UserManagement />}
 
-                  {activeMenu === 'deliveries' && <DeliveryRecords />}
-                  {activeMenu === 'points' && <PointsManagement />}
-                  {activeMenu === 'rankings' && <RankingManagement />}
-                  {activeMenu === 'fraud' && <FraudDetection />}
-                  {activeMenu === 'settings' && <SystemSettings />}
-                </div>
-              )}
-            </div>
+                {activeMenu === 'deliveries' && <DeliveryRecords />}
+                {activeMenu === 'points' && <PointsManagement />}
+                {activeMenu === 'rankings' && <RankingManagement />}
+                {activeMenu === 'fraud' && <FraudDetection />}
+                {activeMenu === 'settings' && <SystemSettings />}
+              </div>
+            )}
           </div>
         </div>
       </main>

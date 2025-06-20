@@ -104,115 +104,129 @@ export default function ManualEntry({ isOpen, onClose, onSuccess }: ManualEntryP
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* 배경 오버레이 */}
       <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
       
       {/* 팝업 컨테이너 */}
-      <div className="relative bg-gradient-to-br from-blue-900/95 via-purple-900/95 to-indigo-900/95 backdrop-blur-lg rounded-2xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto shadow-2xl border border-white/20">
-        {/* 헤더 */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">수기 입력</h2>
+      <div className="relative bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-3 sm:p-6 w-full max-w-md max-h-[80vh] overflow-y-auto shadow-2xl border border-purple-500/30 relative overflow-hidden">
+        {/* 배경 애니메이션 효과 */}
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
+        
+        <div className="relative z-10">
+          {/* 헤더 - 실시간 Top 3 스타일 */}
+          <div className="text-center mb-3 sm:mb-6">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <FaTimes className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+              <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
+                수기 입력
+              </h2>
+              <FaTimes className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+            </div>
+            <p className="text-purple-200 text-xs">실적을 직접 입력하세요! ✍️</p>
+          </div>
+
+          {/* 닫기 버튼 */}
           <button
             onClick={onClose}
-            className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+            className="absolute top-2 right-2 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all"
           >
-            <FaTimes className="text-white" size={16} />
+            <FaTimes size={16} />
           </button>
+
+          <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-gradient-to-r from-yellow-400/20 to-orange-500/20 border border-yellow-400/30 rounded-xl">
+            <p className="text-yellow-200 text-xs sm:text-sm text-center">
+              수기 입력은 포인트 랭킹에 반영 ❌<br />
+              중복 입력은 최신 데이터로 덮어쓰기 됩니다.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <div>
+              <label htmlFor="platform" className="block text-xs sm:text-sm font-bold text-purple-200 mb-1.5 sm:mb-2">
+                플랫폼
+              </label>
+              <select
+                id="platform"
+                name="platform"
+                value={formData.platform}
+                onChange={handleChange}
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 border border-purple-400/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent backdrop-blur-sm appearance-none text-xs sm:text-sm"
+                required
+              >
+                <option value="배민커넥트" className="bg-slate-900">배민커넥트</option>
+                <option value="쿠팡이츠" className="bg-slate-900">쿠팡이츠</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="date" className="block text-xs sm:text-sm font-bold text-purple-200 mb-1.5 sm:mb-2">
+                날짜
+              </label>
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 border border-purple-400/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent backdrop-blur-sm [&::-webkit-calendar-picker-indicator]:invert text-xs sm:text-sm"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="orderCount" className="block text-xs sm:text-sm font-bold text-purple-200 mb-1.5 sm:mb-2">
+                건수
+              </label>
+              <input
+                type="text"
+                id="orderCount"
+                name="orderCount"
+                value={formData.orderCount}
+                onChange={handleChange}
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 border border-purple-400/30 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent backdrop-blur-sm text-xs sm:text-sm"
+                required
+                min="1"
+                placeholder="배달 건수를 입력하세요"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="totalAmount" className="block text-xs sm:text-sm font-bold text-purple-200 mb-1.5 sm:mb-2">
+                금액 (원)
+              </label>
+              <input
+                type="text"
+                id="totalAmount"
+                name="totalAmount"
+                value={formData.totalAmount}
+                onChange={handleChange}
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 border border-purple-400/30 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent backdrop-blur-sm text-xs sm:text-sm"
+                required
+                min="0"
+                placeholder="총 금액을 입력하세요"
+              />
+            </div>
+
+            <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-all border border-white/20 text-xs sm:text-sm"
+                disabled={loading}
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white font-bold rounded-xl transition-all hover:scale-[1.02] shadow-lg text-xs sm:text-sm"
+                disabled={loading}
+              >
+                {loading ? '처리중...' : '저장'}
+              </button>
+            </div>
+          </form>
         </div>
-
-        <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl">
-          <p className="text-yellow-200 text-sm text-center">
-            수기 입력은 포인트 랭킹에 반영 ❌<br />
-            중복 입력은 최신 데이터로 덮어쓰기 됩니다.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="platform" className="block text-sm font-medium text-white mb-2">
-              플랫폼
-            </label>
-            <select
-              id="platform"
-              name="platform"
-              value={formData.platform}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent backdrop-blur-sm appearance-none"
-              required
-            >
-              <option value="배민커넥트" className="bg-gray-800">배민커넥트</option>
-              <option value="쿠팡이츠" className="bg-gray-800">쿠팡이츠</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="date" className="block text-sm font-medium text-white mb-2">
-              날짜
-            </label>
-            <input
-              type="date"
-              id="date"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent backdrop-blur-sm [&::-webkit-calendar-picker-indicator]:invert"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="orderCount" className="block text-sm font-medium text-white mb-2">
-              건수
-            </label>
-            <input
-              type="text"
-              id="orderCount"
-              name="orderCount"
-              value={formData.orderCount}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent backdrop-blur-sm"
-              required
-              min="1"
-              placeholder="배달 건수를 입력하세요"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="totalAmount" className="block text-sm font-medium text-white mb-2">
-              금액 (원)
-            </label>
-            <input
-              type="text"
-              id="totalAmount"
-              name="totalAmount"
-              value={formData.totalAmount}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent backdrop-blur-sm"
-              required
-              min="0"
-              placeholder="총 금액을 입력하세요"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors border border-white/20"
-              disabled={loading}
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl transition-all hover:scale-[1.02] shadow-lg"
-              disabled={loading}
-            >
-              {loading ? '처리중...' : '저장'}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

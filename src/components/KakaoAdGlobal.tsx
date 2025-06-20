@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface KakaoAdGlobalProps {
   page: 'home' | 'ranking' | 'records' | 'upload' | 'store' | 'settings' | 'login' | 'attendance' | 'signup';
@@ -8,7 +8,7 @@ interface KakaoAdGlobalProps {
 }
 
 const adConfig = {
-  home: ['DAN-hoOuYkLu161z0omL', 'DAN-xsiNefKQFaudq5Uw', 'DAN-LXiLUwIQALgY5wZI'],
+  home: ['DAN-hoOuYkLu161z0omL', 'DAN-xsiNefKQFaudq5Uw', 'DAN-zx1BnJ7EWOQQoLWs'],
   ranking: ['DAN-f1yXlqwkDAofm50d'],
   records: ['DAN-oFrCjKBzmzkfB5Ap'],
   upload: ['DAN-kG6WELVLxrxJnhok'],
@@ -19,48 +19,62 @@ const adConfig = {
   signup: ['DAN-sMpnrnTCEfjs8dMd']
 };
 
+// 전역 스크립트 로드 상태 관리
+let scriptLoaded = false;
+
 // 전역 스크립트 로드 함수
 const loadKakaoAdScript = () => {
-  if (typeof window !== 'undefined' && !document.querySelector('script[src*="kas/static/ba.min.js"]')) {
-    const script = document.createElement('script');
-    script.async = true;
-    script.type = 'text/javascript';
-    script.src = '//t1.daumcdn.net/kas/static/ba.min.js';
-    document.head.appendChild(script);
+  if (scriptLoaded || typeof window === 'undefined') return;
+  
+  const existingScript = document.querySelector('script[src*="kas/static/ba.min.js"]');
+  if (existingScript) {
+    scriptLoaded = true;
+    return;
   }
+
+  const script = document.createElement('script');
+  script.async = true;
+  script.type = 'text/javascript';
+  script.src = '//t1.daumcdn.net/kas/static/ba.min.js';
+  script.onload = () => {
+    scriptLoaded = true;
+  };
+  document.head.appendChild(script);
 };
 
 export default function KakaoAdGlobal({ page, index = 0 }: KakaoAdGlobalProps) {
-  const adRef = useRef<HTMLDivElement>(null);
-  const adUnit = adConfig[page][index] || adConfig[page][0];
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = useState(false);
+  const adUnit = adConfig[page]?.[index] || adConfig[page]?.[0];
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && adRef.current && adUnit) {
-      // 기존 광고 제거
-      adRef.current.innerHTML = '';
-      
-      // 광고 컨테이너 생성
-      const ins = document.createElement('ins');
-      ins.className = 'kakao_ad_area';
-      ins.style.display = 'none';
-      ins.setAttribute('data-ad-unit', adUnit);
-      ins.setAttribute('data-ad-width', '320');
-      ins.setAttribute('data-ad-height', '100');
-      
-      adRef.current.appendChild(ins);
-      
-      // 스크립트 로드
-      loadKakaoAdScript();
-    }
-  }, [adUnit]);
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient || !containerRef.current || !adUnit) return;
+
+    // 광고 스크립트 로드
+    loadKakaoAdScript();
+  }, [isClient, adUnit]);
+
+  if (!isClient || !adUnit) {
+    return <div className="w-full h-[100px]" />;
+  }
 
   return (
-    <div className="w-full flex justify-center py-2">
+    <div className="w-full flex justify-center">
       <div 
-        ref={adRef}
-        className="w-[320px] h-[100px] bg-white/5 backdrop-blur-sm rounded-lg flex items-center justify-center text-gray-400 text-sm overflow-hidden"
+        ref={containerRef}
+        className="w-[320px] h-[100px] bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden"
       >
-        광고 로딩 중...
+        <ins
+          className="kakao_ad_area"
+          style={{ display: 'none' }}
+          data-ad-unit={adUnit}
+          data-ad-width="320"
+          data-ad-height="100"
+        />
       </div>
     </div>
   );

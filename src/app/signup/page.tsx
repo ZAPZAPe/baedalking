@@ -122,6 +122,20 @@ const SignUp = () => {
         const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
         const initialPoints = formData.referralCode && referralValid ? 500 : 300; // 추천코드 있으면 500P, 없으면 300P
         
+        // 먼저 사용자가 이미 존재하는지 확인
+        const { data: existingProfile } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (existingProfile) {
+          // 이미 프로필이 존재하면 로그인으로 이동
+          toast.success('이미 가입된 계정입니다. 로그인해주세요.');
+          router.push('/login');
+          return;
+        }
+        
         const { error: profileError } = await supabase
           .from('users')
           .insert({
@@ -139,8 +153,12 @@ const SignUp = () => {
 
         if (profileError) {
           console.error('프로필 생성 오류:', profileError);
-          // Auth 사용자 삭제
-          await supabase.auth.admin.deleteUser(authData.user.id);
+          if (profileError.code === '23505') {
+            // 중복 키 오류인 경우
+            toast.error('이미 가입된 계정입니다. 로그인해주세요.');
+            router.push('/login');
+            return;
+          }
           throw profileError;
         }
 
@@ -451,32 +469,9 @@ const SignUp = () => {
 
         {/* 하단 광고 */}
         <section className="mb-8">
-          <div className="w-full h-[100px] bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden">
-            <ins
-              className="kakao_ad_area"
-              style={{ display: 'none' }}
-              data-ad-unit="DAN-sMpnrnTCEfjs8dMd"
-              data-ad-width="320"
-              data-ad-height="100"
-            />
-          </div>
+          <KakaoAdGlobal page="signup" index={0} />
         </section>
       </div>
-      
-      {/* Kakao AdFit Script */}
-      <Script
-        src="//t1.daumcdn.net/kas/static/ba.min.js"
-        strategy="lazyOnload"
-        onLoad={() => {
-          if (typeof window !== 'undefined' && (window as any).adfit) {
-            try {
-              (window as any).adfit.init();
-            } catch (error) {
-              console.warn('광고 초기화 오류:', error);
-            }
-          }
-        }}
-      />
     </div>
   );
 };

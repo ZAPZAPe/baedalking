@@ -7,6 +7,29 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Supabase 환경 변수가 설정되지 않았습니다. NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.')
 }
 
+// 타임아웃이 있는 fetch 함수
+const fetchWithTimeout = (timeout = 5000) => {
+  return async (input: RequestInfo | URL, options?: RequestInit) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+      const response = await fetch(input, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout');
+      }
+      throw error;
+    }
+  };
+};
+
 // 빈 문자열이라도 createClient는 호출하여 빌드가 실패하지 않도록 함
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -23,6 +46,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'Accept': 'application/json',
       'apikey': supabaseAnonKey || 'placeholder-key'
     },
+    fetch: fetchWithTimeout(5000) // 5초 타임아웃 설정
+  },
+  db: {
+    schema: 'public'
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 })
 

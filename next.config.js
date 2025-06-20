@@ -39,11 +39,35 @@ const nextConfig = {
   // 성능 최적화 설정
   compress: true,
   poweredByHeader: false,
+  // react-icons 모듈화 임포트 설정
+  modularizeImports: {
+    'react-icons': {
+      transform: 'react-icons/{{member}}',
+    },
+  },
   // 실험적 기능들
   experimental: {
     // optimizeCss 비활성화 - SSR 빌드 에러 방지
     // optimizeCss: true
-    optimizePackageImports: ['react-icons'],
+    optimizePackageImports: ['react-icons', '@supabase/supabase-js'],
+  },
+  // HTTP 헤더 설정
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload'
+          },
+        ],
+      },
+    ]
   },
 }
 

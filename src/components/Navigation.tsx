@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo, useMemo } from 'react';
 import { FaHome, FaTrophy, FaHistory, FaUpload, FaStore, FaCog, FaBell, FaSignInAlt, FaCheck, FaTrash, FaExclamationCircle, FaCheckCircle, FaInfoCircle, FaExclamationTriangle, FaClock } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
@@ -25,9 +25,31 @@ interface NavigationProps {
   title?: string;
 }
 
+// NavLink 컴포넌트를 메모이제이션
+const NavLink = memo(({ href, pathname, icon: Icon, label }: {
+  href: string;
+  pathname: string;
+  icon: any;
+  label: string;
+}) => (
+  <Link 
+    href={href} 
+    className={`flex flex-col items-center justify-center w-16 h-16 ${
+      pathname === href 
+        ? 'text-yellow-400' 
+        : 'text-white hover:text-yellow-400'
+    } transition-colors`}
+  >
+    <Icon size={24} />
+    <span className="text-xs mt-1">{label}</span>
+  </Link>
+));
+
+NavLink.displayName = 'NavLink';
+
 export default function Navigation({ title }: NavigationProps) {
   const pathname = usePathname();
-  const defaultTitle = titleMap[pathname] || '';
+  const defaultTitle = useMemo(() => titleMap[pathname] || '', [pathname]);
   const { user } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification, clearAll } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -92,7 +114,7 @@ export default function Navigation({ title }: NavigationProps) {
   return (
     <>
       {/* 상단 네비게이션 바 */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-900 to-purple-900 border-b border-white/10">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900 to-pink-900 border-b border-purple-500/30">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between relative">
           {/* 좌측: 홈 메뉴 */}
           <Link 
@@ -132,92 +154,33 @@ export default function Navigation({ title }: NavigationProps) {
 
       {/* 하단 네비게이션 바 - 로그인한 사용자만 표시 */}
       {user && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-900 to-purple-900 border-t border-white/10">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900 to-pink-900 border-t border-purple-500/30">
           <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-around">
-          {/* 랭킹 */}
-          <Link 
-            href="/ranking" 
-            className={`flex flex-col items-center justify-center w-16 h-16 ${
-              pathname === '/ranking' 
-                ? 'text-yellow-400' 
-                : 'text-white hover:text-yellow-400'
-            } transition-colors`}
-          >
-            <FaTrophy size={24} />
-            <span className="text-xs mt-1">랭킹</span>
-          </Link>
-
-          {/* 기록 */}
-          <Link 
-            href="/records" 
-            className={`flex flex-col items-center justify-center w-16 h-16 ${
-              pathname === '/records' 
-                ? 'text-yellow-400' 
-                : 'text-white hover:text-yellow-400'
-            } transition-colors`}
-          >
-            <FaHistory size={24} />
-            <span className="text-xs mt-1">기록</span>
-          </Link>
-
-          {/* 업로드 */}
-          <Link 
-            href="/upload" 
-            className={`flex flex-col items-center justify-center w-16 h-16 ${
-              pathname === '/upload' 
-                ? 'text-yellow-400' 
-                : 'text-white hover:text-yellow-400'
-            } transition-colors`}
-          >
-            <FaUpload size={24} />
-            <span className="text-xs mt-1">업로드</span>
-          </Link>
-
-          {/* 상점 */}
-          <Link 
-            href="/store" 
-            className={`flex flex-col items-center justify-center w-16 h-16 ${
-              pathname === '/store' 
-                ? 'text-yellow-400' 
-                : 'text-white hover:text-yellow-400'
-            } transition-colors`}
-          >
-            <FaStore size={24} />
-            <span className="text-xs mt-1">상점</span>
-          </Link>
-
-          {/* 설정 */}
-          <Link 
-            href="/settings" 
-            className={`flex flex-col items-center justify-center w-16 h-16 ${
-              pathname === '/settings' 
-                ? 'text-yellow-400' 
-                : 'text-white hover:text-yellow-400'
-            } transition-colors`}
-          >
-            <FaCog size={24} />
-            <span className="text-xs mt-1">설정</span>
-          </Link>
-                  </div>
+            <NavLink href="/ranking" pathname={pathname} icon={FaTrophy} label="랭킹" />
+            <NavLink href="/records" pathname={pathname} icon={FaHistory} label="기록" />
+            <NavLink href="/upload" pathname={pathname} icon={FaUpload} label="업로드" />
+            <NavLink href="/store" pathname={pathname} icon={FaStore} label="상점" />
+            <NavLink href="/settings" pathname={pathname} icon={FaCog} label="설정" />
+          </div>
         </nav>
       )}
 
       {/* 알림 모달 */}
       {showNotifications && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-blue-900/95 via-purple-900/95 to-indigo-900/95 rounded-2xl p-6 shadow-2xl border border-white/20 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="bg-gradient-to-br from-purple-900/95 to-pink-900/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-purple-500/30 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
             {/* 모달 헤더 */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <FaBell className="text-yellow-400" size={20} />
-                <h2 className="text-xl font-bold text-white">알림</h2>
-                <span className="text-blue-200 text-sm">
+                <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">알림</h2>
+                <span className="text-purple-200 text-sm">
                   ({notifications.filter(n => !n.read).length}개의 읽지 않은 알림)
                 </span>
               </div>
               <button
                 onClick={() => setShowNotifications(false)}
-                className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all"
+                className="w-8 h-8 bg-gradient-to-r from-white/10 to-white/5 rounded-full flex items-center justify-center text-white hover:from-white/15 hover:to-white/10 transition-all"
               >
                 ×
               </button>
@@ -228,14 +191,14 @@ export default function Navigation({ title }: NavigationProps) {
               <div className="flex gap-2 mb-4">
                 <button
                   onClick={markAllAsRead}
-                  className="flex-1 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-lg py-2 px-3 text-white text-sm font-bold hover:scale-105 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 rounded-lg py-2 px-3 text-white text-sm font-bold hover:scale-105 transition-all flex items-center justify-center gap-2"
                 >
                   <FaCheck size={12} />
                   모두 읽음
                 </button>
                 <button
                   onClick={() => setShowClearConfirm(true)}
-                  className="flex-1 bg-gradient-to-r from-red-500/20 to-pink-500/20 rounded-lg py-2 px-3 text-white text-sm font-bold hover:scale-105 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 bg-gradient-to-r from-red-500/50 to-pink-500/50 hover:from-red-600/50 hover:to-pink-600/50 rounded-lg py-2 px-3 text-white text-sm font-bold hover:scale-105 transition-all flex items-center justify-center gap-2"
                 >
                   <FaTrash size={12} />
                   모두 삭제
@@ -256,9 +219,9 @@ export default function Navigation({ title }: NavigationProps) {
                     <div
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`bg-gradient-to-r ${getNotificationBg(notification.type)} rounded-xl p-3 border ${
+                      className={`bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 ${
                         notification.read ? 'opacity-60' : ''
-                      } hover:scale-105 transition-all cursor-pointer`}
+                      } hover:from-white/15 hover:to-white/10 transition-all cursor-pointer`}
                     >
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
@@ -294,8 +257,8 @@ export default function Navigation({ title }: NavigationProps) {
       {/* 전체 삭제 확인 모달 */}
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-blue-900/95 via-purple-900/95 to-indigo-900/95 rounded-2xl p-6 shadow-2xl border border-white/20 max-w-sm w-full">
-            <h3 className="text-xl font-bold text-white mb-4">알림 전체 삭제</h3>
+          <div className="bg-gradient-to-br from-purple-900/95 to-pink-900/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-purple-500/30 max-w-sm w-full">
+            <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 mb-4">알림 전체 삭제</h3>
             <p className="text-white/80 mb-6">
               모든 알림을 삭제하시겠습니까?<br />
               이 작업은 되돌릴 수 없습니다.
@@ -303,7 +266,7 @@ export default function Navigation({ title }: NavigationProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="flex-1 bg-white/20 text-white py-2 rounded-xl font-bold text-sm hover:bg-white/30 transition-all"
+                className="flex-1 bg-gradient-to-r from-white/10 to-white/5 text-white py-2 rounded-xl font-bold text-sm hover:from-white/15 hover:to-white/10 transition-all border border-white/20"
               >
                 취소
               </button>
@@ -312,7 +275,7 @@ export default function Navigation({ title }: NavigationProps) {
                   clearAll();
                   setShowClearConfirm(false);
                 }}
-                className="flex-1 bg-red-500 text-white py-2 rounded-xl font-bold text-sm hover:bg-red-600 transition-all"
+                className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white py-2 rounded-xl font-bold text-sm hover:scale-105 transition-all"
               >
                 삭제
               </button>
@@ -320,6 +283,6 @@ export default function Navigation({ title }: NavigationProps) {
           </div>
         </div>
       )}
-      </>
-    );
-  } 
+    </>
+  );
+} 

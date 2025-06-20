@@ -8,9 +8,9 @@ interface UserProfileProps {
 }
 
 const ProfileStat = memo(({ label, value }: { label: string; value: string | number }) => (
-  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center hover:bg-white/20 transition-all">
-    <p className="text-xs text-purple-200 mb-1">{label}</p>
-    <p className="font-bold text-white">{value}</p>
+  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 text-center hover:bg-white/20 transition-all">
+    <p className="text-xs text-purple-200 mb-0.5">{label}</p>
+    <p className="font-bold text-white text-sm sm:text-base">{value}</p>
   </div>
 ));
 
@@ -19,9 +19,9 @@ ProfileStat.displayName = 'ProfileStat';
 const ProfileButton = memo(({ href, icon: Icon, children, gradient }: { href: string; icon: any; children: React.ReactNode; gradient: string }) => (
   <Link 
     href={href} 
-    className={`w-full ${gradient} text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl flex items-center justify-center transition-all hover:scale-[1.02] gap-2`}
+    className={`w-full ${gradient} text-white font-bold py-2.5 px-4 rounded-xl shadow-lg hover:shadow-xl flex items-center justify-center transition-all hover:scale-[1.02] gap-2`}
   >
-    <Icon size={16} />
+    <Icon className="w-3.5 h-3.5" />
     <span className="text-sm">{children}</span>
   </Link>
 ));
@@ -40,22 +40,27 @@ export const UserProfile = memo(({ userProfile }: UserProfileProps) => {
   }, [userProfile?.points]);
 
   return (
-    <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
+    <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-3 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
       {/* 배경 애니메이션 효과 */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
       
       <div className="relative z-10">
-        <div className="flex items-center justify-center text-center mb-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 mb-1 flex items-center justify-center gap-2">
-              <FaCrown className="text-yellow-400 animate-pulse w-5 h-5 sm:w-6 sm:h-6" />
+        {/* 헤더 - 실시간 Top 3 스타일 적용 */}
+        <div className="text-center mb-3 sm:mb-6">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <FaCrown className="text-yellow-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+            <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
               {userProfile?.nickname || '배달킹'}님
-            </h1>
-            <p className="text-purple-200 text-xs sm:text-sm">오늘도 안전 배달하세요! 🚀</p>
+            </h2>
+            <FaCrown className="text-yellow-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
           </div>
+          <p className="text-purple-200 text-xs">
+            오늘도 안전 배달하세요! 🚀
+          </p>
         </div>
         
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
+        {/* 상세 정보 */}
+        <div className="grid grid-cols-3 gap-2 mb-3 sm:mb-4">
           <ProfileStat 
             label="지역" 
             value={userProfile?.region || '서울'} 
@@ -70,7 +75,8 @@ export const UserProfile = memo(({ userProfile }: UserProfileProps) => {
           />
         </div>
         
-        <div className="space-y-2 sm:space-y-3">
+        {/* CTA 버튼 */}
+        <div className="space-y-2">
           <ProfileButton 
             href="/upload" 
             icon={FaUpload}

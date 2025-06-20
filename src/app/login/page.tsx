@@ -161,118 +161,125 @@ const Login = () => {
             <div className="animate-bounce mb-4">
               <FaCrown size={60} className="mx-auto text-yellow-400 drop-shadow-lg" />
             </div>
-            <h1 className="text-3xl font-black text-white mb-2">
+            <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 mb-2">
               배달킹
             </h1>
-            <p className="text-blue-200">실시간 배달 랭킹 서비스</p>
+            <p className="text-purple-200">실시간 배달 랭킹 서비스</p>
           </div>
         </section>
 
         {/* 로그인 폼 */}
         <section className="mb-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">로그인</h2>
+          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
+            {/* 배경 애니메이션 효과 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
             
-            {/* 초대 코드 안내 */}
-            {inviteCode && (
-              <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-3 mb-4">
-                <p className="text-green-200 text-sm text-center">
-                  친구 초대로 가입하면 300P를 즉시 받을 수 있어요! 🎁
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 mb-6 text-center">
+                로그인
+              </h2>
+              
+              {/* 초대 코드 안내 */}
+              {inviteCode && (
+                <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-xl p-3 mb-4">
+                  <p className="text-green-200 text-sm text-center">
+                    친구 초대로 가입하면 300P를 즉시 받을 수 있어요! 🎁
+                  </p>
+                </div>
+              )}
+              
+              {/* 이메일/비밀번호 로그인 폼 */}
+              <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    이메일
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FaEnvelope className="text-purple-400" />
+                    </div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200/60 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                      placeholder="이메일 주소"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    비밀번호
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FaLock className="text-purple-400" />
+                    </div>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200/60 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                      placeholder="비밀번호"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white py-3 px-4 rounded-xl font-bold hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  <FaSignInAlt size={18} />
+                  {loading ? '로그인 중...' : '로그인'}
+                </button>
+              </form>
+
+              {/* 구분선 */}
+              <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/20"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-transparent text-purple-200/60">또는</span>
+                </div>
+              </div>
+              
+              {/* 카카오 로그인 버튼 */}
+              <button
+                onClick={handleKakaoLogin}
+                disabled={loading}
+                className="w-full bg-[#FEE500] text-[#000000D9] py-3 px-4 rounded-xl font-bold hover:bg-[#FDD835] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#FEE500]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              >
+                <FaComment size={18} />
+                카카오로 시작하기
+              </button>
+
+              {/* 회원가입 링크 */}
+              <div className="mt-6 text-center">
+                <p className="text-purple-200/60 text-sm">
+                  아직 계정이 없으신가요?{' '}
+                  <Link 
+                    href="/signup" 
+                    className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 hover:from-yellow-300 hover:to-pink-300 font-bold transition-all"
+                  >
+                    회원가입
+                  </Link>
                 </p>
               </div>
-            )}
-            
-            {/* 이메일/비밀번호 로그인 폼 */}
-            <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  이메일
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaEnvelope className="text-white/60" />
-                  </div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all"
-                    placeholder="이메일 주소"
-                    required
-                    disabled={loading}
-                  />
+
+              {/* 에러 메시지 */}
+              {error && (
+                <div className="mt-4 bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-xl p-3">
+                  <p className="text-red-200 text-sm">{error}</p>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  비밀번호
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaLock className="text-white/60" />
-                  </div>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all"
-                    placeholder="비밀번호"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 px-4 rounded-xl font-bold hover:from-yellow-500 hover:to-orange-600 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-              >
-                <FaSignInAlt size={18} />
-                {loading ? '로그인 중...' : '로그인'}
-              </button>
-            </form>
-
-            {/* 구분선 */}
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/20"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-transparent text-white/60">또는</span>
-              </div>
+              )}
             </div>
-            
-            {/* 카카오 로그인 버튼 */}
-            <button
-              onClick={handleKakaoLogin}
-              disabled={loading}
-              className="w-full bg-[#FEE500] text-[#000000D9] py-3 px-4 rounded-xl font-bold hover:bg-[#FDD835] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#FEE500]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-            >
-              <FaComment size={18} />
-              카카오로 시작하기
-            </button>
-
-            {/* 회원가입 링크 */}
-            <div className="mt-6 text-center">
-              <p className="text-white/60 text-sm">
-                아직 계정이 없으신가요?{' '}
-                <Link 
-                  href="/signup" 
-                  className="text-yellow-400 hover:text-yellow-300 font-bold transition-colors"
-                >
-                  회원가입
-                </Link>
-              </p>
-            </div>
-
-            {/* 에러 메시지 */}
-            {error && (
-              <div className="mt-4 bg-red-500/20 border border-red-500/50 rounded-xl p-3">
-                <p className="text-red-200 text-sm">{error}</p>
-              </div>
-            )}
           </div>
         </section>
 

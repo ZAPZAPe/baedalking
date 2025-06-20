@@ -116,7 +116,10 @@ export const getPointTransactions = async (userId: string, limitCount: number = 
       .order('created_at', { ascending: false })
       .limit(limitCount);
 
+    console.log('supabase data:', data, 'error:', error); // 진단용 로그
+
     if (error) throw error;
+    if (!data) return [];
 
     return data.map((transaction: any) => ({
       id: transaction.id,
@@ -124,7 +127,7 @@ export const getPointTransactions = async (userId: string, limitCount: number = 
       type: transaction.points > 0 ? 'earn' : 'spend',
       amount: Math.abs(transaction.points),
       reason: transaction.reason,
-      description: transaction.reason,
+      description: transaction.reason.startsWith('출근도장') ? '출근도장' : transaction.reason,
       createdAt: new Date(transaction.created_at)
     }));
   } catch (error) {
@@ -145,10 +148,6 @@ export const rewardUploadPoints = async (userId: string, isFirstUpload: boolean 
     return false;
   }
 };
-
-
-
-
 
 // 첫 업로드 확인
 export const isFirstUpload = async (userId: string): Promise<boolean> => {

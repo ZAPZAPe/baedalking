@@ -246,18 +246,6 @@ export default function UploadPage() {
   return (
     <div className="relative z-10">
       <div className="max-w-3xl mx-auto px-4">
-        {/* 에러 메시지 */}
-        {error && (
-          <div className="mb-4 bg-red-500/20 border border-red-500/50 rounded-xl p-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
-                <FaExclamationTriangle size={16} className="text-red-400" />
-              </div>
-              <p className="text-red-200 text-sm">{error}</p>
-            </div>
-          </div>
-        )}
-
         {!uploadSuccess ? (
           <>
             {/* 업로드 안내 */}
@@ -267,21 +255,21 @@ export default function UploadPage() {
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
                 
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-white">실적 업로드</h2>
-                      <p className="text-purple-200 text-xs sm:text-sm">
-                        사진만 올리면 AI가 자동으로 분석해요! 🤖
-                      </p>
+                  {/* 헤더 - 실시간 Top 3 스타일 */}
+                  <div className="text-center mb-4 sm:mb-6">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <FaUpload className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+                      <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
+                        실적 업로드
+                      </h2>
+                      <FaUpload className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
                     </div>
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg animate-bounce">
-                      <FaUpload className="text-white w-4 h-4 sm:w-5 sm:h-5" />
-                    </div>
+                    <p className="text-purple-200 text-xs">사진만 올리면 AI가 자동으로 분석해요! 🤖</p>
                   </div>
 
                   {/* 오늘 날짜 안내 */}
-                  <div className="mb-4 bg-purple-500/20 border border-purple-500/50 rounded-xl p-3">
-                    <div className="flex items-center gap-2">
+                  <div className="mb-4 bg-gradient-to-r from-white/10 to-white/5 border border-white/20 rounded-xl p-3">
+                    <div className="text-center">
                       <div className="text-purple-200">
                         <p className="font-medium text-sm">오늘 날짜: {getKoreanToday()}</p>
                         <p className="text-xs mt-1">매일 오전 6시에 날짜가 갱신됩니다</p>
@@ -291,11 +279,11 @@ export default function UploadPage() {
 
                   {/* 플랫폼 선택 */}
                   <div className="mb-4">
-                    <p className="text-white text-sm font-medium mb-2">플랫폼 선택</p>
+                    <p className="text-white text-sm font-medium mb-2 text-center">플랫폼 선택</p>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setDetectedPlatform('배민커넥트')}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        className={`py-2 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center ${
                           detectedPlatform === '배민커넥트'
                             ? 'bg-gradient-to-r from-purple-400 to-pink-500 text-white shadow-lg'
                             : 'bg-white/10 text-purple-200 hover:bg-white/20'
@@ -306,7 +294,7 @@ export default function UploadPage() {
                       </button>
                       <button
                         onClick={() => setDetectedPlatform('쿠팡이츠')}
-                        className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        className={`py-2 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center ${
                           detectedPlatform === '쿠팡이츠'
                             ? 'bg-gradient-to-r from-purple-400 to-pink-500 text-white shadow-lg'
                             : 'bg-white/10 text-purple-200 hover:bg-white/20'
@@ -321,7 +309,7 @@ export default function UploadPage() {
                   {/* 파일 선택 영역 */}
                   <div className="space-y-3">
                     <div
-                      className="border-2 border-dashed border-purple-400/30 rounded-xl p-4 text-center cursor-pointer hover:border-purple-400/50 transition-colors bg-white/5 hover:bg-white/10"
+                      className="border-2 border-dashed border-white/30 rounded-xl p-4 text-center cursor-pointer hover:border-white/50 transition-colors bg-gradient-to-r from-white/10 to-white/5 hover:from-white/15 hover:to-white/10"
                       onClick={() => document.getElementById('fileInput')?.click()}
                     >
                       <input
@@ -367,8 +355,8 @@ export default function UploadPage() {
 
                     {/* 분석 결과 표시 */}
                     {analysisComplete && analysisResult && (
-                      <div className="bg-white/10 rounded-xl p-3 space-y-2">
-                        <h4 className="text-white font-medium text-sm mb-2">분석 결과</h4>
+                      <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 space-y-2 border border-white/20">
+                        <h4 className="text-white font-medium text-sm mb-2 text-center">분석 결과</h4>
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
                             <p className="text-purple-200 text-xs">플랫폼</p>
@@ -397,15 +385,29 @@ export default function UploadPage() {
                       </div>
                     )}
 
+                    {/* 에러 메시지 */}
+                    {error && (
+                      <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <FaExclamationTriangle size={12} className="text-red-400" />
+                          </div>
+                          <p className="text-red-200 text-xs">{error}</p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* 업로드 버튼 */}
                     <button
                       className={`w-full py-3 rounded-xl text-white font-bold text-sm transition-all ${
                         analysisComplete && !analyzing && !error
-                          ? 'bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 hover:shadow-lg hover:shadow-xl hover:scale-[1.02]'
+                          ? 'bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 hover:shadow-lg hover:shadow-xl hover:scale-[1.02]'
+                          : error
+                          ? 'bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 hover:shadow-lg hover:shadow-xl hover:scale-[1.02]'
                           : 'bg-white/20 cursor-not-allowed'
                       }`}
-                      onClick={handleUpload}
-                      disabled={!analysisComplete || analyzing || uploading || !!error}
+                      onClick={error ? resetUpload : handleUpload}
+                      disabled={!analysisComplete || analyzing || uploading}
                     >
                       {uploading ? (
                         <div className="flex items-center justify-center gap-2">
@@ -413,7 +415,10 @@ export default function UploadPage() {
                           <span>등록 중...</span>
                         </div>
                       ) : error ? (
-                        <span>업로드 불가</span>
+                        <div className="flex items-center justify-center gap-2">
+                          <FaUpload className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span>다시 업로드하기</span>
+                        </div>
                       ) : (
                         <div className="flex items-center justify-center gap-2">
                           <FaUpload className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -433,10 +438,21 @@ export default function UploadPage() {
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
                 
                 <div className="relative z-10">
-                  <h3 className="text-base font-bold text-white mb-3">예시 이미지</h3>
+                  {/* 헤더 - 실시간 Top 3 스타일 */}
+                  <div className="text-center mb-3 sm:mb-4">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <FaClipboardList className="text-purple-400 animate-bounce w-4 h-4 sm:w-6 sm:h-6" />
+                      <h3 className="text-base sm:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
+                        예시 이미지
+                      </h3>
+                      <FaClipboardList className="text-purple-400 animate-bounce w-4 h-4 sm:w-6 sm:h-6" />
+                    </div>
+                    <p className="text-purple-200 text-xs">올바른 화면을 캡처해주세요! 📱</p>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      className="aspect-[4/3] bg-white/10 rounded-xl overflow-hidden hover:bg-white/20 transition-all hover:scale-[1.02] flex flex-col items-center justify-center group"
+                      className="aspect-[4/3] bg-gradient-to-r from-white/10 to-white/5 rounded-xl overflow-hidden hover:from-white/15 hover:to-white/10 transition-all hover:scale-[1.02] flex flex-col items-center justify-center group border border-white/20"
                       onClick={() => openExampleModal('배민커넥트')}
                     >
                       <div className="flex flex-col items-center justify-center h-full w-full">
@@ -445,7 +461,7 @@ export default function UploadPage() {
                       </div>
                     </button>
                     <button
-                      className="aspect-[4/3] bg-white/10 rounded-xl overflow-hidden hover:bg-white/20 transition-all hover:scale-[1.02] flex flex-col items-center justify-center group"
+                      className="aspect-[4/3] bg-gradient-to-r from-white/10 to-white/5 rounded-xl overflow-hidden hover:from-white/15 hover:to-white/10 transition-all hover:scale-[1.02] flex flex-col items-center justify-center group border border-white/20"
                       onClick={() => openExampleModal('쿠팡이츠')}
                     >
                       <div className="flex flex-col items-center justify-center h-full w-full">
@@ -467,21 +483,22 @@ export default function UploadPage() {
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
                 
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-white">업로드 완료!</h2>
-                      <p className="text-purple-200 text-xs sm:text-sm">
-                        AI가 자동으로 분석했어요 ✨
-                      </p>
+                  {/* 헤더 - 실시간 Top 3 스타일 */}
+                  <div className="text-center mb-4 sm:mb-6">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <FaCheckCircle className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+                      <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
+                        업로드 완료!
+                      </h2>
+                      <FaCheckCircle className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
                     </div>
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                      <FaCheckCircle className="text-white w-4 h-4 sm:w-5 sm:h-5" />
-                    </div>
+                    <p className="text-purple-200 text-xs">AI가 자동으로 분석했어요 ✨</p>
                   </div>
 
                   {/* 분석 결과 */}
                   <div className="space-y-3">
-                    <div className="bg-white/10 rounded-xl p-3">
+                    <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20">
+                      <h4 className="text-white font-medium text-sm mb-2 text-center">분석 결과</h4>
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-purple-200 text-sm">플랫폼</p>
                         <p className="text-white font-medium text-sm">{detectedPlatform}</p>
@@ -500,7 +517,7 @@ export default function UploadPage() {
 
                     {/* 포인트 획득 */}
                     {!isDuplicateUpload ? (
-                      <div className="bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl p-3 border border-amber-500/20">
+                      <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
                             <FaCoins className="text-white" size={16} />
@@ -514,7 +531,7 @@ export default function UploadPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-blue-500/20 border border-blue-500/50 rounded-xl p-3">
+                      <div className="bg-gradient-to-r from-white/10 to-white/5 border border-white/20 rounded-xl p-3">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
                             <FaCheckCircle className="text-blue-400" size={16} />
@@ -532,13 +549,13 @@ export default function UploadPage() {
                     {/* 버튼 */}
                     <div className="flex gap-2">
                       <button
-                        className="flex-1 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all text-sm font-bold"
+                        className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-white/10 to-white/5 hover:from-white/15 hover:to-white/10 text-white transition-all text-xs sm:text-sm font-bold border border-white/20"
                         onClick={resetUpload}
                       >
                         다시 업로드
                       </button>
                       <button
-                        className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white hover:shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] text-sm font-bold"
+                        className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white hover:shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] text-xs sm:text-sm font-bold"
                         onClick={() => router.push('/')}
                       >
                         홈으로
@@ -559,40 +576,49 @@ export default function UploadPage() {
 
       {/* 예시 모달 */}
       {showExampleModal && selectedExampleApp && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center">
-          <div className="bg-gradient-to-br from-purple-900/90 to-pink-900/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-purple-500/30 w-[90%] max-w-sm mx-auto my-auto max-h-[calc(100vh-120px)] flex flex-col">
-            {/* 모달 헤더 - 고정 */}
-            <div className="flex items-center justify-between p-4 pb-2 border-b border-purple-500/20">
-              <h3 className="text-lg font-bold text-white">
-                {selectedExampleApp} 예시
-              </h3>
-              <button
-                className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
-                onClick={closeExampleModal}
-              >
-                <FaTimes className="text-white" size={16} />
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-3 sm:p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto shadow-2xl border border-purple-500/30 relative overflow-hidden">
+            {/* 배경 애니메이션 효과 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
+            
+            <div className="relative z-10">
+              {/* 헤더 - 실시간 Top 3 스타일 */}
+              <div className="text-center mb-3 sm:mb-6">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <FaClipboardList className="text-purple-400 animate-bounce w-4 h-4 sm:w-6 sm:h-6" />
+                  <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
+                    {selectedExampleApp} 예시
+                  </h2>
+                  <FaClipboardList className="text-purple-400 animate-bounce w-4 h-4 sm:w-6 sm:h-6" />
+                </div>
+                <p className="text-purple-200 text-xs">올바른 화면을 캡처해주세요! 📱</p>
+              </div>
 
-            {/* 모달 내용 - 스크롤 가능 */}
-            <div className="overflow-y-auto flex-1 p-4 pt-2">
+              {/* 닫기 버튼 */}
+              <button
+                onClick={closeExampleModal}
+                className="absolute top-2 right-2 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all"
+              >
+                <FaTimes size={16} />
+              </button>
+
               {/* 중요 안내사항 */}
-              <div className="mb-3 bg-amber-500/20 border border-amber-500/50 rounded-xl p-2.5">
+              <div className="mb-3 sm:mb-4 bg-gradient-to-r from-amber-400/20 to-orange-500/20 border border-amber-400/30 rounded-xl p-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                    <FaExclamationTriangle size={10} className="text-amber-400" />
+                  <div className="w-6 h-6 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <FaExclamationTriangle size={12} className="text-amber-400" />
                   </div>
                   <div className="text-amber-200 text-xs">
                     <p className="font-medium">중요! 반드시 오늘 날짜 화면만 업로드하세요</p>
-                    <p className="text-[10px]">다른 화면이나 지난 날짜는 인식되지 않습니다</p>
+                    <p className="text-[10px] mt-1">다른 화면이나 지난 날짜는 인식되지 않습니다</p>
                   </div>
                 </div>
               </div>
 
               {/* 예시 이미지 */}
-              <div className="mb-3">
+              <div className="mb-3 sm:mb-4">
                 {selectedExampleApp === '배민커넥트' ? (
-                  <div className="bg-white/10 rounded-xl p-3 space-y-2">
+                  <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 space-y-2 border border-white/20">
                     <div className="aspect-[9/16] bg-white/5 rounded-lg overflow-hidden">
                       <img 
                         src="/baemin-example.svg" 
@@ -607,7 +633,7 @@ export default function UploadPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-white/10 rounded-xl p-3 space-y-2">
+                  <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 space-y-2 border border-white/20">
                     <div className="aspect-[9/16] bg-white/5 rounded-lg overflow-hidden">
                       <img 
                         src="/coupang-example.svg" 
@@ -624,12 +650,12 @@ export default function UploadPage() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <div className="bg-white/10 rounded-xl p-2.5">
-                  <p className="text-white font-medium text-xs mb-1.5">
+              <div className="space-y-2 sm:space-y-3">
+                <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20">
+                  <h4 className="text-white font-medium text-xs mb-2 text-center">
                     {selectedExampleApp === '배민커넥트' ? '배민커넥트 캡처 방법' : '쿠팡이츠 캡처 방법'}
-                  </p>
-                  <div className="text-purple-200 text-[11px] space-y-0.5">
+                  </h4>
+                  <div className="text-purple-200 text-[11px] space-y-1">
                     {selectedExampleApp === '배민커넥트' ? (
                       <>
                         <p>1. 배민커넥트 앱 실행</p>
@@ -645,7 +671,7 @@ export default function UploadPage() {
                     )}
                   </div>
                 </div>
-                <div className="text-red-300 text-[10px] text-center">
+                <div className="text-red-300 text-[10px] text-center bg-red-500/10 border border-red-500/20 rounded-xl p-2">
                   ⚠️ 다른 화면은 인식되지 않습니다
                 </div>
               </div>

@@ -161,6 +161,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
     let sessionCheckTimeout: NodeJS.Timeout;
+    let retryCount = 0;
+    const MAX_RETRIES = 2;
 
     const checkAuthState = async () => {
       // 이미 세션 체크 중이면 중복 실행 방지
@@ -168,54 +170,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setIsCheckingSession(true);
       
+      const attemptSessionCheck = async (): Promise<any> => {
+        try {
+          // 오래된 세션 정리
+          clearOldSession();
+          
+          // 세션 체크에 타임아웃 설정 (3초로 단축)
+          const sessionPromise = supabase.auth.getSession();
+          const timeoutPromise = new Promise((_, reject) => {
+            sessionCheckTimeout = setTimeout(() => reject(new Error('Session check timeout')), 3000);
+          });
+          
+          const { data: { session } } = await Promise.race([
+            sessionPromise,
+            timeoutPromise
+          ]) as any;
+          
+          clearTimeout(sessionCheckTimeout);
+          
+          return session;
+        } catch (error: any) {
+          clearTimeout(sessionCheckTimeout);
+          
+          // 타임아웃 발생 시 재시도
+          if (error.message === 'Session check timeout' && retryCount < MAX_RETRIES) {
+            retryCount++;
+            console.log(`세션 체크 재시도 ${retryCount}/${MAX_RETRIES}`);
+            await new Promise(resolve => setTimeout(resolve, 500)); // 0.5초 대기
+            return attemptSessionCheck();
+          }
+          
+          throw error;
+        }
+      };
+      
       try {
-        // 오래된 세션 정리
-        clearOldSession();
-        
-        // 세션 체크에 타임아웃 설정 (10초로 증가)
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) => {
-          sessionCheckTimeout = setTimeout(() => reject(new Error('Session check timeout')), 10000);
-        });
-        
-        const { data: { session } } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]) as any;
-        
-        clearTimeout(sessionCheckTimeout);
+        const session = await attemptSessionCheck();
         
         if (mounted && session?.user) {
           await loadUserProfile(session.user);
         } else if (mounted) {
-          setUser(null);
-          setUserProfile(null);
+          // 캐시된 프로필 확인
+          if (user?.id) {
+            const cached = profileCache.get(user.id);
+            if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+              setUserProfile(cached.data);
+            }
+          } else {
+            setUser(null);
+            setUserProfile(null);
+          }
         }
       } catch (error: any) {
         console.error('세션 체크 에러:', error);
         if (mounted) {
-          // 타임아웃이나 에러 발생 시 세션 클리어
-          if (error.message === 'Session check timeout') {
-            console.log('세션 체크 타임아웃 - 카카오 로그인 직후 여부 확인');
-            
-            // 카카오 로그인 직후인지 확인 (URL에 code 파라미터가 있는지)
-            let isKakaoCallback = false;
-            if (typeof window !== 'undefined') {
-              const urlParams = new URLSearchParams(window.location.search);
-              isKakaoCallback = window.location.pathname.includes('/auth/kakao/callback') || urlParams.has('code');
-            }
-            
-            if (!isKakaoCallback) {
-              console.log('카카오 로그인이 아님 - 로컬 스토리지 정리');
-              // 모든 관련 스토리지 키 정리
-              ['supabase.auth.token', 'sb-auth-token', 'baedalking-auth'].forEach(key => {
-                localStorage.removeItem(key);
-                sessionStorage.removeItem(key);
-              });
-            } else {
-              console.log('카카오 로그인 직후 - 스토리지 유지');
-            }
+          // 카카오 로그인 직후인지 확인
+          let isKakaoCallback = false;
+          if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            isKakaoCallback = window.location.pathname.includes('/auth/kakao/callback') || urlParams.has('code');
           }
+          
+          if (!isKakaoCallback) {
+            console.log('세션 체크 실패 - 로컬 스토리지 정리');
+            // 모든 관련 스토리지 키 정리
+            ['supabase.auth.token', 'sb-auth-token', 'baedalking-auth'].forEach(key => {
+              localStorage.removeItem(key);
+              sessionStorage.removeItem(key);
+            });
+          }
+          
           setUser(null);
           setUserProfile(null);
         }
