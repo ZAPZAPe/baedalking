@@ -191,20 +191,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const createdProfile = await createUserProfile(newUserData);
         
         // User 타입으로 변환
+        const createdData = createdProfile as any; // 타입 단언으로 스네이크 케이스 필드 접근 허용
         const userData: User = {
           id: authUser.id,
           email: authUser.email || '',
-          nickname: createdProfile?.nickname || kakaoNickname,
-          region: createdProfile?.region || '',
-          vehicle: createdProfile?.vehicle || '',
-          phone: createdProfile?.phone || '',
-          points: createdProfile?.points || 0,
-          totalDeliveries: createdProfile?.total_deliveries || 0,
-          totalEarnings: createdProfile?.total_earnings || 0,
-          profileImage: createdProfile?.profile_image || '',
-          referral_code: createdProfile?.referral_code || referralCode,
-          notificationSettings: createdProfile?.notification_settings || {},
-          role: createdProfile?.role || 'user',
+          nickname: createdData?.nickname || kakaoNickname,
+          region: createdData?.region || '',
+          vehicle: createdData?.vehicle || '',
+          phone: createdData?.phone || '',
+          points: createdData?.points || 0,
+          totalDeliveries: createdData?.total_deliveries || 0,
+          totalEarnings: createdData?.total_earnings || 0,
+          profileImage: createdData?.profile_image || '',
+          referral_code: createdData?.referral_code || referralCode,
+          notificationSettings: createdData?.notification_settings || {},
+          role: createdData?.role || 'user',
         };
         
         setUserProfile(userData);
@@ -214,20 +215,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // 기존 프로필 존재하는 경우
+      const profileData = profile as any; // 타입 단언으로 스네이크 케이스 필드 접근 허용
       const userData: User = {
         id: authUser.id,
         email: authUser.email || '',
-        nickname: profile?.nickname || '',
-        region: profile?.region || '',
-        vehicle: profile?.vehicle || '',
-        phone: profile?.phone || '',
-        points: profile?.points || 0,
-        totalDeliveries: profile?.total_deliveries || 0,
-        totalEarnings: profile?.total_earnings || 0,
-        profileImage: profile?.profile_image || '',
-        referral_code: profile?.referral_code || '',
-        notificationSettings: profile?.notification_settings || {},
-        role: profile?.role || 'user',
+        nickname: profileData?.nickname || '',
+        region: profileData?.region || '',
+        vehicle: profileData?.vehicle || '',
+        phone: profileData?.phone || '',
+        points: profileData?.points || 0,
+        totalDeliveries: profileData?.total_deliveries || 0,
+        totalEarnings: profileData?.total_earnings || 0,
+        profileImage: profileData?.profile_image || '',
+        referral_code: profileData?.referral_code || '',
+        notificationSettings: profileData?.notification_settings || {},
+        role: profileData?.role || 'user',
       };
 
       setUserProfile(userData);
