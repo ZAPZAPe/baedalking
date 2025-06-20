@@ -129,22 +129,50 @@ export default function ProfileSetupPage() {
     }, 0);
   };
 
+  const validateNickname = (nickname: string) => {
+    // 길이 검사
+    if (nickname.length < 2) {
+      return { isValid: false, message: '닉네임은 2자 이상이어야 합니다.' };
+    }
+    
+    if (nickname.length > 12) {
+      return { isValid: false, message: '닉네임은 12자 이하여야 합니다.' };
+    }
+
+    // 특수문자 검사 (한글, 영문, 숫자, 일부 특수문자만 허용)
+    const allowedPattern = /^[가-힣a-zA-Z0-9._-]+$/;
+    if (!allowedPattern.test(nickname)) {
+      return { isValid: false, message: '닉네임은 한글, 영문, 숫자, ., _, - 만 사용 가능합니다.' };
+    }
+
+    // 연속된 특수문자 검사
+    if (/[._-]{2,}/.test(nickname)) {
+      return { isValid: false, message: '특수문자는 연속으로 사용할 수 없습니다.' };
+    }
+
+    // 시작과 끝이 특수문자인지 검사
+    if (/^[._-]|[._-]$/.test(nickname)) {
+      return { isValid: false, message: '닉네임은 특수문자로 시작하거나 끝날 수 없습니다.' };
+    }
+
+    // 부적절한 단어 검사
+    const bannedWords = ['admin', 'administrator', 'root', 'system', '관리자', '운영자', 'null', 'undefined'];
+    const lowerNickname = nickname.toLowerCase();
+    for (const word of bannedWords) {
+      if (lowerNickname.includes(word)) {
+        return { isValid: false, message: '사용할 수 없는 닉네임입니다.' };
+      }
+    }
+
+    return { isValid: true, message: '' };
+  };
+
   // 닉네임 중복 검사
   const checkNicknameDuplicate = async (nickname: string) => {
-    if (!nickname || nickname.length < 2) {
-      setNicknameError('닉네임은 2글자 이상이어야 합니다.');
-      return false;
-    }
-
-    if (nickname.length > 10) {
-      setNicknameError('닉네임은 10글자 이하여야 합니다.');
-      return false;
-    }
-
-    // 특수문자 검사
-    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
-    if (specialCharRegex.test(nickname)) {
-      setNicknameError('닉네임에는 특수문자를 사용할 수 없습니다.');
+    // 먼저 유효성 검사
+    const validation = validateNickname(nickname);
+    if (!validation.isValid) {
+      setNicknameError(validation.message);
       return false;
     }
 
@@ -155,12 +183,21 @@ export default function ProfileSetupPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return false;
 
-      const { data: existingUser } = await supabase
+      const { data: existingUser, error } = await supabase
         .from('users')
         .select('id')
         .eq('nickname', nickname)
         .neq('id', session.user.id)
         .single();
+
+      // 네트워크 에러나 리소스 부족 에러는 조용히 처리
+      if (error && (error.message?.includes('Failed to fetch') || 
+                   error.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+                   error.code === 'ERR_INSUFFICIENT_RESOURCES')) {
+        console.warn('네트워크 또는 리소스 에러로 인한 닉네임 확인 실패');
+        setNicknameError('네트워크 오류로 닉네임 확인에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        return false;
+      }
 
       if (existingUser) {
         setNicknameError('이미 사용 중인 닉네임입니다.');
@@ -168,8 +205,16 @@ export default function ProfileSetupPage() {
       }
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('닉네임 중복 확인 오류:', error);
+      
+      // 네트워크 에러는 사용자에게 알림
+      if (error.message?.includes('Failed to fetch') || 
+          error.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
+        setNicknameError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        setNicknameError('닉네임 확인 중 오류가 발생했습니다.');
+      }
       return true; // 오류 시 통과
     } finally {
       setIsCheckingNickname(false);
@@ -403,11 +448,32 @@ export default function ProfileSetupPage() {
                   required
                 />
               </div>
-              {nicknameError && (
-                <p className="mt-1 text-xs text-red-400">{nicknameError}</p>
-              )}
               {isCheckingNickname && (
-                <p className="mt-1 text-xs text-blue-400">닉네임 확인 중...</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-3 h-3 border-2 border-blue-400/20 border-t-blue-400 rounded-full animate-spin"></div>
+                  <p className="text-xs text-blue-400">닉네임 확인 중...</p>
+                </div>
+              )}
+              {!nicknameError && !isCheckingNickname && formData.nickname && validateNickname(formData.nickname).isValid && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-400 rounded-full flex items-center justify-center">
+                    <span className="text-white text-[8px]">✓</span>
+                  </div>
+                  <p className="text-xs text-green-400 font-medium">✨ 사용 가능한 멋진 닉네임입니다!</p>
+                </div>
+              )}
+              {nicknameError && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-red-400 rounded-full flex items-center justify-center">
+                    <span className="text-white text-[8px]">!</span>
+                  </div>
+                  <p className="text-xs text-red-400">{nicknameError}</p>
+                </div>
+              )}
+              {!nicknameError && !isCheckingNickname && formData.nickname && !validateNickname(formData.nickname).isValid && (
+                <div className="mt-2">
+                  <p className="text-xs text-white/60">💡 닉네임 규칙: 2-12자, 한글/영문/숫자/._- 사용 가능</p>
+                </div>
               )}
               {userInfo?.nickname && !nicknameError && !isCheckingNickname && (
                 <p className="mt-1 text-xs text-white/60">카카오톡 닉네임: {userInfo.nickname}</p>

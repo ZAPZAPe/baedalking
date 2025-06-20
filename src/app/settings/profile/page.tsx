@@ -67,16 +67,57 @@ export default function ProfileEditPage() {
     }
   };
 
+  const validateNickname = (nickname: string) => {
+    // 길이 검사
+    if (nickname.length < 2) {
+      return { isValid: false, message: '닉네임은 2자 이상이어야 합니다.' };
+    }
+    
+    if (nickname.length > 12) {
+      return { isValid: false, message: '닉네임은 12자 이하여야 합니다.' };
+    }
+
+    // 특수문자 검사 (한글, 영문, 숫자, 일부 특수문자만 허용)
+    const allowedPattern = /^[가-힣a-zA-Z0-9._-]+$/;
+    if (!allowedPattern.test(nickname)) {
+      return { isValid: false, message: '닉네임은 한글, 영문, 숫자, ., _, - 만 사용 가능합니다.' };
+    }
+
+    // 연속된 특수문자 검사
+    if (/[._-]{2,}/.test(nickname)) {
+      return { isValid: false, message: '특수문자는 연속으로 사용할 수 없습니다.' };
+    }
+
+    // 시작과 끝이 특수문자인지 검사
+    if (/^[._-]|[._-]$/.test(nickname)) {
+      return { isValid: false, message: '닉네임은 특수문자로 시작하거나 끝날 수 없습니다.' };
+    }
+
+    // 부적절한 단어 검사 (간단한 예시)
+    const bannedWords = ['admin', 'administrator', 'root', 'system', '관리자', '운영자', 'null', 'undefined'];
+    const lowerNickname = nickname.toLowerCase();
+    for (const word of bannedWords) {
+      if (lowerNickname.includes(word)) {
+        return { isValid: false, message: '사용할 수 없는 닉네임입니다.' };
+      }
+    }
+
+    return { isValid: true, message: '' };
+  };
+
   const handleNicknameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newNickname = e.target.value.trim();
+    const newNickname = e.target.value;
     setProfile(prev => ({ ...prev, nickname: newNickname }));
     
-    if (newNickname.length < 2) {
-      setNicknameError('닉네임은 2자 이상이어야 합니다.');
+    // 실시간 유효성 검사
+    const validation = validateNickname(newNickname);
+    if (!validation.isValid) {
+      setNicknameError(validation.message);
       setNicknameStatus(null);
       return;
     }
 
+    // 현재 닉네임과 같으면 검사하지 않음
     if (newNickname === userProfile?.nickname) {
       setNicknameError('');
       setNicknameStatus(null);
@@ -85,14 +126,14 @@ export default function ProfileEditPage() {
 
     // 디바운스 처리
     const timeoutId = setTimeout(async () => {
-    const isAvailable = await checkNicknameAvailability(newNickname);
-    if (!isAvailable) {
-      setNicknameError('이미 사용 중인 닉네임입니다.');
+      const isAvailable = await checkNicknameAvailability(newNickname);
+      if (!isAvailable) {
+        setNicknameError('이미 사용 중인 닉네임입니다.');
         setNicknameStatus('unavailable');
-    } else {
-      setNicknameError('');
+      } else {
+        setNicknameError('');
         setNicknameStatus('available');
-    }
+      }
     }, 500);
 
     return () => clearTimeout(timeoutId);
@@ -212,16 +253,39 @@ export default function ProfileEditPage() {
                 disabled={isCheckingNickname}
               />
               {isCheckingNickname && (
-                <p className="mt-1 text-sm text-blue-400">닉네임 확인 중...</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-blue-400/20 border-t-blue-400 rounded-full animate-spin"></div>
+                  <p className="text-sm text-blue-400">닉네임 확인 중...</p>
+                </div>
               )}
               {nicknameStatus === 'available' && !isCheckingNickname && (
-                <p className="mt-1 text-sm text-green-400">사용 가능한 닉네임입니다.</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-4 h-4 bg-green-400 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                  <p className="text-sm text-green-400 font-medium">✨ 사용 가능한 멋진 닉네임입니다!</p>
+                </div>
               )}
               {nicknameStatus === 'unavailable' && !isCheckingNickname && (
-                <p className="mt-1 text-sm text-red-400">이미 사용 중인 닉네임입니다.</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-4 h-4 bg-red-400 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✕</span>
+                  </div>
+                  <p className="text-sm text-red-400">이미 사용 중인 닉네임입니다.</p>
+                </div>
               )}
               {nicknameError && !isCheckingNickname && nicknameStatus !== 'unavailable' && (
-                <p className="mt-1 text-sm text-red-400">{nicknameError}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-4 h-4 bg-red-400 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">!</span>
+                  </div>
+                  <p className="text-sm text-red-400">{nicknameError}</p>
+                </div>
+              )}
+              {!nicknameError && !isCheckingNickname && nicknameStatus === null && profile.nickname && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-400">💡 닉네임 규칙: 2-12자, 한글/영문/숫자/._- 사용 가능</p>
+                </div>
               )}
             </div>
           </div>

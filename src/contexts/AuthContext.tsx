@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isCheckingSession, setIsCheckingSession] = useState(false);
 
-  const loadUserProfile = async (authUser: SupabaseUser) => {
+  const loadUserProfile = useCallback(async (authUser: SupabaseUser) => {
     try {
       // 캐시 확인
       const cached = profileCache.get(authUser.id);
@@ -71,6 +71,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error && error.code !== 'PGRST116') {
         console.error('프로필 로드 실패:', error);
+        // 네트워크 에러나 리소스 부족 에러는 조용히 처리
+        if (error.message?.includes('Failed to fetch') || 
+            error.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+            error.code === 'ERR_INSUFFICIENT_RESOURCES') {
+          console.warn('네트워크 또는 리소스 에러로 인한 프로필 로드 실패');
+          setUserProfile(null);
+          return;
+        }
         throw error;
       }
 
@@ -196,7 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('프로필 로드 실패:', error);
       setUserProfile(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -215,10 +223,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // 오래된 세션 정리
           clearOldSession();
           
-          // 세션 체크에 타임아웃 설정 (5초)
+          // 세션 체크에 타임아웃 설정 (3초로 단축)
           const sessionPromise = supabase.auth.getSession();
           const timeoutPromise = new Promise((_, reject) => {
-            sessionCheckTimeout = setTimeout(() => reject(new Error('Session check timeout')), 5000);
+            sessionCheckTimeout = setTimeout(() => reject(new Error('Session check timeout')), 3000);
           });
           
           const result = await Promise.race([
@@ -238,11 +246,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error: any) {
           clearTimeout(sessionCheckTimeout);
           
-          // 타임아웃 발생 시 재시도
+          // 네트워크 에러나 리소스 부족 에러는 재시도하지 않음
+          if (error.message?.includes('Failed to fetch') || 
+              error.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+              error.code === 'ERR_INSUFFICIENT_RESOURCES') {
+            console.warn('네트워크 또는 리소스 에러, 재시도 중단:', error.message);
+            return null;
+          }
+          
+          // 타임아웃 발생 시에만 재시도
           if (error.message === 'Session check timeout' && retryCount < MAX_RETRIES) {
             retryCount++;
             console.log(`세션 체크 재시도 ${retryCount}/${MAX_RETRIES}`);
-            await new Promise(resolve => setTimeout(resolve, 500)); // 0.5초 대기
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1초로 증가
             return attemptSessionCheck();
           }
           
@@ -321,7 +337,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearTimeout(sessionCheckTimeout);
       subscription.unsubscribe();
     };
-  }, [loadUserProfile, user?.id, isCheckingSession]);
+  }, []); // 빈 의존성 배열로 변경하여 무한 루프 방지
 
   const signUp = useCallback(async (nickname: string) => {
     try {

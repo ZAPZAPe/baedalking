@@ -52,12 +52,58 @@ const UserProfileSetup = ({ userId, onComplete }: UserProfileSetupProps) => {
     }, 0);
   };
 
+  const validateNickname = (nickname: string) => {
+    // 길이 검사
+    if (nickname.length < 2) {
+      return { isValid: false, message: '닉네임은 2자 이상이어야 합니다.' };
+    }
+    
+    if (nickname.length > 12) {
+      return { isValid: false, message: '닉네임은 12자 이하여야 합니다.' };
+    }
+
+    // 특수문자 검사 (한글, 영문, 숫자, 일부 특수문자만 허용)
+    const allowedPattern = /^[가-힣a-zA-Z0-9._-]+$/;
+    if (!allowedPattern.test(nickname)) {
+      return { isValid: false, message: '닉네임은 한글, 영문, 숫자, ., _, - 만 사용 가능합니다.' };
+    }
+
+    // 연속된 특수문자 검사
+    if (/[._-]{2,}/.test(nickname)) {
+      return { isValid: false, message: '특수문자는 연속으로 사용할 수 없습니다.' };
+    }
+
+    // 시작과 끝이 특수문자인지 검사
+    if (/^[._-]|[._-]$/.test(nickname)) {
+      return { isValid: false, message: '닉네임은 특수문자로 시작하거나 끝날 수 없습니다.' };
+    }
+
+    // 부적절한 단어 검사
+    const bannedWords = ['admin', 'administrator', 'root', 'system', '관리자', '운영자', 'null', 'undefined'];
+    const lowerNickname = nickname.toLowerCase();
+    for (const word of bannedWords) {
+      if (lowerNickname.includes(word)) {
+        return { isValid: false, message: '사용할 수 없는 닉네임입니다.' };
+      }
+    }
+
+    return { isValid: true, message: '' };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
 
     try {
+      // 닉네임 유효성 검사
+      const nicknameValidation = validateNickname(nickname);
+      if (!nicknameValidation.isValid) {
+        setError(nicknameValidation.message);
+        setIsSubmitting(false);
+        return;
+      }
+
       // 전화번호 유효성 검사 (입력된 경우에만)
       if (phone && !validatePhoneNumber(phone)) {
         setError('올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)');

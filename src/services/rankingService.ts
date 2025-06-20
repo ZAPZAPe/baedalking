@@ -47,11 +47,27 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
     }
 
     console.log('📤 Supabase 쿼리 실행 중...');
-    const { data, error } = await query;
+    
+    // 타임아웃 설정
+    const queryPromise = query;
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Query timeout')), 5000)
+    );
+    
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     if (error) {
       console.error('❌ 랭킹 조회 오류:', error);
       console.error('오류 상세:', JSON.stringify(error, null, 2));
+      
+      // 네트워크 에러나 리소스 부족 에러는 조용히 처리
+      if (error.message?.includes('Failed to fetch') || 
+          error.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+          error.code === 'ERR_INSUFFICIENT_RESOURCES') {
+        console.warn('네트워크 또는 리소스 에러로 인한 랭킹 조회 실패');
+        return [];
+      }
+      
       return [];
     }
 
@@ -64,8 +80,8 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
 
     // 뷰에서 가져온 데이터를 RankingData 형식으로 변환
     const result = data
-      .filter(row => (row.total_amount || 0) > 0 && (row.total_orders || 0) > 0) // 실제 배달 기록이 있는 사용자만
-      .map(row => ({
+      .filter((row: any) => (row.total_amount || 0) > 0 && (row.total_orders || 0) > 0) // 실제 배달 기록이 있는 사용자만
+      .map((row: any) => ({
         userId: row.user_id,
         nickname: row.nickname,
         region: row.region,

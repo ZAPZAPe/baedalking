@@ -199,26 +199,36 @@ export default function Home() {
   const [rankingError, setRankingError] = useState(false);
 
   const fetchRanking = useCallback(async (retryCount = 0) => {
-    const MAX_RETRIES = 2;
+    const MAX_RETRIES = 1; // 재시도 횟수 줄이기
     
     try {
       const ranking = await getTodayRanking();
       setTopRankers(ranking.slice(0, 3).length > 0 ? ranking.slice(0, 3) : DEFAULT_RANKERS);
       setHasLoadedRanking(true);
       setRankingError(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('랭킹 로드 실패:', error);
       
-      // 재시도
-      if (retryCount < MAX_RETRIES) {
+      // 네트워크 에러나 리소스 부족 에러는 재시도하지 않음
+      if (error.message?.includes('Failed to fetch') || 
+          error.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+          error.code === 'ERR_INSUFFICIENT_RESOURCES') {
+        console.warn('네트워크 또는 리소스 에러로 인한 랭킹 로드 실패');
+        setRankingError(true);
+        setTopRankers(DEFAULT_RANKERS);
+        return;
+      }
+      
+      // 타임아웃 에러만 재시도
+      if (retryCount < MAX_RETRIES && error.message?.includes('timeout')) {
         console.log(`랭킹 재시도 ${retryCount + 1}/${MAX_RETRIES}`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2초로 증가
         return fetchRanking(retryCount + 1);
       }
       
       // 최종 실패 시 에러 상태 설정
       setRankingError(true);
-      // 기본값 유지
+      setTopRankers(DEFAULT_RANKERS);
     } finally {
       setLoadingRanking(false);
     }
