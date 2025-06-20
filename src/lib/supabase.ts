@@ -8,39 +8,18 @@ console.log('🔧 Supabase 설정 확인:');
 console.log('URL:', supabaseUrl ? '✅ 설정됨' : '❌ 누락됨');
 console.log('ANON_KEY:', supabaseAnonKey ? `✅ 설정됨 (길이: ${supabaseAnonKey.length})` : '❌ 누락됨');
 
+// 브라우저에서 환경 변수 직접 확인
+if (typeof window !== 'undefined') {
+  console.log('🔐 브라우저 환경 변수 확인:');
+  console.log('NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ 설정됨' : '❌ 누락됨');
+  console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? `✅ 설정됨 (길이: ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length})` : '❌ 누락됨');
+}
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Supabase 환경 변수가 설정되지 않았습니다. NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.')
 }
 
-// 타임아웃이 있는 fetch 함수
-const fetchWithTimeout = (timeout = 10000) => {
-  return async (input: RequestInfo | URL, options?: RequestInit) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
-    try {
-      const response = await fetch(input, {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          ...options?.headers
-        }
-      });
-      clearTimeout(timeoutId);
-      return response;
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        throw new Error('Request timeout');
-      }
-      throw error;
-    }
-  };
-};
-
-// 빈 문자열이라도 createClient는 호출하여 빌드가 실패하지 않도록 함
+// Supabase 클라이언트 생성 - 기본 설정 사용
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -51,20 +30,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     flowType: 'pkce', // PKCE 플로우 사용
     debug: process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SUPABASE_DEBUG === 'true'
   },
-  global: {
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'apikey': supabaseAnonKey || 'placeholder-key'
-    },
-    fetch: fetchWithTimeout(10000) // 10초 타임아웃 설정
-  },
   db: {
     schema: 'public'
   },
   realtime: {
     params: {
       eventsPerSecond: 10
+    }
+  },
+  global: {
+    headers: {
+      'apikey': supabaseAnonKey,
+      'Authorization': `Bearer ${supabaseAnonKey}`
     }
   }
 })

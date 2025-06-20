@@ -213,7 +213,7 @@ export function PlatformStatistics() {
                   <div className="flex items-center gap-1 mb-1 sm:mb-2">
                     <FaCoins className="text-white/90 w-3 h-3 sm:w-4 sm:h-4" />
                     <span className="text-white font-black text-base sm:text-xl">
-                      {stat.averagePerOrder.toLocaleString()}원
+                      {(stat.averagePerOrder || 0).toLocaleString()}원
                     </span>
                   </div>
                   <p className="text-white/80 text-xs">건당 평균</p>
@@ -289,10 +289,10 @@ export function PlatformStatistics() {
                       </div>
                       <div className="flex-1 text-right">
                         <p className="text-white font-bold text-xs">
-                          {ranker.totalAmount.toLocaleString()}원
+                          {(ranker.totalAmount || 0).toLocaleString()}원
                         </p>
                         <p className="text-cyan-200 text-xs">
-                          {ranker.totalOrders}건
+                          {ranker.totalOrders || 0}건
                         </p>
                       </div>
                     </div>
@@ -327,10 +327,10 @@ export function PlatformStatistics() {
                       </div>
                       <div className="flex-1 text-right">
                         <p className="text-white font-bold text-xs">
-                          {ranker.totalAmount.toLocaleString()}원
+                          {(ranker.totalAmount || 0).toLocaleString()}원
                         </p>
                         <p className="text-green-200 text-xs">
-                          {ranker.totalOrders}건
+                          {ranker.totalOrders || 0}건
                         </p>
                       </div>
                     </div>

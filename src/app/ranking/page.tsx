@@ -15,81 +15,6 @@ import { toast } from 'react-hot-toast';
 import KakaoAdGlobal from '@/components/KakaoAdGlobal';
 import RankingFilter from '@/components/ranking/RankingFilter';
 import RankingList from '@/components/ranking/RankingList';
-import RankingShare from '@/components/ranking/RankingShare';
-
-// 현실적인 기본 랭킹 데이터 생성
-const generateDefaultRankings = (): RankingData[] => {
-  const nicknames = [
-    '배달왕', '스피드러너', '번개배달', '로켓배송', '퀵실버',
-    '달리는치타', '바람의전설', '배달의신', '라이더킹', '질주본능',
-    '배달천사', '도로위황제', '스피드마스터', '배달영웅', '나이트라이더',
-    '번개맨', '광속배달', '터보라이더', '배달전사', '로드러너',
-    '바람을가르는', '배달의달인', '스피드헌터', '도로의지배자', '배달특급',
-    '미친속도', '배달의제왕', '스피드킹', '배달명장', '로드마스터',
-    '폭풍질주', '배달프로', '스피드퀸', '배달의여왕', '도로위여신',
-    '배달장인', '번개소녀', '스피드걸', '배달공주', '로드프린세스',
-    '바람처럼', '배달의정석', '스피드팬텀', '도로위유령', '배달의전설',
-    '광속소년', '배달히어로', '스피드보이', '배달의희망', '로드워리어'
-  ];
-  
-  const regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주', '세종'];
-  const vehicles = ['motorcycle', 'bicycle', 'car', 'walk'] as const;
-  
-  // 플랫폼 선택 함수 - 상위권일수록 두 플랫폼 사용 확률 높음
-  const selectPlatform = (rank: number): string => {
-    const random = Math.random();
-    if (rank <= 10 && random < 0.5) {
-      return '배민커넥트, 쿠팡이츠';
-    } else if (rank <= 20 && random < 0.3) {
-      return '배민커넥트, 쿠팡이츠';
-    } else if (rank <= 30 && random < 0.2) {
-      return '배민커넥트, 쿠팡이츠';
-    } else {
-      return Math.random() < 0.5 ? '배민커넥트' : '쿠팡이츠';
-    }
-  };
-  
-  // 수익 곡선 생성 (1위: 300만원 -> 50위: 20만원)
-  const generateAmount = (rank: number): number => {
-    if (rank === 1) return 3000000;
-    if (rank <= 5) return Math.floor(2500000 - (rank - 1) * 200000);
-    if (rank <= 10) return Math.floor(1700000 - (rank - 5) * 140000);
-    if (rank <= 20) return Math.floor(1000000 - (rank - 10) * 50000);
-    if (rank <= 30) return Math.floor(500000 - (rank - 20) * 15000);
-    if (rank <= 40) return Math.floor(350000 - (rank - 30) * 10000);
-    return Math.floor(250000 - (rank - 40) * 5000);
-  };
-  
-  // 건수 계산 (건당 평균 25,000 ~ 35,000원)
-  const generateOrders = (amount: number): number => {
-    const avgPerOrder = 25000 + Math.random() * 10000;
-    return Math.max(1, Math.round(amount / avgPerOrder));
-  };
-  
-  const rankings: RankingData[] = [];
-  
-  // 50명의 랭킹 데이터 생성
-  for (let i = 0; i < 50; i++) {
-    const rank = i + 1;
-    const totalAmount = generateAmount(rank);
-    const totalOrders = generateOrders(totalAmount);
-    
-    rankings.push({
-      rank,
-      userId: `default-${rank}`,
-      nickname: nicknames[i],
-      region: regions[Math.floor(Math.random() * regions.length)],
-      totalAmount,
-      totalOrders,
-      platform: selectPlatform(rank),
-      vehicle: vehicles[Math.floor(Math.random() * vehicles.length)]
-    });
-  }
-  
-  return rankings;
-};
-
-const DEFAULT_RANKINGS = generateDefaultRankings();
 
 export default function RankingPage() {
   const { user, userProfile, loading } = useAuth();
@@ -101,7 +26,7 @@ export default function RankingPage() {
   const [region, setRegion] = useState('all');
   // 플랫폼 필터 추가
   const [platform, setPlatform] = useState('all');
-  const [rankings, setRankings] = useState<RankingData[]>(DEFAULT_RANKINGS);
+  const [rankings, setRankings] = useState<RankingData[]>([]);
   const [rankingLoading, setRankingLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<RankingData | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -123,7 +48,7 @@ export default function RankingPage() {
         
         // 데이터가 없으면 기본 데이터 사용
         if (!data || data.length === 0) {
-          data = DEFAULT_RANKINGS;
+          data = [];
         }
         
         // 정렬 기준에 따라 데이터 정렬
@@ -169,7 +94,7 @@ export default function RankingPage() {
         setDisplayCount(10); // 필터 변경 시 표시 개수 초기화
       } catch (error) {
         console.error('랭킹 데이터 가져오기 오류:', error);
-        setRankings(DEFAULT_RANKINGS);
+        setRankings([]);
       } finally {
         setRankingLoading(false);
       }
@@ -313,13 +238,13 @@ export default function RankingPage() {
                         <div className="text-right">
                           <p className="text-amber-200 text-xs sm:text-sm mb-1">오늘 수익</p>
                           <p className="text-base sm:text-lg font-bold text-white">
-                            {rankings.find(r => r.userId === user.id)?.totalAmount.toLocaleString() || '0'}원
+                            {(rankings.find(r => r.userId === user.id)?.totalAmount || 0).toLocaleString()}원
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="text-amber-200 text-xs sm:text-sm mb-1">오늘 건수</p>
                           <p className="text-base sm:text-lg font-bold text-white">
-                            {rankings.find(r => r.userId === user.id)?.totalOrders || '0'}건
+                            {rankings.find(r => r.userId === user.id)?.totalOrders || 0}건
                           </p>
                         </div>
                       </div>
@@ -478,7 +403,7 @@ export default function RankingPage() {
                   {rankings.length > 0 ? (
                     rankings.slice(0, displayCount).map((ranker, index) => (
                       <div 
-                        key={ranker.rank}
+                        key={`${ranker.userId}-${ranker.rank}-${index}`}
                         className={`
                           relative transition-all duration-300 hover:scale-[1.02]
                         `}
@@ -561,11 +486,11 @@ export default function RankingPage() {
                                 index <= 2 ? 'text-xs sm:text-xl' : 
                                 'text-xs sm:text-base'}
                             `}>
-                              {ranker.totalAmount.toLocaleString()}원
+                              {(ranker.totalAmount || 0).toLocaleString()}원
                             </div>
                             <div className="flex justify-end">
                               <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs whitespace-nowrap">
-                                {ranker.totalOrders}건
+                                {ranker.totalOrders || 0}건
                               </span>
                             </div>
                           </div>
@@ -602,13 +527,6 @@ export default function RankingPage() {
             </div>
           </section>
         </div>
-
-        {/* 공유 버튼 */}
-        {rankings.length > 0 && (
-          <div className="mt-6">
-            <RankingShare rankingData={rankings.slice(0, 10)} />
-          </div>
-        )}
 
         {/* 사용자 상세 정보 모달 */}
         {showUserModal && selectedUser && (
@@ -684,7 +602,7 @@ export default function RankingPage() {
                           {period === 'today' ? '오늘' : period === 'week' ? '이번 주' : '이번 달'} 수익
                         </span>
                       </div>
-                      <span className="text-white font-bold text-xs sm:text-sm">{selectedUser.totalAmount.toLocaleString()}원</span>
+                      <span className="text-white font-bold text-xs sm:text-sm">{(selectedUser.totalAmount || 0).toLocaleString()}원</span>
                     </div>
                   </div>
 
@@ -696,7 +614,7 @@ export default function RankingPage() {
                           {period === 'today' ? '오늘' : period === 'week' ? '이번 주' : '이번 달'} 건수
                         </span>
                       </div>
-                      <span className="text-white font-bold text-xs sm:text-sm">{selectedUser.totalOrders}건</span>
+                      <span className="text-white font-bold text-xs sm:text-sm">{selectedUser.totalOrders || 0}건</span>
                     </div>
                   </div>
 

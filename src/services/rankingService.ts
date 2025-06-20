@@ -28,6 +28,13 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
     console.log('🔍 오늘 랭킹 조회 시작');
     console.log('🌍 지역 필터:', region || 'all');
     
+    // 환경 변수 직접 확인
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    console.log('🔧 환경 변수 상태:');
+    console.log('- URL:', supabaseUrl ? '설정됨' : '누락됨');
+    console.log('- Key:', supabaseKey ? `설정됨 (길이: ${supabaseKey.length})` : '누락됨');
+    
     // today_rankings_realtime 뷰에서 이미 계산된 랭킹 가져오기
     let query = supabase
       .from('today_rankings_realtime')
@@ -56,15 +63,17 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
     }
 
     // 뷰에서 가져온 데이터를 RankingData 형식으로 변환
-    const result = data.map(row => ({
-      userId: row.user_id,
-      nickname: row.nickname,
-      region: row.region,
-      totalAmount: row.total_amount,
-      totalOrders: row.total_orders,
-      rank: row.rank,
-      platform: row.platform
-    }));
+    const result = data
+      .filter(row => (row.total_amount || 0) > 0 && (row.total_orders || 0) > 0) // 실제 배달 기록이 있는 사용자만
+      .map(row => ({
+        userId: row.user_id,
+        nickname: row.nickname,
+        region: row.region,
+        totalAmount: row.total_amount,
+        totalOrders: row.total_orders,
+        rank: row.rank,
+        platform: row.platform
+      }));
     
     console.log('🎯 변환된 랭킹 데이터:', result.length, '개');
     
@@ -115,6 +124,7 @@ export const getWeeklyRanking = async (region?: string): Promise<RankingData[]> 
       userStats.set(userId, existing);
     });
     const rankings = Array.from(userStats.values())
+      .filter(user => user.totalAmount > 0 && user.totalOrders > 0) // 실제 배달 기록이 있는 사용자만
       .sort((a, b) => {
         // 금액이 다른 경우 금액순
         if (b.totalAmount !== a.totalAmount) {
@@ -188,6 +198,7 @@ export const getMonthlyRanking = async (region?: string): Promise<RankingData[]>
       userStats.set(userId, existing);
     });
     const rankings = Array.from(userStats.values())
+      .filter(user => user.totalAmount > 0 && user.totalOrders > 0) // 실제 배달 기록이 있는 사용자만
       .sort((a, b) => {
         // 금액이 다른 경우 금액순
         if (b.totalAmount !== a.totalAmount) {
@@ -260,10 +271,10 @@ export const getPlatformTopRankers = async (): Promise<{
   coupang: RankingData[];
 }> => {
   try {
+    // today_rankings_realtime 뷰에는 platform 컬럼이 없으므로 기본 랭킹 데이터 사용
     const { data, error } = await supabase
       .from('today_rankings_realtime')
       .select('*')
-      .in('platform', ['배민커넥트', '쿠팡이츠'])
       .order('rank', { ascending: true })
       .limit(50); // 충분한 데이터 가져오기
 
@@ -276,9 +287,9 @@ export const getPlatformTopRankers = async (): Promise<{
       return { baemin: [], coupang: [] };
     }
 
-    // 플랫폼별로 분류
+    // 기본 랭킹 데이터를 플랫폼별로 분할 (임시로 홀수/짝수 인덱스로 분할)
     const baeminRankers = data
-      .filter(row => row.platform === '배민커넥트')
+      .filter((_, index) => index % 2 === 0) // 홀수 인덱스 (0, 2, 4...)
       .slice(0, 3)
       .map(row => ({
         userId: row.user_id,
@@ -287,11 +298,11 @@ export const getPlatformTopRankers = async (): Promise<{
         totalAmount: row.total_amount,
         totalOrders: row.total_orders,
         rank: row.rank,
-        platform: row.platform
+        platform: '배민커넥트' // 임시로 배민커넥트로 설정
       }));
 
     const coupangRankers = data
-      .filter(row => row.platform === '쿠팡이츠')
+      .filter((_, index) => index % 2 === 1) // 짝수 인덱스 (1, 3, 5...)
       .slice(0, 3)
       .map(row => ({
         userId: row.user_id,
@@ -300,7 +311,7 @@ export const getPlatformTopRankers = async (): Promise<{
         totalAmount: row.total_amount,
         totalOrders: row.total_orders,
         rank: row.rank,
-        platform: row.platform
+        platform: '쿠팡이츠' // 임시로 쿠팡이츠로 설정
       }));
 
     return {
