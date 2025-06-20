@@ -344,8 +344,29 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
+      return;
     }
-  }, [authLoading, user, router]);
+
+    // 프로필 설정이 완료되지 않은 경우 프로필 설정 페이지로 리다이렉트
+    if (!authLoading && user && userProfile) {
+      const isProfileComplete = Boolean(
+        userProfile.nickname && 
+        userProfile.nickname.trim() && 
+        userProfile.region && 
+        userProfile.region.trim() && 
+        userProfile.vehicle && 
+        userProfile.vehicle.trim() && 
+        userProfile.phone && 
+        userProfile.phone.trim()
+      );
+
+      if (!isProfileComplete) {
+        console.log('프로필 설정이 완료되지 않아 프로필 설정 페이지로 이동합니다.');
+        router.push('/profile-setup');
+        return;
+      }
+    }
+  }, [authLoading, user, userProfile, router]);
 
   if (!user || authLoading || !userProfile) {
     return <Loading />;
