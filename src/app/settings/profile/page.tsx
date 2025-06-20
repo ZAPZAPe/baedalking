@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaUser, FaMapMarkerAlt, FaMotorcycle, FaBicycle, FaCar, FaTimes } from 'react-icons/fa';
+import { FaUser, FaMapMarkerAlt, FaMotorcycle, FaBicycle, FaCar, FaTimes, FaPhone } from 'react-icons/fa';
+import { formatPhoneNumber, validatePhoneNumber, unformatPhoneNumber } from '@/utils/phoneUtils';
 
 // 한국 주요 지역 목록
 const regions = [
@@ -24,13 +25,27 @@ export default function ProfileEditPage() {
     nickname: userProfile?.nickname || '',
     region: userProfile?.region || '',
     vehicle: userProfile?.vehicle || 'motorcycle',
+    phone: userProfile?.phone ? formatPhoneNumber(userProfile.phone) : '',
   });
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
     }
   }, [user, router]);
+
+  // 프로필이 업데이트될 때 상태 동기화
+  useEffect(() => {
+    if (userProfile) {
+      setProfile({
+        nickname: userProfile.nickname || '',
+        region: userProfile.region || '',
+        vehicle: userProfile.vehicle || 'motorcycle',
+        phone: userProfile.phone ? formatPhoneNumber(userProfile.phone) : '',
+      });
+    }
+  }, [userProfile]);
 
   const checkNicknameAvailability = async (nickname: string) => {
     try {
@@ -83,6 +98,28 @@ export default function ProfileEditPage() {
     return () => clearTimeout(timeoutId);
   };
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const prevValue = profile.phone;
+    const newValue = formatPhoneNumber(input.value);
+    
+    setProfile(prev => ({ ...prev, phone: newValue }));
+    
+    // 커서 위치 조정을 위해 다음 렌더링 사이클에서 실행
+    setTimeout(() => {
+      if (phoneInputRef.current) {
+        const cursorPos = input.selectionStart || 0;
+        const prevLength = prevValue.length;
+        const newLength = newValue.length;
+        
+        // 하이픈이 자동으로 추가된 경우 커서 위치 조정
+        if (newLength > prevLength && newValue[cursorPos - 1] === '-') {
+          phoneInputRef.current.setSelectionRange(cursorPos, cursorPos);
+        }
+      }
+    }, 0);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -104,10 +141,18 @@ export default function ProfileEditPage() {
     try {
       if (!user) throw new Error('로그인이 필요합니다.');
       
+      // 전화번호 유효성 검사 (입력된 경우에만)
+      if (profile.phone && !validatePhoneNumber(profile.phone)) {
+        setError('올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)');
+        setLoading(false);
+        return;
+      }
+
       await updateProfile({
         nickname: profile.nickname,
         region: profile.region,
         vehicle: profile.vehicle,
+        phone: profile.phone ? unformatPhoneNumber(profile.phone) : '',
       });
 
       setSuccess(true);
@@ -199,6 +244,33 @@ export default function ProfileEditPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* 전화번호 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              전화번호 (선택사항)
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaPhone className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                ref={phoneInputRef}
+                type="tel"
+                value={profile.phone}
+                onChange={handlePhoneChange}
+                className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="010-0000-0000"
+                maxLength={13}
+              />
+              {profile.phone && !validatePhoneNumber(profile.phone) && (
+                <p className="mt-1 text-sm text-red-400">올바른 전화번호 형식을 입력해주세요.</p>
+              )}
+              {profile.phone && validatePhoneNumber(profile.phone) && (
+                <p className="mt-1 text-sm text-green-400">올바른 전화번호 형식입니다.</p>
+              )}
+            </div>
           </div>
 
           {/* 이동수단 */}

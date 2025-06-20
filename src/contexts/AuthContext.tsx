@@ -215,20 +215,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // 오래된 세션 정리
           clearOldSession();
           
-          // 세션 체크에 타임아웃 설정 (3초로 단축)
+          // 세션 체크에 타임아웃 설정 (5초)
           const sessionPromise = supabase.auth.getSession();
           const timeoutPromise = new Promise((_, reject) => {
-            sessionCheckTimeout = setTimeout(() => reject(new Error('Session check timeout')), 3000);
+            sessionCheckTimeout = setTimeout(() => reject(new Error('Session check timeout')), 5000);
           });
           
-          const { data: { session } } = await Promise.race([
+          const result = await Promise.race([
             sessionPromise,
             timeoutPromise
           ]) as any;
           
           clearTimeout(sessionCheckTimeout);
           
-          return session;
+          if (result?.data?.session) {
+            return result.data.session;
+          } else if (result?.session) {
+            return result.session;
+          }
+          
+          return null;
         } catch (error: any) {
           clearTimeout(sessionCheckTimeout);
           
@@ -248,6 +254,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const session = await attemptSessionCheck();
         
         if (mounted && session?.user) {
+          setUser(session.user);
           await loadUserProfile(session.user);
         } else if (mounted) {
           // 캐시된 프로필 확인
@@ -300,6 +307,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Auth 상태 변경:', event);
       
       if (session?.user) {
+        setUser(session.user);
         await loadUserProfile(session.user);
       } else {
         setUser(null);

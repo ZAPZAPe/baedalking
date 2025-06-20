@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { FaUser, FaMapMarkerAlt, FaMotorcycle, FaPhone, FaCamera, FaUserFriends } from 'react-icons/fa';
 import Image from 'next/image';
 import { validateInviteCode } from '@/services/inviteService';
 import { toast } from 'sonner';
+import { formatPhoneNumber, validatePhoneNumber, unformatPhoneNumber } from '@/utils/phoneUtils';
 
 // 시/도 목록
 const REGIONS = [
@@ -42,6 +43,7 @@ export default function ProfileSetupPage() {
   });
 
   const [userInfo, setUserInfo] = useState<any>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const checkUserAndLoadData = async () => {
@@ -76,7 +78,7 @@ export default function ProfileSetupPage() {
             nickname: userData.nickname || '',
             region: userData.region || '',
             vehicle: userData.vehicle || '',
-            phone: userData.phone || '',
+            phone: userData.phone ? formatPhoneNumber(userData.phone) : '',
             profile_image: userData.profile_image || '',
             invite_code: ''
           });
@@ -102,6 +104,29 @@ export default function ProfileSetupPage() {
     if (name === 'nickname') {
       setNicknameError('');
     }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const prevValue = formData.phone;
+    const newValue = formatPhoneNumber(input.value);
+    
+    setFormData(prev => ({ ...prev, phone: newValue }));
+    setError('');
+    
+    // 커서 위치 조정을 위해 다음 렌더링 사이클에서 실행
+    setTimeout(() => {
+      if (phoneInputRef.current) {
+        const cursorPos = input.selectionStart || 0;
+        const prevLength = prevValue.length;
+        const newLength = newValue.length;
+        
+        // 하이픈이 자동으로 추가된 경우 커서 위치 조정
+        if (newLength > prevLength && newValue[cursorPos - 1] === '-') {
+          phoneInputRef.current.setSelectionRange(cursorPos, cursorPos);
+        }
+      }
+    }, 0);
   };
 
   // 닉네임 중복 검사
@@ -221,6 +246,12 @@ export default function ProfileSetupPage() {
       return;
     }
 
+    // 전화번호 유효성 검사
+    if (!validatePhoneNumber(formData.phone)) {
+      setError('올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)');
+      return;
+    }
+
     // 닉네임 에러가 있으면 제출 불가
     if (nicknameError) {
       setError('닉네임을 확인해주세요.');
@@ -252,7 +283,7 @@ export default function ProfileSetupPage() {
           nickname: formData.nickname,
           region: formData.region,
           vehicle: formData.vehicle,
-          phone: formData.phone,
+          phone: unformatPhoneNumber(formData.phone),
           profile_image: formData.profile_image,
           updated_at: new Date().toISOString()
         })
@@ -391,15 +422,23 @@ export default function ProfileSetupPage() {
                   <FaPhone className="h-4 w-4 text-white/40 animate-pulse" />
                 </div>
                 <input
+                  ref={phoneInputRef}
                   type="tel"
                   name="phone"
                   value={formData.phone}
-                  onChange={handleInputChange}
+                  onChange={handlePhoneChange}
                   className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all"
-                  placeholder="전화번호를 입력하세요"
+                  placeholder="010-0000-0000"
+                  maxLength={13}
                   required
                 />
               </div>
+              {formData.phone && !validatePhoneNumber(formData.phone) && (
+                <p className="mt-1 text-xs text-red-400">올바른 전화번호 형식을 입력해주세요.</p>
+              )}
+              {formData.phone && validatePhoneNumber(formData.phone) && (
+                <p className="mt-1 text-xs text-green-400">올바른 전화번호 형식입니다.</p>
+              )}
             </div>
 
             {/* 지역 */}

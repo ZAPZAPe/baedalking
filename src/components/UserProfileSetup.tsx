@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
+import { formatPhoneNumber, validatePhoneNumber, unformatPhoneNumber } from '@/utils/phoneUtils';
 
 interface UserProfileSetupProps {
   userId: string;
@@ -14,8 +15,10 @@ const UserProfileSetup = ({ userId, onComplete }: UserProfileSetupProps) => {
   const [nickname, setNickname] = useState('');
   const [region, setRegion] = useState('');
   const [vehicle, setVehicle] = useState('');
+  const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   const regions = [
     '서울', '부산', '대구', '인천', '광주', '대전',
@@ -27,12 +30,41 @@ const UserProfileSetup = ({ userId, onComplete }: UserProfileSetupProps) => {
     '오토바이', '자전거', '전동킥보드', '기타'
   ];
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const prevValue = phone;
+    const newValue = formatPhoneNumber(input.value);
+    
+    setPhone(newValue);
+    
+    // 커서 위치 조정을 위해 다음 렌더링 사이클에서 실행
+    setTimeout(() => {
+      if (phoneInputRef.current) {
+        const cursorPos = input.selectionStart || 0;
+        const prevLength = prevValue.length;
+        const newLength = newValue.length;
+        
+        // 하이픈이 자동으로 추가된 경우 커서 위치 조정
+        if (newLength > prevLength && newValue[cursorPos - 1] === '-') {
+          phoneInputRef.current.setSelectionRange(cursorPos, cursorPos);
+        }
+      }
+    }, 0);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
 
     try {
+      // 전화번호 유효성 검사 (입력된 경우에만)
+      if (phone && !validatePhoneNumber(phone)) {
+        setError('올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)');
+        setIsSubmitting(false);
+        return;
+      }
+
       // 닉네임 중복 체크
       const { data: existingUser } = await supabase
         .from('users')
@@ -54,6 +86,7 @@ const UserProfileSetup = ({ userId, onComplete }: UserProfileSetupProps) => {
           nickname,
           region,
           vehicle: vehicle,
+          phone: phone ? unformatPhoneNumber(phone) : '',
           updated_at: new Date().toISOString()
         });
 
@@ -144,6 +177,31 @@ const UserProfileSetup = ({ userId, onComplete }: UserProfileSetupProps) => {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                전화번호 (선택사항)
+              </label>
+              <div className="mt-1">
+                <input
+                  ref={phoneInputRef}
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="010-0000-0000"
+                  maxLength={13}
+                />
+                {phone && !validatePhoneNumber(phone) && (
+                  <p className="mt-1 text-sm text-red-600">올바른 전화번호 형식을 입력해주세요.</p>
+                )}
+                {phone && validatePhoneNumber(phone) && (
+                  <p className="mt-1 text-sm text-green-600">올바른 전화번호 형식입니다.</p>
+                )}
               </div>
             </div>
 

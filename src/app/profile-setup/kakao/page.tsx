@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaPhone, FaMapMarkerAlt, FaMotorcycle, FaCrown, FaRocket, FaGift } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
+import { formatPhoneNumber, validatePhoneNumber, unformatPhoneNumber } from '@/utils/phoneUtils';
 
 // 한국 주요 지역 목록
 const REGIONS = [
@@ -36,6 +37,7 @@ const KakaoProfileSetup = () => {
     vehicle: '',
     referralCode: ''
   });
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   // 로그인하지 않은 경우 로그인 페이지로 리다이렉트
   useEffect(() => {
@@ -53,6 +55,29 @@ const KakaoProfileSetup = () => {
     if (name === 'referralCode') {
       setReferralValid(null);
     }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const prevValue = formData.phone;
+    const newValue = formatPhoneNumber(input.value);
+    
+    setFormData(prev => ({ ...prev, phone: newValue }));
+    setError('');
+    
+    // 커서 위치 조정을 위해 다음 렌더링 사이클에서 실행
+    setTimeout(() => {
+      if (phoneInputRef.current) {
+        const cursorPos = input.selectionStart || 0;
+        const prevLength = prevValue.length;
+        const newLength = newValue.length;
+        
+        // 하이픈이 자동으로 추가된 경우 커서 위치 조정
+        if (newLength > prevLength && newValue[cursorPos - 1] === '-') {
+          phoneInputRef.current.setSelectionRange(cursorPos, cursorPos);
+        }
+      }
+    }, 0);
   };
 
   // 추천인 코드 확인
@@ -91,6 +116,12 @@ const KakaoProfileSetup = () => {
     
     if (!formData.phone || !formData.region || !formData.vehicle) {
       setError('모든 정보를 입력해주세요.');
+      return;
+    }
+
+    // 전화번호 유효성 검사
+    if (!validatePhoneNumber(formData.phone)) {
+      setError('올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)');
       return;
     }
 
@@ -135,7 +166,7 @@ const KakaoProfileSetup = () => {
       const { error: updateError } = await supabase
         .from('users')
         .update({
-          phone: formData.phone,
+          phone: unformatPhoneNumber(formData.phone),
           region: formData.region,
           vehicle: formData.vehicle,
           referred_by: formData.referralCode || null,
@@ -214,15 +245,23 @@ const KakaoProfileSetup = () => {
                     <FaPhone className="h-4 w-4 text-white/40" />
                   </div>
                   <input
+                    ref={phoneInputRef}
                     type="tel"
                     name="phone"
                     value={formData.phone}
-                    onChange={handleInputChange}
+                    onChange={handlePhoneChange}
                     className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:bg-white/15 transition-all"
-                    placeholder="전화번호를 입력하세요"
+                    placeholder="010-0000-0000"
+                    maxLength={13}
                     required
                   />
                 </div>
+                {formData.phone && !validatePhoneNumber(formData.phone) && (
+                  <p className="mt-1 text-xs text-red-400">올바른 전화번호 형식을 입력해주세요.</p>
+                )}
+                {formData.phone && validatePhoneNumber(formData.phone) && (
+                  <p className="mt-1 text-xs text-green-400">올바른 전화번호 형식입니다.</p>
+                )}
               </div>
 
               {/* 지역 */}
