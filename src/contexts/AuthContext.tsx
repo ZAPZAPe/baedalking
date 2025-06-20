@@ -244,8 +244,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    let safetyTimeout: NodeJS.Timeout;
     
     const initializeAuth = async () => {
+      // 안전장치: 최대 5초 후에는 강제로 로딩 해제
+      safetyTimeout = setTimeout(() => {
+        if (mounted) {
+          console.warn('⚠️ 인증 초기화 타임아웃 - 강제로 로딩 해제');
+          setLoading(false);
+          setIsCheckingSession(false);
+        }
+      }, 5000);
       try {
         setIsCheckingSession(true);
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -288,7 +297,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } finally {
         if (mounted) {
+          clearTimeout(safetyTimeout); // 정상 완료 시 타임아웃 해제
           setIsCheckingSession(false);
+          setLoading(false); // 로딩 상태 해제
         }
       }
     };
@@ -316,6 +327,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, [handleAuthUser]);
