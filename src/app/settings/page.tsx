@@ -28,7 +28,7 @@ declare global {
 }
 
 export default function SettingsPage() {
-  const { user, userProfile, loading: authLoading, signOut, updateProfile, refreshUserProfile } = useAuth();
+  const { user, userProfile, loading: authLoading, signOut, updateProfile, refreshProfile } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -200,7 +200,7 @@ export default function SettingsPage() {
       if (error) throw error;
 
       // AuthContext의 userProfile 업데이트
-      await refreshUserProfile();
+      await refreshProfile();
       
       toast.success('프로필이 성공적으로 업데이트되었습니다.');
       setIsEditMode(false);

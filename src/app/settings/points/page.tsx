@@ -19,7 +19,7 @@ interface AttendanceRecord {
 }
 
 export default function AttendancePage() {
-  const { user, userProfile, refreshUserProfile } = useAuth();
+  const { user, userProfile, refreshProfile } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
@@ -159,7 +159,7 @@ export default function AttendancePage() {
       }
 
       // 상태 업데이트
-      await refreshUserProfile();
+              await refreshProfile();
       setTodayAttended(true);
       setConsecutiveDays(consecutiveDays + 1);
       setJustAttended(true);

@@ -25,7 +25,7 @@ const VEHICLES = [
 
 const KakaoProfileSetup = () => {
   const router = useRouter();
-  const { user, refreshUserProfile } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [checkingReferral, setCheckingReferral] = useState(false);
@@ -89,19 +89,20 @@ const KakaoProfileSetup = () => {
 
     setCheckingReferral(true);
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, nickname')
-        .eq('referral_code', formData.referralCode)
-        .single();
+      // API 루트를 통한 추천인 코드 확인
+      const response = await fetch(`/api/invite/validate?code=${formData.referralCode}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-      if (error || !data) {
-        setReferralValid(false);
-        setError('유효하지 않은 추천인 코드입니다.');
-      } else {
+      if (response.ok) {
+        const data = await response.json();
         setReferralValid(true);
         setError('');
         toast.success(`${data.nickname}님의 추천 코드가 확인되었습니다!`);
+      } else {
+        setReferralValid(false);
+        setError('유효하지 않은 추천인 코드입니다.');
       }
     } catch (error) {
       setReferralValid(false);
@@ -129,60 +130,46 @@ const KakaoProfileSetup = () => {
     setError('');
 
     try {
-      // 추천인이 있는 경우 추천인에게 포인트 지급
+      // 추천인이 있는 경우 추천인 코드 처리
       if (formData.referralCode && referralValid) {
-        // 추천인 정보 조회
-        const { data: referrer, error: referrerError } = await supabase
-          .from('users')
-          .select('id, points')
-          .eq('referral_code', formData.referralCode)
-          .single();
-
-        if (!referrerError && referrer) {
-          // 추천인에게 500포인트 지급
-          const { error: updatePointsError } = await supabase
-            .from('users')
-            .update({
-              points: (referrer.points || 0) + 500
+        try {
+          const response = await fetch('/api/invite/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code: formData.referralCode,
+              userId: user?.id
             })
-            .eq('id', referrer.id);
+          });
 
-          if (!updatePointsError) {
-            // 포인트 내역 기록
-            await supabase
-              .from('point_history')
-              .insert({
-                user_id: referrer.id,
-                amount: 500,
-                type: 'referral_reward',
-                description: '친구 추천 보상',
-                created_at: new Date().toISOString()
-              });
+          if (response.ok) {
+            toast.success('추천인에게 500포인트가 지급되었습니다!');
           }
+        } catch (error) {
+          console.error('추천인 코드 처리 실패:', error);
         }
       }
 
       // 사용자 프로필 업데이트
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          phone: unformatPhoneNumber(formData.phone),
-          region: formData.region,
-          vehicle: formData.vehicle,
-          referred_by: formData.referralCode || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user?.id);
+      const updateData = {
+        phone: unformatPhoneNumber(formData.phone),
+        region: formData.region,
+        vehicle: formData.vehicle,
+        referred_by: formData.referralCode || null,
+      };
 
-      if (updateError) throw updateError;
+      const response = await fetch(`/api/users/${user?.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+      });
+
+      if (!response.ok) {
+        throw new Error('프로필 업데이트 실패');
+      }
 
       // AuthContext의 userProfile 업데이트
-      await refreshUserProfile();
-
-      // 성공 메시지
-      if (formData.referralCode && referralValid) {
-        toast.success('추천인에게 500포인트가 지급되었습니다!');
-      }
+      await refreshProfile();
       
       // 홈으로 이동
       router.push('/');
