@@ -6,7 +6,7 @@ import { getTodayRanking, RankingData } from '@/services/rankingService';
 import { UserProfile } from '@/components/home/UserProfile';
 import { TopRankers } from '@/components/home/TopRankers';
 import Link from 'next/link';
-import { FaCrown, FaTrophy, FaUpload, FaUsers, FaStar, FaMedal, FaChartLine, FaFireAlt, FaBell, FaGift, FaCamera, FaSignInAlt, FaRocket, FaShieldAlt, FaCoins, FaArrowRight, FaPlay, FaHeart, FaBolt, FaStore, FaUserFriends, FaShare, FaComment, FaCalendarCheck, FaMapMarker } from 'react-icons/fa';
+import { FaCrown, FaTrophy, FaUpload, FaUsers, FaStar, FaMedal, FaChartLine, FaFireAlt, FaBell, FaGift, FaCamera, FaSignInAlt, FaRocket, FaShieldAlt, FaCoins, FaArrowRight, FaPlay, FaHeart, FaBolt, FaStore, FaUserFriends, FaShare, FaComment, FaCalendarCheck, FaMapMarker, FaUser } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { initKakaoShare, inviteFriends } from '@/services/kakaoShare';
 import { generateInviteCode } from '@/services/inviteService';
@@ -199,6 +199,18 @@ export default function Home() {
   const [hasLoadedRanking, setHasLoadedRanking] = useState(false);
   const [rankingError, setRankingError] = useState(false);
 
+  // 프로필 설정 완료 여부 확인
+  const isProfileComplete = user && userProfile ? Boolean(
+    userProfile.nickname && 
+    userProfile.nickname.trim() && 
+    userProfile.region && 
+    userProfile.region.trim() && 
+    userProfile.vehicle && 
+    userProfile.vehicle.trim() && 
+    userProfile.phone && 
+    userProfile.phone.trim()
+  ) : false;
+
   const fetchRanking = useCallback(async (retryCount = 0) => {
     const MAX_RETRIES = 2;
     
@@ -262,8 +274,8 @@ export default function Home() {
     }
   };
 
-  // 비로그인 사용자용 컨텐츠
-  if (!authLoading && !user) {
+  // 비로그인 사용자 또는 프로필 미완료 사용자용 컨텐츠
+  if (!authLoading && (!user || (user && !isProfileComplete))) {
     return (
       <div className="relative z-10">
         <div className="max-w-3xl mx-auto px-4">
@@ -281,23 +293,44 @@ export default function Home() {
                   <FaCrown size={100} className="mx-auto text-yellow-400 drop-shadow-lg " />
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 mb-2">
-                  배달킹에 <br></br> 오신 것을 환영합니다!
+                  {user && !isProfileComplete ? (
+                    <>프로필 설정을 <br />완료해주세요!</>
+                  ) : (
+                    <>배달킹에 <br />오신 것을 환영합니다!</>
+                  )}
                 </h1>
                 <p className="text-purple-200 mb-6 text-sm sm:text-base">
-                  전국 배달 라이더들의 실시간 랭킹 서비스
+                  {user && !isProfileComplete ? (
+                    "프로필 설정을 완료하고 배달킹의 모든 기능을 이용해보세요"
+                  ) : (
+                    "전국 배달 라이더들의 실시간 랭킹 서비스"
+                  )}
                 </p>
 
                 <div className="space-y-2">
-                  <Link 
-                    href="/login" 
-                    prefetch={true}
-                    className="block w-full bg-[#FEE500] text-[#000000D9] py-3 px-4 rounded-xl font-bold hover:bg-[#FDD835] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#FEE500]/50 transition-all shadow-lg"
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <FaComment size={16} />
-                      <span>카카오로 시작하기</span>
-                    </div>
-                  </Link>
+                  {user && !isProfileComplete ? (
+                    <Link 
+                      href="/profile-setup" 
+                      prefetch={true}
+                      className="block w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-4 rounded-xl font-bold hover:from-purple-600 hover:to-pink-600 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-400/50 transition-all shadow-lg"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <FaUser size={16} />
+                        <span>프로필 설정하러 가기</span>
+                      </div>
+                    </Link>
+                  ) : (
+                    <Link 
+                      href="/login" 
+                      prefetch={true}
+                      className="block w-full bg-[#FEE500] text-[#000000D9] py-3 px-4 rounded-xl font-bold hover:bg-[#FDD835] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#FEE500]/50 transition-all shadow-lg"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <FaComment size={16} />
+                        <span>카카오로 시작하기</span>
+                      </div>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
