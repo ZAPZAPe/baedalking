@@ -1,27 +1,39 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { FaClipboardList, FaCalendarAlt, FaMoneyBillWave, FaPlus, FaImage, FaCheck, FaTimes, FaChartLine, FaUsers, FaTrophy, FaFire, FaList, FaCalendar, FaTrash, FaFilter, FaCamera, FaSpinner, FaMotorcycle, FaBicycle, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaClipboardList, FaCalendarAlt, FaMoneyBillWave, FaPlus, FaImage, FaCheck, FaTimes, FaChartLine, FaUsers, FaTrophy, FaFire, FaList, FaCalendar, FaTrash, FaFilter, FaCamera, FaSpinner, FaMotorcycle, FaBicycle, FaChevronLeft, FaChevronRight, FaCoins, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getUserDeliveryRecords, deleteDeliveryRecord } from '@/services/deliveryService';
-import type { DeliveryRecord } from '@/types/index';
+import { format, startOfWeek, endOfWeek, addWeeks, eachDayOfInterval, isToday, startOfMonth, endOfMonth, addMonths, isWithinInterval } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { DeliveryRecord } from '@/types';
 import Loading from '@/components/Loading';
 import ManualEntry from '@/components/delivery/ManualEntry';
 import Link from 'next/link';
 import Image from 'next/image';
 import KakaoAdGlobal from '@/components/KakaoAdGlobal';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function RecordsPage() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   const [records, setRecords] = useState<DeliveryRecord[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month'>('week');
+  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('week');
   const [selectedPlatform, setSelectedPlatform] = useState<'all' | '배민커넥트' | '쿠팡이츠'>('all');
   const [manualOpen, setManualOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [currentPeriodOffset, setCurrentPeriodOffset] = useState(0); // 0: 현재, -1: 지난주/지난달, 1: 다음주/다음달
+  const [manualData, setManualData] = useState({
+    date: format(new Date(), 'yyyy-MM-dd'),
+    platform: '배민커넥트' as '배민커넥트' | '쿠팡이츠',
+    amount: '',
+    deliveryCount: ''
+  });
+  const [manualLoading, setManualLoading] = useState(false);
+  const [calendarOffset, setCalendarOffset] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // 날짜 관련 계산을 useMemo로 최적화
   const dateInfo = useMemo(() => {
@@ -64,25 +76,14 @@ export default function RecordsPage() {
 
   // 기간별 필터링 - useMemo로 최적화
   const filteredRecords = useMemo(() => {
-    let filteredByPlatform = records;
+    let filtered = records;
+    
     if (selectedPlatform !== 'all') {
-      filteredByPlatform = records.filter(record => record.platform === selectedPlatform);
+      filtered = filtered.filter(r => r.platform === selectedPlatform);
     }
-
-    if (selectedPeriod === 'week') {
-      const weekStart = getWeekStart(dateInfo.targetDate);
-      const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
-      const weekStartStr = weekStart.toISOString().split('T')[0];
-      const weekEndStr = weekEnd.toISOString().split('T')[0];
-      return filteredByPlatform.filter(record => record.date >= weekStartStr && record.date <= weekEndStr);
-    } else {
-      const monthStart = getMonthStart(dateInfo.targetDate);
-      const monthEnd = new Date(dateInfo.targetDate.getFullYear(), dateInfo.targetDate.getMonth() + 1, 0);
-      const monthStartStr = monthStart.toISOString().split('T')[0];
-      const monthEndStr = monthEnd.toISOString().split('T')[0];
-      return filteredByPlatform.filter(record => record.date >= monthStartStr && record.date <= monthEndStr);
-    }
-  }, [records, selectedPlatform, selectedPeriod, dateInfo.targetDate]);
+    
+    return filtered;
+  }, [records, selectedPlatform]);
 
   // 사용자 배달 기록 가져오기
   useEffect(() => {
@@ -94,14 +95,14 @@ export default function RecordsPage() {
         const userRecords = await getUserDeliveryRecords(user.id);
         setRecords(userRecords);
       } catch (error) {
-        console.error('기록 가져오기 오류:', error);
+        console.error('기록 조회 실패:', error);
       } finally {
         setRecordsLoading(false);
       }
     };
 
     fetchRecords();
-  }, [user]);
+  }, [user, selectedPeriod, selectedPlatform]);
 
   // 기간이 변경될 때 offset 초기화
   useEffect(() => {
@@ -117,7 +118,7 @@ export default function RecordsPage() {
       const userRecords = await getUserDeliveryRecords(user.id);
       setRecords(userRecords);
     } catch (error) {
-      console.error('기록 새로고침 오류:', error);
+      console.error('기록 조회 실패:', error);
     } finally {
       setRecordsLoading(false);
     }
@@ -192,7 +193,7 @@ export default function RecordsPage() {
   };
 
   // 로딩 중이거나 사용자가 없는 경우 처리
-  if (loading) {
+  if (authLoading) {
     return <Loading />;
   }
 
@@ -208,472 +209,602 @@ export default function RecordsPage() {
 
   const periodTotal = filteredRecords.reduce((sum, record) => sum + record.amount, 0);
   const periodCount = filteredRecords.reduce((sum, record) => sum + record.deliveryCount, 0);
-  const periodDays = selectedPeriod === 'week' ? 7 : new Date(dateInfo.targetDate.getFullYear(), dateInfo.targetDate.getMonth() + 1, 0).getDate();
-  const dailyAverage = Math.floor(periodTotal / periodDays);
+  const periodDays = selectedPeriod === 'week' ? 7 : selectedPeriod === 'month' ? 30 : records.length;
+  const dailyAverage = periodCount > 0 ? Math.floor(periodTotal / periodCount) : 0;
+
+  // 전날 대비 증감 계산
+  const todayRecord = records.find(r => format(new Date(r.date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'));
+  const yesterdayRecord = records.find(r => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return format(new Date(r.date), 'yyyy-MM-dd') === format(yesterday, 'yyyy-MM-dd');
+  });
+
+  const dailyChange = todayRecord && yesterdayRecord 
+    ? ((todayRecord.amount - yesterdayRecord.amount) / yesterdayRecord.amount * 100).toFixed(1)
+    : null;
 
   return (
-    <div className="relative z-10">
-      <div className="max-w-3xl mx-auto px-4">
-        {/* 오늘의 실적 */}
-        <section className="mb-4 mt-2">
-          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-3 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
-            {/* 배경 애니메이션 효과 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
-            
-            <div className="relative z-10">
-              {/* 헤더 - 실시간 Top 3 스타일 */}
-              <div className="text-center mb-3 sm:mb-6">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <FaFire className="text-orange-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
-                  <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
-                    오늘의 실적
-                  </h2>
-                  <FaFire className="text-orange-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
-                </div>
-                <p className="text-purple-200 text-xs">오늘도 열심히 달리고 계시네요! 🚀</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
-                <div className="bg-gradient-to-r from-amber-400/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-3 border border-amber-400/30 hover:from-amber-400/30 hover:to-orange-500/30 transition-all text-center">
-                  <p className="text-xs sm:text-sm text-amber-200 mb-1">오늘 수익</p>
-                  <p className="text-lg sm:text-xl font-bold text-white">{todayTotal.toLocaleString()}원</p>
-                  <p className="text-xs text-amber-200">{todayCount}건</p>
-                </div>
-                <div className="bg-gradient-to-r from-purple-400/20 to-pink-500/20 backdrop-blur-sm rounded-xl p-3 border border-purple-400/30 hover:from-purple-400/30 hover:to-pink-500/30 transition-all text-center">
-                  <p className="text-xs sm:text-sm text-purple-200 mb-1">일평균</p>
-                  <p className="text-lg sm:text-xl font-bold text-white">{dailyAverage.toLocaleString()}원</p>
-                  <p className="text-xs text-purple-200">{getPeriodDisplayText()}</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setManualOpen(true)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02]"
-                >
-                  <FaPlus className="w-3.5 h-3.5" />
-                  수기 입력
-                </button>
-                <Link
-                  href="/upload"
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02]"
-                >
-                  <FaCamera className="w-3.5 h-3.5" />
-                  캡처 업로드
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 광고 */}
-        <section className="mb-4">
-          <KakaoAdGlobal page="records" index={0} />
-        </section>
-
-        {/* 필터 및 기록 섹션 */}
-        <section className="mb-2">
-          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-3 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
-            {/* 배경 애니메이션 효과 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
-            
-            <div className="relative z-10">
-              {/* 헤더 - 실시간 Top 3 스타일 */}
-              <div className="text-center mb-3 sm:mb-6">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <FaCalendarAlt className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
-                  <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
-                    기록 관리
-                  </h2>
-                  <FaCalendarAlt className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
-                </div>
-                <p className="text-purple-200 text-xs">상세한 기록을 확인하세요! 📊</p>
-              </div>
-
-              {/* 필터 섹션 */}
-              <div className="space-y-3 mb-3 sm:mb-4">
-                <div className="flex gap-2">
-                  {[
-                    { value: 'week' as const, label: '주간', Icon: FaCalendarAlt },
-                    { value: 'month' as const, label: '월간', Icon: FaCalendar }
-                  ].map((v) => (
-                    <button
-                      key={v.value}
-                      onClick={() => setSelectedPeriod(v.value)}
-                      className={`
-                        flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2
-                        ${selectedPeriod === v.value
-                          ? 'bg-gradient-to-r from-purple-400 to-pink-500 text-white shadow-lg'
-                          : 'bg-white/10 text-purple-200 hover:text-white hover:bg-white/20'}
-                      `}
-                    >
-                      <v.Icon className="w-3 h-3 sm:w-4 sm:h-4" />
-                      {v.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex gap-2">
-                  {[
-                    { value: 'all' as const, label: '전체', Icon: FaList },
-                    { value: '배민커넥트' as const, label: '배민커넥트' },
-                    { value: '쿠팡이츠' as const, label: '쿠팡이츠' }
-                  ].map((v) => (
-                    <button
-                      key={v.value}
-                      onClick={() => setSelectedPlatform(v.value)}
-                      className={`
-                        flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2
-                        ${selectedPlatform === v.value
-                          ? 'bg-gradient-to-r from-purple-400 to-pink-500 text-white shadow-lg'
-                          : 'bg-white/10 text-purple-200 hover:text-white hover:bg-white/20'}
-                      `}
-                    >
-                      {v.Icon && <v.Icon className="w-3 h-3 sm:w-4 sm:h-4" />}
-                      {v.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 구분선 */}
-              <div className="border-t border-purple-400/20 mb-3 sm:mb-4"></div>
-
-              {/* 달력 보기 */}
-              <div className="bg-white/10 rounded-xl p-3">
-                {selectedPeriod === 'week' ? (
-                  // 주간 리포트
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between mb-3">
-                      <button
-                        onClick={goToPreviousPeriod}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <FaChevronLeft className="text-white" size={14} />
-                      </button>
-                      
-                      <div className="text-center">
-                        <h3 className="text-base font-bold text-white">
-                          {getWeekStart(dateInfo.targetDate).toLocaleDateString('ko-KR', {
-                            month: 'long',
-                            day: 'numeric'
-                          })} ~ {new Date(getWeekStart(dateInfo.targetDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', {
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </h3>
-                        <p className="text-xs text-purple-200 mt-1">{getPeriodDisplayText()}</p>
-                        {currentPeriodOffset !== 0 && (
-                          <button
-                            onClick={goToCurrentPeriod}
-                            className="text-xs text-amber-400 hover:text-amber-300 mt-1"
-                          >
-                            현재로 돌아가기
-                          </button>
-                        )}
-                      </div>
-                      
-                      <button
-                        onClick={goToNextPeriod}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <FaChevronRight className="text-white" size={14} />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
-                        <div className="text-xs text-purple-200 mb-1">주간 합산 금액</div>
-                        <div className="text-lg font-bold text-white">
-                          {periodTotal.toLocaleString()}원
-                        </div>
-                      </div>
-                      <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
-                        <div className="text-xs text-purple-200 mb-1">주간 합산 건수</div>
-                        <div className="text-lg font-bold text-white">
-                          {periodCount}건
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1">
-                      {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-                        <div
-                          key={day}
-                          className="text-center text-xs font-bold text-purple-200 py-1"
-                        >
-                          {day}
-                        </div>
-                      ))}
-                      {Array.from({ length: 7 }, (_, i) => {
-                        const date = new Date(getWeekStart(dateInfo.targetDate).getTime() + i * 24 * 60 * 60 * 1000);
-                        const dateStr = date.toISOString().split('T')[0];
-                        const isToday = dateStr === dateInfo.todayStr;
-                        const hasRecords = getRecordsByDateStr(dateStr).length > 0;
-
-                        return (
-                          <button
-                            key={dateStr}
-                            onClick={() => setSelectedDate(dateStr)}
-                            className={`
-                              aspect-square relative rounded-lg transition-all
-                              ${isToday ? 'bg-amber-400/20' : ''}
-                              ${hasRecords ? 'hover:bg-white/20' : ''}
-                              ${selectedDate === dateStr ? 'ring-2 ring-amber-400' : ''}
-                            `}
-                          >
-                            <div className="text-center">
-                              <div className="text-xs font-bold text-white mb-1">
-                                {parseInt(dateStr.split('-')[2])}
-                              </div>
-                              {hasRecords && (
-                                <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mx-auto" />
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  // 월간 리포트
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between mb-3">
-                      <button
-                        onClick={goToPreviousPeriod}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <FaChevronLeft className="text-white" size={14} />
-                      </button>
-                      
-                      <div className="text-center">
-                        <h3 className="text-base font-bold text-white">
-                          {dateInfo.targetDate.getFullYear()}년 {dateInfo.targetDate.getMonth() + 1}월
-                        </h3>
-                        <p className="text-xs text-purple-200 mt-1">{getPeriodDisplayText()}</p>
-                        {currentPeriodOffset !== 0 && (
-                          <button
-                            onClick={goToCurrentPeriod}
-                            className="text-xs text-amber-400 hover:text-amber-300 mt-1"
-                          >
-                            현재로 돌아가기
-                          </button>
-                        )}
-                      </div>
-                      
-                      <button
-                        onClick={goToNextPeriod}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <FaChevronRight className="text-white" size={14} />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
-                        <div className="text-xs text-purple-200 mb-1">월간 합산 금액</div>
-                        <div className="text-lg font-bold text-white">
-                          {periodTotal.toLocaleString()}원
-                        </div>
-                      </div>
-                      <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
-                        <div className="text-xs text-purple-200 mb-1">월간 합산 건수</div>
-                        <div className="text-lg font-bold text-white">
-                          {periodCount}건
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
-                        <div className="text-xs text-purple-200 mb-1">일평균 금액</div>
-                        <div className="text-lg font-bold text-white">
-                          {dailyAverage.toLocaleString()}원
-                        </div>
-                      </div>
-                      <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
-                        <div className="text-xs text-purple-200 mb-1">일평균 건수</div>
-                        <div className="text-lg font-bold text-white">
-                          {Math.floor(periodCount / periodDays)}건
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1">
-                      {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-                        <div
-                          key={day}
-                          className="text-center text-xs font-bold text-purple-200 py-1"
-                        >
-                          {day}
-                        </div>
-                      ))}
-                      {Array.from({ length: dateInfo.firstDayOfMonth }, (_, i) => (
-                        <div key={`empty-${i}`} className="aspect-square" />
-                      ))}
-                      {Array.from({ length: dateInfo.daysInMonth }, (_, i) => {
-                        const date = new Date(dateInfo.currentYear, dateInfo.currentMonth, i + 1);
-                        const dateStr = date.toISOString().split('T')[0];
-                        const isToday = dateStr === dateInfo.todayStr;
-                        const hasRecords = getRecordsByDateStr(dateStr).length > 0;
-
-                        return (
-                          <button
-                            key={dateStr}
-                            onClick={() => setSelectedDate(dateStr)}
-                            className={`
-                              aspect-square relative rounded-lg transition-all
-                              ${isToday ? 'bg-amber-400/20' : ''}
-                              ${hasRecords ? 'hover:bg-white/20' : ''}
-                              ${selectedDate === dateStr ? 'ring-2 ring-amber-400' : ''}
-                            `}
-                          >
-                            <div className="text-center">
-                              <div className="text-xs font-bold text-white mb-1">
-                                {parseInt(dateStr.split('-')[2])}
-                              </div>
-                              {hasRecords && (
-                                <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mx-auto" />
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* 수기 입력 모달 */}
-      <ManualEntry
-        isOpen={manualOpen}
-        onClose={() => setManualOpen(false)}
-        onSuccess={() => {
-          setManualOpen(false);
-          refreshRecords();
-        }}
-      />
-
-      {/* 선택된 날짜의 상세 정보 */}
-      {selectedDate && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-3 sm:p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto shadow-2xl border border-purple-500/30 relative overflow-hidden">
-            {/* 배경 애니메이션 효과 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
-            
-            <div className="relative z-10">
-              {/* 헤더 - 실시간 Top 3 스타일 */}
-              <div className="text-center mb-3 sm:mb-6">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <FaCalendar className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
-                  <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
-                    일일 상세
-                  </h2>
-                  <FaCalendar className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
-                </div>
-                <p className="text-purple-200 text-xs">해당 날짜의 기록을 확인하세요! 📅</p>
-              </div>
-
-              {/* 닫기 버튼 */}
-              <button
-                onClick={() => setSelectedDate(null)}
-                className="absolute top-2 right-2 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all"
-              >
-                <FaTimes size={16} />
-              </button>
-
-              {/* 날짜 표시 */}
-              <div className="text-center mb-3 sm:mb-4">
-                <h3 className="text-base sm:text-lg font-bold text-white">
-                  {new Date(selectedDate).toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    weekday: 'long'
-                  })}
-                </h3>
-              </div>
+    <ProtectedRoute>
+      <div className="relative z-10">
+        <div className="max-w-3xl mx-auto px-4">
+          {/* 오늘의 실적 */}
+          <section className="mb-4 mt-2">
+            <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-3 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
+              {/* 배경 애니메이션 효과 */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
               
-              <div className="space-y-2 sm:space-y-3">
-                {getRecordsByDateStr(selectedDate).length === 0 ? (
-                  <div className="text-center py-6 sm:py-8">
-                    <p className="text-purple-200/60 text-sm sm:text-base">이 날짜에 기록이 없습니다.</p>
+              <div className="relative z-10">
+                {/* 헤더 - 실시간 Top 3 스타일 */}
+                <div className="text-center mb-3 sm:mb-6">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <FaFire className="text-orange-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+                    <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
+                      오늘의 실적
+                    </h2>
+                    <FaFire className="text-orange-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
                   </div>
-                ) : (
-                  <>
-                    {getRecordsByDateStr(selectedDate).map((record) => (
-                      <div
-                        key={record.id}
-                        className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-white/10 to-white/5 rounded-xl border border-white/20 hover:from-white/15 hover:to-white/10 transition-all"
+                  <p className="text-purple-200 text-xs">오늘도 열심히 달리고 계시네요! 🚀</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+                  <div className="bg-gradient-to-r from-amber-400/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-3 border border-amber-400/30 hover:from-amber-400/30 hover:to-orange-500/30 transition-all text-center">
+                    <p className="text-xs sm:text-sm text-amber-200 mb-1">오늘 수익</p>
+                    <p className="text-lg sm:text-xl font-bold text-white">{todayTotal.toLocaleString()}원</p>
+                    <p className="text-xs text-amber-200">{todayCount}건</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-purple-400/20 to-pink-500/20 backdrop-blur-sm rounded-xl p-3 border border-purple-400/30 hover:from-purple-400/30 hover:to-pink-500/30 transition-all text-center">
+                    <p className="text-xs sm:text-sm text-purple-200 mb-1">일평균</p>
+                    <p className="text-lg sm:text-xl font-bold text-white">{dailyAverage.toLocaleString()}원</p>
+                    <p className="text-xs text-purple-200">{getPeriodDisplayText()}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => setManualOpen(true)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                  >
+                    <FaPlus className="w-3.5 h-3.5" />
+                    수기 입력
+                  </button>
+                  <Link
+                    href="/upload"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                  >
+                    <FaCamera className="w-3.5 h-3.5" />
+                    캡처 업로드
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 광고 */}
+          <section className="mb-4">
+            <KakaoAdGlobal page="records" index={0} />
+          </section>
+
+          {/* 필터 및 기록 섹션 */}
+          <section className="mb-2">
+            <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-3 sm:p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
+              {/* 배경 애니메이션 효과 */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
+              
+              <div className="relative z-10">
+                {/* 헤더 - 실시간 Top 3 스타일 */}
+                <div className="text-center mb-3 sm:mb-6">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <FaCalendarAlt className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+                    <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
+                      기록 관리
+                    </h2>
+                    <FaCalendarAlt className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+                  </div>
+                  <p className="text-purple-200 text-xs">상세한 기록을 확인하세요! 📊</p>
+                </div>
+
+                {/* 필터 섹션 */}
+                <div className="space-y-3 mb-3 sm:mb-4">
+                  <div className="flex gap-2">
+                    {[
+                      { value: 'week' as const, label: '주간', Icon: FaCalendarAlt },
+                      { value: 'month' as const, label: '월간', Icon: FaCalendar },
+                      { value: 'all' as const, label: '전체', Icon: FaList }
+                    ].map((v) => (
+                      <button
+                        key={v.value}
+                        onClick={() => setSelectedPeriod(v.value)}
+                        className={`
+                          flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2
+                          ${selectedPeriod === v.value
+                            ? 'bg-gradient-to-r from-purple-400 to-pink-500 text-white shadow-lg'
+                            : 'bg-white/10 text-purple-200 hover:text-white hover:bg-white/20'}
+                        `}
                       >
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
-                            {record.platform === '배민커넥트' ? (
-                              <Image
-                                src="/images/baemin-logo.svg"
-                                alt="배민커넥트"
-                                width={20}
-                                height={20}
-                                className="object-contain w-4 h-4 sm:w-5 sm:h-5"
-                              />
-                            ) : (
-                              <Image
-                                src="/images/coupang-logo.svg"
-                                alt="쿠팡"
-                                width={20}
-                                height={20}
-                                className="object-contain w-4 h-4 sm:w-5 sm:h-5"
-                              />
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-bold text-white text-sm sm:text-base">{record.platform}</div>
-                            <div className="text-xs sm:text-sm text-purple-200">
-                              {record.deliveryCount}건
-                            </div>
+                        <v.Icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2">
+                    {[
+                      { value: 'all' as const, label: '전체', Icon: FaList },
+                      { value: '배민커넥트' as const, label: '배민커넥트' },
+                      { value: '쿠팡이츠' as const, label: '쿠팡이츠' }
+                    ].map((v) => (
+                      <button
+                        key={v.value}
+                        onClick={() => setSelectedPlatform(v.value)}
+                        className={`
+                          flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2
+                          ${selectedPlatform === v.value
+                            ? 'bg-gradient-to-r from-purple-400 to-pink-500 text-white shadow-lg'
+                            : 'bg-white/10 text-purple-200 hover:text-white hover:bg-white/20'}
+                        `}
+                      >
+                        {v.Icon && <v.Icon className="w-3 h-3 sm:w-4 sm:h-4" />}
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 구분선 */}
+                <div className="border-t border-purple-400/20 mb-3 sm:mb-4"></div>
+
+                {/* 달력 보기 */}
+                <div className="bg-white/10 rounded-xl p-3">
+                  {selectedPeriod === 'week' ? (
+                    // 주간 리포트
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <button
+                          onClick={goToPreviousPeriod}
+                          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                        >
+                          <FaChevronLeft className="text-white" size={14} />
+                        </button>
+                        
+                        <div className="text-center">
+                          <h3 className="text-base font-bold text-white">
+                            {getWeekStart(dateInfo.targetDate).toLocaleDateString('ko-KR', {
+                              month: 'long',
+                              day: 'numeric'
+                            })} ~ {new Date(getWeekStart(dateInfo.targetDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', {
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </h3>
+                          <p className="text-xs text-purple-200 mt-1">{getPeriodDisplayText()}</p>
+                          {currentPeriodOffset !== 0 && (
+                            <button
+                              onClick={goToCurrentPeriod}
+                              className="text-xs text-amber-400 hover:text-amber-300 mt-1"
+                            >
+                              현재로 돌아가기
+                            </button>
+                          )}
+                        </div>
+                        
+                        <button
+                          onClick={goToNextPeriod}
+                          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                        >
+                          <FaChevronRight className="text-white" size={14} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
+                          <div className="text-xs text-purple-200 mb-1">주간 합산 금액</div>
+                          <div className="text-lg font-bold text-white">
+                            {periodTotal.toLocaleString()}원
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="text-right">
-                            <div className="font-bold text-white text-sm sm:text-base">
-                              {record.amount.toLocaleString()}원
-                            </div>
-                            <div className="text-xs sm:text-sm">
-                              {record.verified ? (
-                                <span className="text-green-400">✓ 인증됨</span>
-                              ) : (
-                                <span className="text-yellow-400">⚠ 미인증</span>
-                              )}
-                            </div>
+                        <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
+                          <div className="text-xs text-purple-200 mb-1">주간 합산 건수</div>
+                          <div className="text-lg font-bold text-white">
+                            {periodCount}건
                           </div>
-                          <button
-                            onClick={() => handleDeleteRecord(record.id)}
-                            className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-red-400/20 to-red-500/20 hover:from-red-400/30 hover:to-red-500/30 transition-all border border-red-400/30"
-                          >
-                            <FaTrash className="text-red-400 w-3 h-3 sm:w-4 sm:h-4" />
-                          </button>
                         </div>
                       </div>
-                    ))}
-                    
-                    <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl border border-amber-400/30">
-                      <div className="font-bold text-white text-sm sm:text-base">총계</div>
-                      <div className="font-bold text-white text-base sm:text-lg">
-                        {getDayTotal(selectedDate).toLocaleString()}원
+
+                      <div className="grid grid-cols-7 gap-1">
+                        {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+                          <div
+                            key={day}
+                            className="text-center text-xs font-bold text-purple-200 py-1"
+                          >
+                            {day}
+                          </div>
+                        ))}
+                        {Array.from({ length: 7 }, (_, i) => {
+                          const date = new Date(getWeekStart(dateInfo.targetDate).getTime() + i * 24 * 60 * 60 * 1000);
+                          const dateStr = date.toISOString().split('T')[0];
+                          const isToday = dateStr === dateInfo.todayStr;
+                          const hasRecords = getRecordsByDateStr(dateStr).length > 0;
+
+                          return (
+                            <button
+                              key={dateStr}
+                              onClick={() => setSelectedDate(dateStr)}
+                              className={`
+                                aspect-square relative rounded-lg transition-all
+                                ${isToday ? 'bg-amber-400/20' : ''}
+                                ${hasRecords ? 'hover:bg-white/20' : ''}
+                                ${selectedDate === dateStr ? 'ring-2 ring-amber-400' : ''}
+                              `}
+                            >
+                              <div className="text-center">
+                                <div className="text-xs font-bold text-white mb-1">
+                                  {parseInt(dateStr.split('-')[2])}
+                                </div>
+                                {hasRecords && (
+                                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mx-auto" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-                  </>
-                )}
+                  ) : (
+                    // 월간 리포트
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <button
+                          onClick={goToPreviousPeriod}
+                          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                        >
+                          <FaChevronLeft className="text-white" size={14} />
+                        </button>
+                        
+                        <div className="text-center">
+                          <h3 className="text-base font-bold text-white">
+                            {dateInfo.targetDate.getFullYear()}년 {dateInfo.targetDate.getMonth() + 1}월
+                          </h3>
+                          <p className="text-xs text-purple-200 mt-1">{getPeriodDisplayText()}</p>
+                          {currentPeriodOffset !== 0 && (
+                            <button
+                              onClick={goToCurrentPeriod}
+                              className="text-xs text-amber-400 hover:text-amber-300 mt-1"
+                            >
+                              현재로 돌아가기
+                            </button>
+                          )}
+                        </div>
+                        
+                        <button
+                          onClick={goToNextPeriod}
+                          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                        >
+                          <FaChevronRight className="text-white" size={14} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
+                          <div className="text-xs text-purple-200 mb-1">월간 합산 금액</div>
+                          <div className="text-lg font-bold text-white">
+                            {periodTotal.toLocaleString()}원
+                          </div>
+                        </div>
+                        <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
+                          <div className="text-xs text-purple-200 mb-1">월간 합산 건수</div>
+                          <div className="text-lg font-bold text-white">
+                            {periodCount}건
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
+                          <div className="text-xs text-purple-200 mb-1">일평균 금액</div>
+                          <div className="text-lg font-bold text-white">
+                            {dailyAverage.toLocaleString()}원
+                          </div>
+                        </div>
+                        <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-3 border border-white/20 text-center">
+                          <div className="text-xs text-purple-200 mb-1">일평균 건수</div>
+                          <div className="text-lg font-bold text-white">
+                            {Math.floor(periodCount / periodDays)}건
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-7 gap-1">
+                        {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+                          <div
+                            key={day}
+                            className="text-center text-xs font-bold text-purple-200 py-1"
+                          >
+                            {day}
+                          </div>
+                        ))}
+                        {Array.from({ length: dateInfo.firstDayOfMonth }, (_, i) => (
+                          <div key={`empty-${i}`} className="aspect-square" />
+                        ))}
+                        {Array.from({ length: dateInfo.daysInMonth }, (_, i) => {
+                          const date = new Date(dateInfo.currentYear, dateInfo.currentMonth, i + 1);
+                          const dateStr = date.toISOString().split('T')[0];
+                          const isToday = dateStr === dateInfo.todayStr;
+                          const hasRecords = getRecordsByDateStr(dateStr).length > 0;
+
+                          return (
+                            <button
+                              key={dateStr}
+                              onClick={() => setSelectedDate(dateStr)}
+                              className={`
+                                aspect-square relative rounded-lg transition-all
+                                ${isToday ? 'bg-amber-400/20' : ''}
+                                ${hasRecords ? 'hover:bg-white/20' : ''}
+                                ${selectedDate === dateStr ? 'ring-2 ring-amber-400' : ''}
+                              `}
+                            >
+                              <div className="text-center">
+                                <div className="text-xs font-bold text-white mb-1">
+                                  {parseInt(dateStr.split('-')[2])}
+                                </div>
+                                {hasRecords && (
+                                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mx-auto" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* 수기 입력 모달 */}
+        <ManualEntry
+          isOpen={manualOpen}
+          onClose={() => setManualOpen(false)}
+          onSuccess={() => {
+            setManualOpen(false);
+            refreshRecords();
+          }}
+        />
+
+        {/* 선택된 날짜의 상세 정보 */}
+        {selectedDate && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-3 sm:p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto shadow-2xl border border-purple-500/30 relative overflow-hidden">
+              {/* 배경 애니메이션 효과 */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
+              
+              <div className="relative z-10">
+                {/* 헤더 - 실시간 Top 3 스타일 */}
+                <div className="text-center mb-3 sm:mb-6">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <FaCalendar className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+                    <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
+                      일일 상세
+                    </h2>
+                    <FaCalendar className="text-purple-400 animate-bounce w-4 h-4 sm:w-7 sm:h-7" />
+                  </div>
+                  <p className="text-purple-200 text-xs">해당 날짜의 기록을 확인하세요! 📅</p>
+                </div>
+
+                {/* 닫기 버튼 */}
+                <button
+                  onClick={() => setSelectedDate(null)}
+                  className="absolute top-2 right-2 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all"
+                >
+                  <FaTimes size={16} />
+                </button>
+
+                {/* 날짜 표시 */}
+                <div className="text-center mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    {new Date(selectedDate).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      weekday: 'long'
+                    })}
+                  </h3>
+                </div>
+                
+                <div className="space-y-2 sm:space-y-3">
+                  {getRecordsByDateStr(selectedDate).length === 0 ? (
+                    <div className="text-center py-6 sm:py-8">
+                      <p className="text-purple-200/60 text-sm sm:text-base">이 날짜에 기록이 없습니다.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {getRecordsByDateStr(selectedDate).map((record) => (
+                        <div
+                          key={record.id}
+                          className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-white/10 to-white/5 rounded-xl border border-white/20 hover:from-white/15 hover:to-white/10 transition-all"
+                        >
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                              {record.platform === '배민커넥트' ? (
+                                <Image
+                                  src="/images/baemin-logo.svg"
+                                  alt="배민커넥트"
+                                  width={20}
+                                  height={20}
+                                  className="object-contain w-4 h-4 sm:w-5 sm:h-5"
+                                />
+                              ) : (
+                                <Image
+                                  src="/images/coupang-logo.svg"
+                                  alt="쿠팡"
+                                  width={20}
+                                  height={20}
+                                  className="object-contain w-4 h-4 sm:w-5 sm:h-5"
+                                />
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-bold text-white text-sm sm:text-base">{record.platform}</div>
+                              <div className="text-xs sm:text-sm text-purple-200">
+                                {record.deliveryCount}건
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="text-right">
+                              <div className="font-bold text-white text-sm sm:text-base">
+                                {record.amount.toLocaleString()}원
+                              </div>
+                              <div className="text-xs sm:text-sm">
+                                {record.verified ? (
+                                  <span className="text-green-400">✓ 인증됨</span>
+                                ) : (
+                                  <span className="text-yellow-400">⚠ 미인증</span>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteRecord(record.id)}
+                              className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-red-400/20 to-red-500/20 hover:from-red-400/30 hover:to-red-500/30 transition-all border border-red-400/30"
+                            >
+                              <FaTrash className="text-red-400 w-3 h-3 sm:w-4 sm:h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-amber-400/20 to-orange-500/20 rounded-xl border border-amber-400/30">
+                        <div className="font-bold text-white text-sm sm:text-base">총계</div>
+                        <div className="font-bold text-white text-base sm:text-lg">
+                          {getDayTotal(selectedDate).toLocaleString()}원
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 통계 요약 */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-purple-500/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
+                <FaCoins className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-purple-200 text-xs">총 수익</p>
+                <p className="text-white font-bold text-lg">{periodTotal.toLocaleString()}원</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-purple-500/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center">
+                <FaMotorcycle className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-purple-200 text-xs">총 배달</p>
+                <p className="text-white font-bold text-lg">{periodCount}건</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-purple-500/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center">
+                <FaTrophy className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-purple-200 text-xs">건당 평균</p>
+                <p className="text-white font-bold text-lg">{dailyAverage.toLocaleString()}원</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-purple-500/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-xl flex items-center justify-center">
+                <FaCoins className="text-white w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-purple-200 text-xs">획득 포인트</p>
+                <p className="text-white font-bold text-lg">{periodCount * 100}P</p>
               </div>
             </div>
           </div>
         </div>
-      )}
 
-    </div>
+        {/* 일별 기록 */}
+        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-2xl shadow-xl border border-purple-500/30 mb-6">
+          <div className="p-4 border-b border-purple-500/20">
+            <h2 className="text-white font-bold flex items-center gap-2">
+              <FaCalendarAlt className="text-purple-400" />
+              일별 기록
+            </h2>
+            {dailyChange && (
+              <p className="text-sm mt-1">
+                <span className="text-purple-200">전날 대비 </span>
+                <span className={`font-bold ${parseFloat(dailyChange) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {parseFloat(dailyChange) >= 0 ? <FaArrowUp className="inline w-3 h-3" /> : <FaArrowDown className="inline w-3 h-3" />}
+                  {Math.abs(parseFloat(dailyChange))}%
+                </span>
+              </p>
+            )}
+          </div>
+
+          {recordsLoading ? (
+            <div className="p-8">
+              <Loading />
+            </div>
+          ) : filteredRecords.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-purple-200">아직 기록이 없습니다</p>
+              <p className="text-purple-300 text-sm mt-2">실적을 업로드하고 기록을 확인하세요!</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-purple-500/20">
+              {filteredRecords.map((record) => (
+                <div key={record.id} className="p-4 hover:bg-white/5 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-bold">
+                        {format(new Date(record.date), 'M월 d일 (EEE)', { locale: ko })}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        record.platform === '배민커넥트' 
+                          ? 'bg-cyan-500/20 text-cyan-300' 
+                          : 'bg-green-500/20 text-green-300'
+                      }`}>
+                        {record.platform}
+                      </span>
+                    </div>
+                    <span className="text-yellow-400 font-bold">
+                      {record.amount.toLocaleString()}원
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-purple-200">
+                      배달 {record.deliveryCount}건 · 건당 {Math.round(record.amount / record.deliveryCount).toLocaleString()}원
+                    </span>
+                    <span className="text-purple-300">+100P</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 하단 광고 */}
+        <div className="mb-20">
+          <KakaoAdGlobal page="records" index={1} />
+        </div>
+      </div>
+    </ProtectedRoute>
   );
 } 

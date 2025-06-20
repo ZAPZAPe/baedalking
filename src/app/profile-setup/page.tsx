@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
-import { FaUser, FaMapMarkerAlt, FaMotorcycle, FaPhone, FaCamera } from 'react-icons/fa';
+import { FaUser, FaMapMarkerAlt, FaMotorcycle, FaPhone, FaCamera, FaUserFriends } from 'react-icons/fa';
 import Image from 'next/image';
+import { validateInviteCode } from '@/services/inviteService';
+import { toast } from 'sonner';
 
 // 시/도 목록
 const REGIONS = [
@@ -33,7 +35,8 @@ export default function ProfileSetupPage() {
     region: '',
     vehicle: '',
     phone: '',
-    profile_image: ''
+    profile_image: '',
+    invite_code: ''
   });
 
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -72,7 +75,8 @@ export default function ProfileSetupPage() {
             region: userData.region || '',
             vehicle: userData.vehicle || '',
             phone: userData.phone || '',
-            profile_image: userData.profile_image || ''
+            profile_image: userData.profile_image || '',
+            invite_code: ''
           });
           setUserInfo(userData);
         }
@@ -187,7 +191,23 @@ export default function ProfileSetupPage() {
 
       if (updateError) throw updateError;
 
-    router.push('/');
+      // 초대 코드가 입력된 경우 처리
+      if (formData.invite_code) {
+        try {
+          const result = await validateInviteCode(formData.invite_code, session.user.id);
+          
+          // 성공 메시지 표시
+          toast.success(`초대 코드 사용 성공! ${result.invitedPoints}P를 받았습니다!`, {
+            duration: 5000,
+          });
+        } catch (error: any) {
+          // 초대 코드 오류는 무시하고 진행 (선택사항이므로)
+          console.error('초대 코드 처리 오류:', error);
+          toast.error(error.message || '초대 코드 처리 중 오류가 발생했습니다.');
+        }
+      }
+
+      router.push('/');
     } catch (err: any) {
       console.error('프로필 저장 오류:', err);
       setError(err.message || '프로필 저장 중 오류가 발생했습니다.');
@@ -198,7 +218,7 @@ export default function ProfileSetupPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-900 to-purple-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-600 via-pink-600 to-purple-800">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto"></div>
           <p className="mt-4 text-white">로딩 중...</p>
@@ -208,11 +228,13 @@ export default function ProfileSetupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-blue-900 to-purple-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-r from-purple-600 via-pink-600 to-purple-800 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
         {/* 헤더 */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">프로필 설정</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-pink-200 bg-clip-text text-transparent mb-2">
+            프로필 설정
+          </h1>
           <p className="text-white/80">배달킹 서비스 이용을 위한 추가 정보를 입력해주세요</p>
         </div>
 
@@ -233,11 +255,11 @@ export default function ProfileSetupPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <FaUser className="w-12 h-12 text-white/40" />
+                      <FaUser className="w-12 h-12 text-white/40 animate-pulse" />
                     </div>
                   )}
                 </div>
-                <label className="absolute bottom-0 right-0 bg-amber-500 rounded-full p-2 cursor-pointer hover:bg-amber-600 transition-colors">
+                <label className="absolute bottom-0 right-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-2 cursor-pointer hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-110">
                   <FaCamera className="w-4 h-4 text-white" />
                   <input
                     type="file"
@@ -255,17 +277,17 @@ export default function ProfileSetupPage() {
 
             {/* 닉네임 */}
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">닉네임</label>
+              <label className="block text-sm font-medium text-white/80 mb-1">닉네임 *</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaUser className="h-4 w-4 text-white/40" />
+                  <FaUser className="h-4 w-4 text-white/40 animate-pulse" />
                 </div>
                 <input
                   type="text"
                   name="nickname"
                   value={formData.nickname}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:bg-white/15 transition-all"
+                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all"
                   placeholder="닉네임을 입력하세요"
                   required
                 />
@@ -277,17 +299,17 @@ export default function ProfileSetupPage() {
 
             {/* 전화번호 */}
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">전화번호</label>
+              <label className="block text-sm font-medium text-white/80 mb-1">전화번호 *</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaPhone className="h-4 w-4 text-white/40" />
+                  <FaPhone className="h-4 w-4 text-white/40 animate-pulse" />
                 </div>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:bg-white/15 transition-all"
+                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all"
                   placeholder="전화번호를 입력하세요"
                   required
                 />
@@ -296,16 +318,16 @@ export default function ProfileSetupPage() {
 
             {/* 지역 */}
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">활동 지역</label>
+              <label className="block text-sm font-medium text-white/80 mb-1">활동 지역 *</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaMapMarkerAlt className="h-4 w-4 text-white/40" />
+                  <FaMapMarkerAlt className="h-4 w-4 text-white/40 animate-pulse" />
                 </div>
                 <select
                   name="region"
                   value={formData.region}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:bg-white/15 transition-all appearance-none"
+                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all appearance-none"
                   required
                 >
                   <option value="" className="bg-slate-900">지역을 선택하세요</option>
@@ -320,16 +342,16 @@ export default function ProfileSetupPage() {
 
             {/* 배달 수단 */}
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">배달 수단</label>
+              <label className="block text-sm font-medium text-white/80 mb-1">배달 수단 *</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaMotorcycle className="h-4 w-4 text-white/40" />
+                  <FaMotorcycle className="h-4 w-4 text-white/40 animate-pulse" />
                 </div>
                 <select
                   name="vehicle"
                   value={formData.vehicle}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:bg-white/15 transition-all appearance-none"
+                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all appearance-none"
                   required
                 >
                   <option value="" className="bg-slate-900">배달 수단을 선택하세요</option>
@@ -340,6 +362,26 @@ export default function ProfileSetupPage() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* 친구 초대 코드 */}
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-1">친구 초대 코드 (선택)</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaUserFriends className="h-4 w-4 text-white/40 animate-pulse" />
+                </div>
+                <input
+                  type="text"
+                  name="invite_code"
+                  value={formData.invite_code}
+                  onChange={handleInputChange}
+                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all uppercase"
+                  placeholder="초대 코드를 입력하세요"
+                  maxLength={6}
+                />
+              </div>
+              <p className="mt-1 text-xs text-white/60">초대 코드 입력 시 300P를 받을 수 있습니다!</p>
             </div>
 
             {/* 에러 메시지 */}
@@ -353,7 +395,7 @@ export default function ProfileSetupPage() {
             <button
               type="submit"
               disabled={saving || uploadingImage}
-              className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 px-4 rounded-xl font-bold hover:shadow-lg hover:shadow-amber-500/25 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-amber-400/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-4 rounded-xl font-bold hover:shadow-lg hover:shadow-purple-500/25 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {saving ? (
                 <div className="flex items-center justify-center gap-2">
@@ -370,6 +412,9 @@ export default function ProfileSetupPage() {
         {/* 안내 메시지 */}
         <div className="mt-6 text-center">
           <p className="text-white/60 text-sm">
+            * 표시된 항목은 필수 입력 사항입니다
+          </p>
+          <p className="text-white/60 text-sm mt-1">
             프로필 정보는 나중에 설정에서 변경할 수 있습니다
           </p>
         </div>

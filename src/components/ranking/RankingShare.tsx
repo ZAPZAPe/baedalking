@@ -1,4 +1,10 @@
-export default function RankingShare() {
+import { RankingData } from '@/services/rankingService';
+
+interface RankingShareProps {
+  rankingData?: RankingData[];
+}
+
+export default function RankingShare({ rankingData }: RankingShareProps) {
   const handleShare = () => {
     // 카카오톡 공유 기능 구현 예정
     alert('카카오톡 공유 기능이 곧 추가됩니다!');
