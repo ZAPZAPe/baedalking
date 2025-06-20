@@ -168,15 +168,22 @@ export async function POST(request: Request) {
 
     const invitedNewPoints = (invitedData.points || 0) + 300;
 
+    // 초대받은 사용자의 포인트 업데이트 + referred_by 필드 설정
     const { error: invitedUpdateError } = await supabaseAdmin
       .from('users')
-      .update({ points: invitedNewPoints })
+      .update({ 
+        points: invitedNewPoints,
+        referred_by: inviter.id // 추천인 관계 저장
+      })
       .eq('id', newUserId);
 
     if (invitedUpdateError) {
       console.error('초대받은 사용자 포인트 업데이트 실패:', invitedUpdateError);
       throw new Error('초대받은 사용자 포인트 업데이트 실패');
     }
+
+    console.log('✅ 초대 코드 검증 및 포인트 지급 완료');
+    console.log(`📊 초대자(${inviter.id}): +500P, 초대받은 사용자(${newUserId}): +300P`);
 
     return NextResponse.json({
       success: true,

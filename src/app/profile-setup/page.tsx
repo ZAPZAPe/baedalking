@@ -32,6 +32,9 @@ export default function ProfileSetupPage() {
   const [error, setError] = useState('');
   const [nicknameError, setNicknameError] = useState('');
   const [isCheckingNickname, setIsCheckingNickname] = useState(false);
+  const [isCheckingInviteCode, setIsCheckingInviteCode] = useState(false);
+  const [inviteCodeError, setInviteCodeError] = useState('');
+  const [inviteCodeValid, setInviteCodeValid] = useState(false);
   
   const [formData, setFormData] = useState({
     nickname: '',
@@ -89,6 +92,7 @@ export default function ProfileSetupPage() {
           
           // 카카오 닉네임이 있고 유효하면 자동으로 중복 검사
           if (defaultNickname && validateNickname(defaultNickname).isValid) {
+            console.log('🎯 카카오 닉네임 자동 설정 및 검증:', defaultNickname);
             setTimeout(() => {
               checkNicknameDuplicate(defaultNickname);
             }, 1000);
@@ -113,6 +117,19 @@ export default function ProfileSetupPage() {
     // 닉네임 변경 시 에러 초기화
     if (name === 'nickname') {
       setNicknameError('');
+    }
+    
+    // 추천코드 변경 시 에러 초기화 및 실시간 검증
+    if (name === 'invite_code') {
+      setInviteCodeError('');
+      setInviteCodeValid(false);
+      
+      // 5자리 코드가 완성되면 실시간 검증
+      if (value.length === 5) {
+        setTimeout(() => {
+          checkInviteCodeValid(value);
+        }, 500);
+      }
     }
   };
 
@@ -375,6 +392,68 @@ export default function ProfileSetupPage() {
     }
   };
 
+  // 추천코드 유효성 검사 (실시간)
+  const checkInviteCodeValid = async (code: string) => {
+    if (!code || code.length !== 5) {
+      setInviteCodeError('');
+      setInviteCodeValid(false);
+      return;
+    }
+
+    setIsCheckingInviteCode(true);
+    setInviteCodeError('');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // 추천코드 존재 여부 확인
+      const { data: inviter, error } = await supabase
+        .from('users')
+        .select('id, nickname')
+        .eq('referral_code', code)
+        .single();
+
+      if (error || !inviter) {
+        setInviteCodeError('존재하지 않는 추천코드입니다.');
+        setInviteCodeValid(false);
+        return;
+      }
+
+      // 자기 자신의 코드인지 확인
+      if (inviter.id === session.user.id) {
+        setInviteCodeError('자신의 추천코드는 사용할 수 없습니다.');
+        setInviteCodeValid(false);
+        return;
+      }
+
+      // 이미 사용한 코드인지 확인
+      const { data: existingInvite } = await supabase
+        .from('invites')
+        .select('id')
+        .eq('invite_code', code)
+        .eq('invited_user_id', session.user.id)
+        .single();
+
+      if (existingInvite) {
+        setInviteCodeError('이미 사용된 추천코드입니다.');
+        setInviteCodeValid(false);
+        return;
+      }
+
+      // 모든 검사 통과
+      setInviteCodeValid(true);
+      setInviteCodeError('');
+      
+    } catch (error) {
+      console.error('추천코드 검증 오류:', error);
+      setInviteCodeError('추천코드 검증 중 오류가 발생했습니다.');
+      setInviteCodeValid(false);
+    } finally {
+      setIsCheckingInviteCode(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-600 via-pink-600 to-purple-800">
@@ -590,12 +669,44 @@ export default function ProfileSetupPage() {
                   name="invite_code"
                   value={formData.invite_code}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all uppercase"
-                  placeholder="초대 코드를 입력하세요"
-                  maxLength={15}
+                  className={`block w-full pl-10 pr-3 py-3 bg-white/10 border rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:bg-white/15 transition-all uppercase ${
+                    inviteCodeError 
+                      ? 'border-red-400/50 focus:ring-red-400/50' 
+                      : inviteCodeValid
+                        ? 'border-green-400/50 focus:ring-green-400/50'
+                        : 'border-white/20 focus:ring-purple-400/50'
+                  }`}
+                  placeholder="ABC12 형식 (5자리)"
+                  maxLength={5}
                 />
               </div>
-              <p className="mt-1 text-xs text-white/60">초대 코드 입력 시 300P를 받을 수 있습니다!</p>
+              {isCheckingInviteCode && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-3 h-3 border-2 border-blue-400/20 border-t-blue-400 rounded-full animate-spin"></div>
+                  <p className="text-xs text-blue-400">추천코드 확인 중...</p>
+                </div>
+              )}
+              {inviteCodeValid && !isCheckingInviteCode && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-400 rounded-full flex items-center justify-center">
+                    <span className="text-white text-[8px]">✓</span>
+                  </div>
+                  <p className="text-xs text-green-400 font-medium">✨ 유효한 추천코드입니다! 300P를 받게 됩니다!</p>
+                </div>
+              )}
+              {inviteCodeError && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-red-400 rounded-full flex items-center justify-center">
+                    <span className="text-white text-[8px]">!</span>
+                  </div>
+                  <p className="text-xs text-red-400">{inviteCodeError}</p>
+                </div>
+              )}
+              {!formData.invite_code && (
+                <p className="mt-1 text-xs text-white/60">
+                  <span className="text-purple-300 font-medium">🎁 혜택:</span> 추천코드 입력 시 300P 지급!
+                </p>
+              )}
             </div>
 
             {/* 에러 메시지 */}

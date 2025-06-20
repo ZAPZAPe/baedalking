@@ -197,56 +197,62 @@ export default function Home() {
   const [loadingRanking, setLoadingRanking] = useState(true);
   const [hasLoadedRanking, setHasLoadedRanking] = useState(false);
   const [rankingError, setRankingError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const fetchRanking = useCallback(async (retryCount = 0) => {
-    const MAX_RETRIES = 1; // 재시도 횟수 줄이기
+    const MAX_RETRIES = 0; // 재시도 비활성화로 무한 루프 방지
     
     try {
+      console.log('🏠 메인 페이지 랭킹 로드 시작');
+      setLoadingRanking(true);
+      setRankingError(false);
+      
       const ranking = await getTodayRanking();
-      setTopRankers(ranking.slice(0, 3).length > 0 ? ranking.slice(0, 3) : DEFAULT_RANKERS);
+      
+      // 데이터가 있으면 상위 3개 사용, 없으면 기본 데이터 사용
+      if (ranking && ranking.length > 0) {
+        console.log('✅ 메인 페이지 랭킹 로드 성공:', ranking.length, '개');
+        setTopRankers(ranking.slice(0, 3));
+      } else {
+        console.log('📊 랭킹 데이터가 없어서 기본 데이터 사용');
+        setTopRankers(DEFAULT_RANKERS);
+      }
+      
       setHasLoadedRanking(true);
       setRankingError(false);
+      
     } catch (error: any) {
-      console.error('랭킹 로드 실패:', error);
+      console.error('💥 메인 페이지 랭킹 로드 실패:', error);
       
-      // 네트워크 에러나 리소스 부족 에러는 재시도하지 않음
-      if (error.message?.includes('Failed to fetch') || 
-          error.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
-          error.code === 'ERR_INSUFFICIENT_RESOURCES') {
-        console.warn('네트워크 또는 리소스 에러로 인한 랭킹 로드 실패');
-        setRankingError(true);
-        setTopRankers(DEFAULT_RANKERS);
-        return;
-      }
-      
-      // 타임아웃 에러만 재시도
-      if (retryCount < MAX_RETRIES && error.message?.includes('timeout')) {
-        console.log(`랭킹 재시도 ${retryCount + 1}/${MAX_RETRIES}`);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // 2초로 증가
-        return fetchRanking(retryCount + 1);
-      }
-      
-      // 최종 실패 시 에러 상태 설정
-      setRankingError(true);
+      // 모든 에러를 안전하게 처리하고 기본 데이터 사용
+      console.warn('🔄 에러 발생 - 기본 랭킹 데이터 사용');
       setTopRankers(DEFAULT_RANKERS);
+      setRankingError(true);
+      setHasLoadedRanking(true); // 로딩 완료로 처리
+      
     } finally {
       setLoadingRanking(false);
+      setIsRetrying(false);
     }
   }, []);
 
   useEffect(() => {
-    // 페이지 로드 시 즉시 랭킹 데이터 로드 (Auth와 독립적으로)
-    if (!hasLoadedRanking) {
+    // 페이지 로드 시 한 번만 랭킹 데이터 로드
+    if (!hasLoadedRanking && !isRetrying) {
+      console.log('🏠 메인 페이지 초기 랭킹 로드');
       fetchRanking();
     }
-  }, [fetchRanking, hasLoadedRanking]);
+  }, [fetchRanking, hasLoadedRanking, isRetrying]);
 
   // 에러 발생 시 재시도 함수
   const handleRetryRanking = useCallback(() => {
-    setLoadingRanking(true);
-    setRankingError(false);
-    fetchRanking();
-  }, [fetchRanking]);
+    if (!isRetrying) {
+      console.log('🔄 랭킹 수동 재시도');
+      setIsRetrying(true);
+      setHasLoadedRanking(false); // 재로딩 허용
+      fetchRanking();
+    }
+  }, [fetchRanking, isRetrying]);
 
   // 로그인 함수
   const handleLogin = () => {

@@ -17,6 +17,7 @@ export interface User {
   totalEarnings?: number;
   profileImage?: string;
   referral_code?: string;
+  referred_by?: string; // 추천인 ID
   notificationSettings?: {
     [key: string]: boolean;
   };
@@ -90,6 +91,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 고유한 username 생성 (이메일 + 타임스탬프)
         const uniqueUsername = `${authUser.email?.split('@')[0] || 'user'}_${Date.now()}`;
         
+        // 카카오에서 받은 사용자 정보 추출
+        const kakaoNickname = authUser.user_metadata?.name || authUser.user_metadata?.full_name || '';
+        
+        // 추천코드 생성 (5자리: 3글자 + 2숫자)
+        const generateReferralCode = () => {
+          const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
+          const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+          return letters + numbers;
+        };
+        
+        const referralCode = generateReferralCode();
+        
         try {
           // 먼저 일반 클라이언트로 시도 (RLS 정책 허용 시)
           const { data: newProfile, error: createError } = await supabase
@@ -98,6 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               id: authUser.id,
               email: authUser.email,
               username: uniqueUsername,
+              nickname: kakaoNickname, // 카카오 닉네임 자동 설정
+              referral_code: referralCode, // 추천코드 자동 생성
               points: 0,
               total_deliveries: 0,
               total_earnings: 0
@@ -120,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const basicUserData: User = {
                 id: authUser.id,
                 email: authUser.email || '',
-                nickname: '',
+                nickname: kakaoNickname, // 카카오 닉네임 설정
                 region: '',
                 vehicle: '',
                 phone: '',
@@ -128,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 totalDeliveries: 0,
                 totalEarnings: 0,
                 profileImage: '',
-                referral_code: '',
+                referral_code: referralCode, // 추천코드 설정
                 notificationSettings: {},
                 role: 'user',
               };
@@ -144,6 +159,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 id: authUser.id,
                 email: authUser.email,
                 username: uniqueUsername,
+                nickname: kakaoNickname, // 카카오 닉네임 자동 설정
+                referral_code: referralCode, // 추천코드 자동 생성
                 points: 0,
                 total_deliveries: 0,
                 total_earnings: 0
@@ -160,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const basicUserData: User = {
                 id: authUser.id,
                 email: authUser.email || '',
-                nickname: '',
+                nickname: kakaoNickname, // 카카오 닉네임 설정
                 region: '',
                 vehicle: '',
                 phone: '',
@@ -168,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 totalDeliveries: 0,
                 totalEarnings: 0,
                 profileImage: '',
-                referral_code: '',
+                referral_code: referralCode, // 추천코드 설정
                 notificationSettings: {},
                 role: 'user',
               };
@@ -181,7 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const userData: User = {
               id: authUser.id,
               email: authUser.email || '',
-              nickname: adminProfile?.nickname || '',
+              nickname: adminProfile?.nickname || kakaoNickname, // 카카오 닉네임 우선
               region: adminProfile?.region || '',
               vehicle: adminProfile?.vehicle || '',
               phone: adminProfile?.phone || '',
@@ -189,13 +206,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               totalDeliveries: adminProfile?.total_deliveries || 0,
               totalEarnings: adminProfile?.total_earnings || 0,
               profileImage: adminProfile?.profile_image || '',
-              referral_code: adminProfile?.referral_code || '',
+              referral_code: adminProfile?.referral_code || referralCode, // 추천코드 설정
               notificationSettings: adminProfile?.notification_settings || {},
               role: adminProfile?.role || 'user',
             };
 
             setUserProfile(userData);
             profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
+            console.log('✅ 카카오 사용자 프로필 생성 완료:', { nickname: kakaoNickname, referralCode });
             return;
           }
 

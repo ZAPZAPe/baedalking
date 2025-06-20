@@ -75,6 +75,21 @@ export default function Navigation({ title }: NavigationProps) {
 
   // 프로필 설정 중인지 확인
   const isInProfileSetup = pathname === '/profile-setup';
+  
+  // 프로필 설정 미완료 시 강제 리다이렉트
+  useEffect(() => {
+    // 로그인한 사용자이고, 프로필이 미완료이며, 현재 프로필 설정 페이지가 아닌 경우
+    if (user && userProfile && isProfileIncomplete && !isInProfileSetup) {
+      // 허용된 페이지들 (로그아웃, 에러 페이지 등)
+      const allowedPaths = ['/login', '/auth', '/error'];
+      const isAllowedPath = allowedPaths.some(path => pathname.startsWith(path));
+      
+      if (!isAllowedPath) {
+        console.log('🔄 프로필 미완료로 인한 리다이렉트:', pathname, '→ /profile-setup');
+        router.replace('/profile-setup');
+      }
+    }
+  }, [user, userProfile, isProfileIncomplete, isInProfileSetup, pathname, router]);
 
   // 관리자 경로면 네비게이션 렌더링하지 않음
   if (pathname?.startsWith('/admin')) {
