@@ -93,9 +93,6 @@ export default function ProfileSetupPage() {
           // 카카오 닉네임이 있고 유효하면 자동으로 중복 검사
           if (defaultNickname && validateNickname(defaultNickname).isValid) {
             console.log('🎯 카카오 닉네임 자동 설정 및 검증:', defaultNickname);
-            setTimeout(() => {
-              checkNicknameDuplicate(defaultNickname);
-            }, 1000);
           }
         }
 
@@ -254,14 +251,7 @@ export default function ProfileSetupPage() {
     setFormData(prev => ({ ...prev, nickname: value }));
     setNicknameError('');
     
-    // 디바운스: 500ms 후에 중복 검사 실행
-    if (value.trim()) {
-      const timeoutId = setTimeout(() => {
-        checkNicknameDuplicate(value.trim());
-      }, 500);
-      
-      return () => clearTimeout(timeoutId);
-    }
+    // 실시간 중복 검사 제거 - 사용자가 버튼을 클릭할 때만 검사
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -379,11 +369,21 @@ export default function ProfileSetupPage() {
         }
       }
 
-      // AuthContext 프로필 새로고침을 위해 약간 대기
+      console.log('✅ 프로필 설정 완료! 홈으로 이동합니다.');
+      
+      // 성공 메시지 표시
+      toast.success('프로필 설정이 완료되었습니다! 🎉', {
+        duration: 2000,
+      });
+
+      // 안전한 방법으로 홈 페이지로 이동
       setTimeout(() => {
-        // 페이지를 새로고침하여 AuthContext가 새로운 프로필을 로드하도록 함
-        window.location.href = '/';
-      }, 1000);
+        router.push('/');
+        // 추가 보장을 위해 페이지 새로고침 (세션 문제 방지)
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 500);
+      }, 1500);
     } catch (err: any) {
       console.error('프로필 저장 오류:', err);
       setError(err.message || '프로필 저장 중 오류가 발생했습니다.');
@@ -532,7 +532,7 @@ export default function ProfileSetupPage() {
                   name="nickname"
                   value={formData.nickname}
                   onChange={handleNicknameChange}
-                  className={`block w-full pl-10 pr-3 py-3 bg-white/10 border rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:bg-white/15 transition-all ${
+                  className={`block w-full pl-10 pr-24 py-3 bg-white/10 border rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:bg-white/15 transition-all ${
                     nicknameError 
                       ? 'border-red-400/50 focus:ring-red-400/50' 
                       : 'border-white/20 focus:ring-purple-400/50'
@@ -540,6 +540,14 @@ export default function ProfileSetupPage() {
                   placeholder="닉네임을 입력하세요"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => checkNicknameDuplicate(formData.nickname)}
+                  disabled={!formData.nickname || isCheckingNickname || !validateNickname(formData.nickname).isValid}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors"
+                >
+                  {isCheckingNickname ? '확인중' : '중복검사'}
+                </button>
               </div>
               {isCheckingNickname && (
                 <div className="mt-2 flex items-center gap-2">
@@ -731,6 +739,15 @@ export default function ProfileSetupPage() {
                 '시작하기'
               )}
             </button>
+            
+            {/* 닉네임 중복 검사 안내 */}
+            {formData.nickname && !nicknameError && !isCheckingNickname && validateNickname(formData.nickname).isValid && (
+              <div className="mt-2 p-2 bg-blue-500/20 border border-blue-400/50 rounded-lg">
+                <p className="text-xs text-blue-200 text-center">
+                  💡 닉네임 중복 검사를 완료해주세요!
+                </p>
+              </div>
+            )}
           </form>
           </div>
         </div>

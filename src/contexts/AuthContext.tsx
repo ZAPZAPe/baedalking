@@ -92,7 +92,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const uniqueUsername = `${authUser.email?.split('@')[0] || 'user'}_${Date.now()}`;
         
         // 카카오에서 받은 사용자 정보 추출
-        const kakaoNickname = authUser.user_metadata?.name || authUser.user_metadata?.full_name || '';
+        console.log('🔍 카카오 사용자 메타데이터 전체:', authUser.user_metadata);
+        console.log('🔍 앱 메타데이터:', authUser.app_metadata);
+        
+        // 다양한 필드에서 닉네임 추출 시도
+        const kakaoNickname = authUser.user_metadata?.name || 
+                             authUser.user_metadata?.full_name || 
+                             authUser.user_metadata?.nickname ||
+                             authUser.user_metadata?.properties?.nickname ||
+                             authUser.user_metadata?.kakao_account?.profile?.nickname ||
+                             '';
+        
+        console.log('🎯 추출된 카카오 닉네임:', kakaoNickname);
+        console.log('📧 이메일:', authUser.email);
         
         // 추천코드 생성 (5자리: 3글자 + 2숫자)
         const generateReferralCode = () => {
