@@ -62,7 +62,7 @@ NavLink.displayName = 'NavLink';
 export default function Navigation({ title }: NavigationProps) {
   const pathname = usePathname();
   const defaultTitle = useMemo(() => titleMap[pathname] || '', [pathname]);
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, isProfileComplete } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification, clearAll } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -70,9 +70,8 @@ export default function Navigation({ title }: NavigationProps) {
 
   // 프로필 설정이 완료되지 않았는지 확인
   const isProfileIncomplete = useMemo(() => {
-    if (!userProfile) return true;
-    return !userProfile.nickname || !userProfile.region || !userProfile.vehicle || !userProfile.phone;
-  }, [userProfile]);
+    return !isProfileComplete(userProfile);
+  }, [userProfile, isProfileComplete]);
 
   // 프로필 설정 중인지 확인
   const isInProfileSetup = pathname === '/profile-setup';

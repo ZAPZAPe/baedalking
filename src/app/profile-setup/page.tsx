@@ -74,8 +74,11 @@ export default function ProfileSetupPage() {
 
         // 카카오에서 받은 정보로 초기값 설정
         if (userData) {
+          // 카카오 닉네임이 있으면 기본값으로 설정
+          const defaultNickname = userData.nickname || '';
+          
           setFormData({
-            nickname: userData.nickname || '',
+            nickname: defaultNickname,
             region: userData.region || '',
             vehicle: userData.vehicle || '',
             phone: userData.phone ? formatPhoneNumber(userData.phone) : '',
@@ -83,6 +86,13 @@ export default function ProfileSetupPage() {
             invite_code: ''
           });
           setUserInfo(userData);
+          
+          // 카카오 닉네임이 있고 유효하면 자동으로 중복 검사
+          if (defaultNickname && validateNickname(defaultNickname).isValid) {
+            setTimeout(() => {
+              checkNicknameDuplicate(defaultNickname);
+            }, 1000);
+          }
         }
 
         setLoading(false);
@@ -352,7 +362,11 @@ export default function ProfileSetupPage() {
         }
       }
 
-      router.push('/');
+      // AuthContext 프로필 새로고침을 위해 약간 대기
+      setTimeout(() => {
+        // 페이지를 새로고침하여 AuthContext가 새로운 프로필을 로드하도록 함
+        window.location.href = '/';
+      }, 1000);
     } catch (err: any) {
       console.error('프로필 저장 오류:', err);
       setError(err.message || '프로필 저장 중 오류가 발생했습니다.');
@@ -470,14 +484,23 @@ export default function ProfileSetupPage() {
                   <p className="text-xs text-red-400">{nicknameError}</p>
                 </div>
               )}
-              {!nicknameError && !isCheckingNickname && formData.nickname && !validateNickname(formData.nickname).isValid && (
-                <div className="mt-2">
-                  <p className="text-xs text-white/60">💡 닉네임 규칙: 2-12자, 한글/영문/숫자/._- 사용 가능</p>
-                </div>
-              )}
-              {userInfo?.nickname && !nicknameError && !isCheckingNickname && (
-                <p className="mt-1 text-xs text-white/60">카카오톡 닉네임: {userInfo.nickname}</p>
-              )}
+              {/* 닉네임 규칙 - 항상 표시 */}
+              <div className="mt-2 p-3 bg-white/5 rounded-lg border border-white/10">
+                <p className="text-xs text-white/70 mb-1">
+                  <span className="text-purple-300 font-medium">💡 닉네임 규칙</span>
+                </p>
+                <ul className="text-xs text-white/60 space-y-0.5">
+                  <li>• 2자 이상 12자 이하</li>
+                  <li>• 한글, 영문, 숫자, ., _, - 사용 가능</li>
+                  <li>• 특수문자 연속 사용 불가</li>
+                  <li>• 특수문자로 시작/끝날 수 없음</li>
+                </ul>
+                {userInfo?.nickname && (
+                  <p className="mt-2 text-xs text-blue-300">
+                    💬 카카오톡 닉네임: <span className="font-medium">{userInfo.nickname}</span>
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* 전화번호 */}

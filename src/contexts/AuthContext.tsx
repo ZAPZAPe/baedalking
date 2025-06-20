@@ -31,6 +31,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   refreshUserProfile: () => Promise<void>;
+  isProfileComplete: (profile: User | null) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -529,6 +530,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, loadUserProfile]);
 
+  // 프로필 완료 여부 체크 함수
+  const isProfileComplete = useCallback((profile: User | null) => {
+    if (!profile) return false;
+    return !!(
+      profile.nickname && 
+      profile.nickname.trim() &&
+      profile.region && 
+      profile.region.trim() &&
+      profile.vehicle && 
+      profile.vehicle.trim() &&
+      profile.phone && 
+      profile.phone.trim()
+    );
+  }, []);
+
   const value = useMemo(() => ({
     user,
     userProfile,
@@ -537,7 +553,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut,
     updateProfile,
     refreshUserProfile,
-  }), [user, userProfile, loading, signUp, signOut, updateProfile, refreshUserProfile]);
+    isProfileComplete,
+  }), [user, userProfile, loading, signUp, signOut, updateProfile, refreshUserProfile, isProfileComplete]);
 
   return (
     <AuthContext.Provider value={value}>
