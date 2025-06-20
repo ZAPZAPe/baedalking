@@ -84,6 +84,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 런타임에서만 supabaseAdmin import
         const { supabaseAdmin } = await import('@/lib/supabase-admin');
         
+        if (!supabaseAdmin) {
+          console.error('Supabase Admin 클라이언트를 생성할 수 없습니다.');
+          throw new Error('서버 설정 오류입니다.');
+        }
+        
         // supabaseAdmin을 사용하여 RLS 정책 우회
         const { data: newProfile, error: createError } = await supabaseAdmin
           .from('users')

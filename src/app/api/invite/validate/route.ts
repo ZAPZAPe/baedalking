@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: Request) {
   try {
@@ -15,6 +14,17 @@ export async function POST(request: Request) {
     // 런타임에서만 환경 변수 검증
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('Supabase 환경 변수가 설정되지 않았습니다.');
+      return NextResponse.json(
+        { error: '서버 설정 오류입니다.' },
+        { status: 500 }
+      );
+    }
+
+    // 런타임에서만 supabaseAdmin import
+    const { supabaseAdmin } = await import('@/lib/supabase-admin');
+
+    if (!supabaseAdmin) {
+      console.error('Supabase Admin 클라이언트를 생성할 수 없습니다.');
       return NextResponse.json(
         { error: '서버 설정 오류입니다.' },
         { status: 500 }
