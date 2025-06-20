@@ -23,6 +23,7 @@ import { getAllDeliveryRecords, updateDeliveryStatus, deleteDeliveryRecord } fro
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface ExtendedDeliveryRecord {
   id: string;
@@ -433,9 +434,11 @@ export default function DeliveryRecords() {
               <div className="mt-6">
                 <label className="text-sm text-zinc-400 block mb-2">업로드된 이미지</label>
                 <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <img 
+                  <Image 
                     src={selectedRecord.imageUrl} 
-                    alt="배달 기록 이미지" 
+                    alt="배달 기록 이미지"
+                    width={600}
+                    height={400}
                     className="w-full rounded-lg"
                   />
                 </div>

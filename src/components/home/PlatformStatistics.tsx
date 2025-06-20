@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { FaTruck, FaMotorcycle, FaChartLine, FaFire, FaBolt, FaCoins, FaTrophy, FaMedal, FaStar } from 'react-icons/fa';
 import { getPlatformTopRankers, RankingData } from '@/services/rankingService';
@@ -56,34 +57,7 @@ export function PlatformStatistics() {
     coupang: RankingData[];
   }>(DEFAULT_PLATFORM_RANKERS);
 
-  useEffect(() => {
-    let mounted = true;
-    
-    const loadData = async () => {
-      try {
-        // 로딩 상태 유지
-        if (mounted) setLoading(true);
-        
-        // 병렬로 데이터 로드
-        await Promise.all([
-          fetchPlatformStats(),
-          fetchPlatformRankers()
-        ]);
-      } catch (error) {
-        console.error('데이터 로드 중 오류:', error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-    
-    loadData();
-    
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const fetchPlatformStats = async (retryCount = 0) => {
+  const fetchPlatformStats = useCallback(async (retryCount = 0) => {
     const MAX_RETRIES = 2;
     
     try {
@@ -124,9 +98,9 @@ export function PlatformStatistics() {
       // 최종 실패 시 기본값 설정
       setStats(DEFAULT_PLATFORM_STATS);
     }
-  };
+  }, []);
 
-  const fetchPlatformRankers = async (retryCount = 0) => {
+  const fetchPlatformRankers = useCallback(async (retryCount = 0) => {
     const MAX_RETRIES = 2;
     
     try {
@@ -149,7 +123,31 @@ export function PlatformStatistics() {
       // 최종 실패 시 기본값 유지
       setPlatformRankers(DEFAULT_PLATFORM_RANKERS);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    
+    const loadData = async () => {
+      try {
+        if (mounted) setLoading(true);
+        await Promise.all([
+          fetchPlatformStats(),
+          fetchPlatformRankers()
+        ]);
+      } catch (error) {
+        console.error('데이터 로드 중 오류:', error);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    
+    loadData();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [fetchPlatformStats, fetchPlatformRankers]);
 
   // 플랫폼별 비율 계산
   const baeminAvg = stats.find(s => s.platform === '배민커넥트')?.averagePerOrder || 0;
@@ -182,11 +180,11 @@ export function PlatformStatistics() {
         {/* 헤더 - 실시간 Top 3 스타일 */}
         <div className="text-center mb-3 sm:mb-6">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <img src="/baemin-logo.svg" alt="배민" className="w-4 h-4 sm:w-7 sm:h-7 animate-bounce" />
+            <Image src="/baemin-logo.svg" alt="배민" width={28} height={28} className="w-4 h-4 sm:w-7 sm:h-7 animate-bounce" />
             <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400">
               배민커넥트 VS 쿠팡이츠
             </h2>
-            <img src="/coupang-logo.svg" alt="쿠팡" className="w-4 h-4 sm:w-7 sm:h-7 animate-bounce" />
+            <Image src="/coupang-logo.svg" alt="쿠팡" width={28} height={28} className="w-4 h-4 sm:w-7 sm:h-7 animate-bounce" />
           </div>
           <p className="text-purple-200 text-xs">오늘의 플랫폼 대결! ⚔️</p>
         </div>
@@ -270,7 +268,7 @@ export function PlatformStatistics() {
             {/* 배민커넥트 TOP 3 */}
             <div className="bg-white/5 rounded-xl p-2.5 sm:p-3 border border-cyan-400/30">
               <div className="flex items-center justify-center gap-1 mb-1.5 sm:mb-2">
-                <img src="/baemin-logo.svg" alt="배민" className="w-3 h-3 sm:w-4 sm:h-4" />
+                <Image src="/baemin-logo.svg" alt="배민" width={16} height={16} className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="text-cyan-400 font-bold text-xs">배민커넥트</span>
               </div>
               <div className="space-y-1 sm:space-y-1.5">
@@ -308,7 +306,7 @@ export function PlatformStatistics() {
             {/* 쿠팡이츠 TOP 3 */}
             <div className="bg-white/5 rounded-xl p-2.5 sm:p-3 border border-green-400/30">
               <div className="flex items-center justify-center gap-1 mb-1.5 sm:mb-2">
-                <img src="/coupang-logo.svg" alt="쿠팡" className="w-3 h-3 sm:w-4 sm:h-4" />
+                <Image src="/coupang-logo.svg" alt="쿠팡" width={16} height={16} className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="text-green-400 font-bold text-xs">쿠팡이츠</span>
               </div>
               <div className="space-y-1 sm:space-y-1.5">

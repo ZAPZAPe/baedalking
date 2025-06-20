@@ -273,7 +273,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearTimeout(sessionCheckTimeout);
       subscription.unsubscribe();
     };
-  }, [loadUserProfile]);
+  }, [loadUserProfile, user?.id, isCheckingSession]);
 
   const signUp = useCallback(async (nickname: string) => {
     try {

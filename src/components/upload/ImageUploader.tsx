@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 
 interface ImageUploaderProps {
   onImageSelect: (file: File) => void;
@@ -39,9 +40,11 @@ export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
         className="hidden"
       />
       {preview ? (
-        <img
+        <Image
           src={preview}
           alt="미리보기"
+          width={400}
+          height={256}
           className="max-h-64 mx-auto rounded-lg"
         />
       ) : (

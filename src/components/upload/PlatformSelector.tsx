@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 type Platform = 'baemin' | 'coupang';
 
@@ -29,9 +30,11 @@ export default function PlatformSelector({ onSelect }: PlatformSelectorProps) {
           }`}
         >
           <div className="flex flex-col items-center">
-            <img
+            <Image
               src="/images/baemin-logo.png"
               alt="배민"
+              width={64}
+              height={64}
               className="w-16 h-16 object-contain mb-2"
             />
             <span className="font-medium">배민</span>
@@ -46,9 +49,11 @@ export default function PlatformSelector({ onSelect }: PlatformSelectorProps) {
           }`}
         >
           <div className="flex flex-col items-center">
-            <img
+            <Image
               src="/images/coupang-logo.png"
               alt="쿠팡이츠"
+              width={64}
+              height={64}
               className="w-16 h-16 object-contain mb-2"
             />
             <span className="font-medium">쿠팡이츠</span>

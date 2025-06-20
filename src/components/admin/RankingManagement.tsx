@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getUsers, getDeliveryRecords } from '@/services/adminService';
 import { UserProfile } from '@/types';
 import { FaTrophy, FaMedal, FaCalendar, FaFilter, FaDownload } from 'react-icons/fa';
@@ -26,11 +26,7 @@ export default function RankingManagement() {
   const [vehicleFilter, setVehicleFilter] = useState('all');
   const [regions, setRegions] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetchRankingData();
-  }, [period, regionFilter, vehicleFilter]);
-
-  const fetchRankingData = async () => {
+  const fetchRankingData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -108,7 +104,11 @@ export default function RankingManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period, regionFilter, vehicleFilter]);
+
+  useEffect(() => {
+    fetchRankingData();
+  }, [fetchRankingData]);
 
   const exportToCSV = () => {
     const headers = ['순위', '닉네임', '지역', '차량', '총 수익', '총 건수', '건당 평균'];
