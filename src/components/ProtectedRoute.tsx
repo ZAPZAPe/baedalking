@@ -24,8 +24,13 @@ const ProtectedRoute = ({ children, requireProfile = true, allowedPaths = [] }: 
       return;
     }
 
-    // 프로필 설정이 필요한 경우
-    if (requireProfile && userProfile) {
+    // 프로필 설정이 필요한 경우 (userProfile이 없거나 필수 필드가 없는 경우)
+    if (requireProfile) {
+      if (!userProfile) {
+        // userProfile이 아직 로드되지 않은 경우 기다림
+        return;
+      }
+      
       // 필수 필드가 모두 설정되었는지 확인
       const isProfileComplete = userProfile.nickname && 
                                userProfile.region && 
@@ -53,7 +58,11 @@ const ProtectedRoute = ({ children, requireProfile = true, allowedPaths = [] }: 
     return null; // 리다이렉트 처리 중
   }
 
-  if (requireProfile && userProfile) {
+  if (requireProfile) {
+    if (!userProfile) {
+      return <Loading />; // userProfile 로딩 중
+    }
+    
     const isProfileComplete = userProfile.nickname && 
                              userProfile.region && 
                              userProfile.vehicle && 

@@ -378,7 +378,7 @@ export default function ProfileSetupPage() {
                   onChange={handleInputChange}
                   className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:bg-white/15 transition-all uppercase"
                   placeholder="초대 코드를 입력하세요"
-                  maxLength={6}
+                  maxLength={15}
                 />
               </div>
               <p className="mt-1 text-xs text-white/60">초대 코드 입력 시 300P를 받을 수 있습니다!</p>

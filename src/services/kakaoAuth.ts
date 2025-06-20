@@ -96,7 +96,10 @@ export const loginWithKakao = async () => {
 
                 // users 테이블에 프로필 생성
                 if (authData.user) {
-                  const referralCode = `BK${Date.now().toString(36).toUpperCase()}`;
+                  // 새로운 짧은 형식의 추천인 코드 생성 (5자리)
+                  const letters = Math.random().toString(36).substring(2, 5).toUpperCase();
+                  const numbers = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+                  const referralCode = letters + numbers;
                   const { error: profileError } = await supabase
                     .from('users')
                     .insert({
