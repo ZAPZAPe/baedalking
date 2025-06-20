@@ -10,6 +10,16 @@ export const supabaseAdmin = supabaseUrl && supabaseServiceKey
       auth: {
         autoRefreshToken: false,
         persistSession: false
+      },
+      global: {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Accept-Profile': 'public'
+        }
+      },
+      db: {
+        schema: 'public'
       }
     })
   : null;

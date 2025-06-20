@@ -89,56 +89,157 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 고유한 username 생성 (이메일 + 타임스탬프)
         const uniqueUsername = `${authUser.email?.split('@')[0] || 'user'}_${Date.now()}`;
         
-        // 런타임에서만 supabaseAdmin import
-        const { supabaseAdmin } = await import('@/lib/supabase-admin');
-        
-        if (!supabaseAdmin) {
-          console.error('Supabase Admin 클라이언트를 생성할 수 없습니다.');
-          throw new Error('서버 설정 오류입니다.');
-        }
-        
-        // supabaseAdmin을 사용하여 RLS 정책 우회
-        const { data: newProfile, error: createError } = await supabaseAdmin
-          .from('users')
-          .upsert({
+        try {
+          // 먼저 일반 클라이언트로 시도 (RLS 정책 허용 시)
+          const { data: newProfile, error: createError } = await supabase
+            .from('users')
+            .upsert({
+              id: authUser.id,
+              email: authUser.email,
+              username: uniqueUsername,
+              points: 0,
+              total_deliveries: 0,
+              total_earnings: 0
+            }, {
+              onConflict: 'id',
+              ignoreDuplicates: false
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.log('일반 클라이언트로 프로필 생성 실패, Admin 클라이언트 시도...');
+            
+            // Admin 클라이언트로 시도
+            const { supabaseAdmin } = await import('@/lib/supabase-admin');
+            
+            if (!supabaseAdmin) {
+              console.warn('Admin 클라이언트 없음. 기본 프로필로 진행...');
+              // Admin 클라이언트가 없어도 기본 프로필 생성
+              const basicUserData: User = {
+                id: authUser.id,
+                email: authUser.email || '',
+                nickname: '',
+                region: '',
+                vehicle: '',
+                phone: '',
+                points: 0,
+                totalDeliveries: 0,
+                totalEarnings: 0,
+                profileImage: '',
+                referral_code: '',
+                notificationSettings: {},
+                role: 'user',
+              };
+              setUserProfile(basicUserData);
+              profileCache.set(authUser.id, { data: basicUserData, timestamp: Date.now() });
+              return;
+            }
+            
+            // Admin 클라이언트로 재시도
+            const { data: adminProfile, error: adminError } = await supabaseAdmin
+              .from('users')
+              .upsert({
+                id: authUser.id,
+                email: authUser.email,
+                username: uniqueUsername,
+                points: 0,
+                total_deliveries: 0,
+                total_earnings: 0
+              }, {
+                onConflict: 'id',
+                ignoreDuplicates: false
+              })
+              .select()
+              .single();
+
+            if (adminError) {
+              console.error('Admin 클라이언트로도 프로필 생성 실패:', adminError);
+              // 그래도 기본 프로필로 진행
+              const basicUserData: User = {
+                id: authUser.id,
+                email: authUser.email || '',
+                nickname: '',
+                region: '',
+                vehicle: '',
+                phone: '',
+                points: 0,
+                totalDeliveries: 0,
+                totalEarnings: 0,
+                profileImage: '',
+                referral_code: '',
+                notificationSettings: {},
+                role: 'user',
+              };
+              setUserProfile(basicUserData);
+              profileCache.set(authUser.id, { data: basicUserData, timestamp: Date.now() });
+              return;
+            }
+
+            // Admin으로 성공한 경우
+            const userData: User = {
+              id: authUser.id,
+              email: authUser.email || '',
+              nickname: adminProfile?.nickname || '',
+              region: adminProfile?.region || '',
+              vehicle: adminProfile?.vehicle || '',
+              phone: adminProfile?.phone || '',
+              points: adminProfile?.points || 0,
+              totalDeliveries: adminProfile?.total_deliveries || 0,
+              totalEarnings: adminProfile?.total_earnings || 0,
+              profileImage: adminProfile?.profile_image || '',
+              referral_code: adminProfile?.referral_code || '',
+              notificationSettings: adminProfile?.notification_settings || {},
+              role: adminProfile?.role || 'user',
+            };
+
+            setUserProfile(userData);
+            profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
+            return;
+          }
+
+          // 일반 클라이언트로 성공한 경우
+          const userData: User = {
             id: authUser.id,
-            email: authUser.email,
-            username: uniqueUsername,
+            email: authUser.email || '',
+            nickname: newProfile?.nickname || '',
+            region: newProfile?.region || '',
+            vehicle: newProfile?.vehicle || '',
+            phone: newProfile?.phone || '',
+            points: newProfile?.points || 0,
+            totalDeliveries: newProfile?.total_deliveries || 0,
+            totalEarnings: newProfile?.total_earnings || 0,
+            profileImage: newProfile?.profile_image || '',
+            referral_code: newProfile?.referral_code || '',
+            notificationSettings: newProfile?.notification_settings || {},
+            role: newProfile?.role || 'user',
+          };
+
+          setUserProfile(userData);
+          profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
+          return;
+        } catch (err) {
+          console.error('프로필 생성 중 예외 발생:', err);
+          // 모든 시도가 실패해도 기본 프로필로 진행
+          const basicUserData: User = {
+            id: authUser.id,
+            email: authUser.email || '',
+            nickname: '',
+            region: '',
+            vehicle: '',
+            phone: '',
             points: 0,
-            total_deliveries: 0,
-            total_earnings: 0
-          }, {
-            onConflict: 'id',
-            ignoreDuplicates: false
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('프로필 생성 에러:', createError);
-          throw createError;
+            totalDeliveries: 0,
+            totalEarnings: 0,
+            profileImage: '',
+            referral_code: '',
+            notificationSettings: {},
+            role: 'user',
+          };
+          setUserProfile(basicUserData);
+          profileCache.set(authUser.id, { data: basicUserData, timestamp: Date.now() });
+          return;
         }
-
-        const userData: User = {
-          id: authUser.id,
-          email: authUser.email || '',
-          nickname: newProfile?.nickname || '',
-          region: newProfile?.region || '',
-          vehicle: newProfile?.vehicle || '',
-          phone: newProfile?.phone || '',
-          points: newProfile?.points || 0,
-          totalDeliveries: newProfile?.total_deliveries || 0,
-          totalEarnings: newProfile?.total_earnings || 0,
-          profileImage: newProfile?.profile_image || '',
-          referral_code: newProfile?.referral_code || '',
-          notificationSettings: newProfile?.notification_settings || {},
-          role: newProfile?.role || 'user',
-        };
-
-        setUserProfile(userData);
-        // 캐시에 저장
-        profileCache.set(authUser.id, { data: userData, timestamp: Date.now() });
-        return;
       }
 
       // 프로필이 존재하는 경우

@@ -51,7 +51,21 @@ export default function ProfileEditPage() {
     try {
       setIsCheckingNickname(true);
       setNicknameStatus('checking');
-      const response = await fetch(`/api/check-nickname?nickname=${encodeURIComponent(nickname)}`);
+      
+      const url = new URL('/api/check-nickname', window.location.origin);
+      url.searchParams.set('nickname', nickname);
+      if (user?.id) {
+        url.searchParams.set('currentUserId', user.id);
+      }
+      
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
       const data = await response.json();
       
       if (!response.ok) {

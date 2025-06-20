@@ -19,12 +19,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Supabase 환경 변수가 설정되지 않았습니다. NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.')
 }
 
-// Supabase 클라이언트 생성 - 단순화된 설정
+// Supabase 클라이언트 생성 - 406 오류 해결을 위한 헤더 설정
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true
+  },
+  global: {
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Profile': 'public'
+    }
+  },
+  db: {
+    schema: 'public'
   }
 })
 
