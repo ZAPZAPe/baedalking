@@ -95,14 +95,14 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
     // 뷰에서 가져온 데이터를 RankingData 형식으로 변환
     const result = data
       .filter((row: any) => {
-        const hasAmount = (row.total_amount || 0) > 0;
-        const hasOrders = (row.total_orders || 0) > 0;
+        const hasAmount = (row.today_earnings || 0) > 0;
+        const hasOrders = (row.today_deliveries || 0) > 0;
         const hasNickname = row.nickname && row.nickname.trim();
         
         console.log('🔍 데이터 필터링:', {
           nickname: row.nickname,
-          total_amount: row.total_amount,
-          total_orders: row.total_orders,
+          today_earnings: row.today_earnings,
+          today_deliveries: row.today_deliveries,
           hasAmount,
           hasOrders,
           hasNickname,
@@ -116,8 +116,8 @@ export const getTodayRanking = async (region?: string): Promise<RankingData[]> =
         userId: row.user_id || '',
         nickname: row.nickname || '익명',
         region: row.region || '미설정',
-        totalAmount: row.total_amount || 0,
-        totalOrders: row.total_orders || 0,
+        totalAmount: row.today_earnings || 0,
+        totalOrders: row.today_deliveries || 0,
         rank: row.rank || 999,
         platform: row.platform || '기타'
       }));
@@ -385,8 +385,8 @@ export const getPlatformTopRankers = async (): Promise<{
         userId: row.user_id,
         nickname: row.nickname,
         region: row.region,
-        totalAmount: row.total_amount,
-        totalOrders: row.total_orders,
+        totalAmount: row.today_earnings,
+        totalOrders: row.today_deliveries,
         rank: row.rank,
         platform: '배민커넥트' // 임시로 배민커넥트로 설정
       }));
@@ -398,8 +398,8 @@ export const getPlatformTopRankers = async (): Promise<{
         userId: row.user_id,
         nickname: row.nickname,
         region: row.region,
-        totalAmount: row.total_amount,
-        totalOrders: row.total_orders,
+        totalAmount: row.today_earnings,
+        totalOrders: row.today_deliveries,
         rank: row.rank,
         platform: '쿠팡이츠' // 임시로 쿠팡이츠로 설정
       }));
