@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   FaChartLine, 
   FaUsers, 
@@ -30,11 +30,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [timeRange]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -78,7 +74,11 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   // 차트 데이터 생성
   const chartData = stats?.trendData || [];

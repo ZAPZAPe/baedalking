@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { FaCalendarCheck, FaCoins, FaGift, FaChevronLeft, FaCheck, FaTrophy, FaStar, FaFireAlt, FaStamp } from 'react-icons/fa';
 import Link from 'next/link';
@@ -29,13 +29,7 @@ export default function AttendancePage() {
   const [claiming, setClaiming] = useState(false);
   const [justAttended, setJustAttended] = useState(false);
 
-  useEffect(() => {
-    if (user && userProfile) {
-      fetchAttendanceData();
-    }
-  }, [user, userProfile]);
-
-  const fetchAttendanceData = async () => {
+  const fetchAttendanceData = useCallback(async () => {
     if (!user) return;
     
     setLoading(true);
@@ -93,7 +87,13 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user && userProfile) {
+      fetchAttendanceData();
+    }
+  }, [user, userProfile, fetchAttendanceData]);
 
   const handleAttendance = async () => {
     console.log('출근도장 버튼 클릭됨');

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, Camera, Image as ImageIcon, CheckCircle, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
 import { useAuth } from '../contexts/AuthContext';
 import { analyzeDeliveryImage } from '../services/imageAnalysisService';
 import { uploadDeliveryRecord } from '../services/uploadService';
@@ -150,9 +151,11 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
           ) : (
             <div className="space-y-4">
               <div className="relative">
-                <img
+                <Image
                   src={previewUrl!}
                   alt="Preview"
+                  width={400}
+                  height={300}
                   className="w-full rounded-lg"
                 />
                 {uploadStatus === 'analyzing' && (

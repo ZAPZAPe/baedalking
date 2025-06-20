@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaUser, FaMapMarkerAlt, FaMotorcycle, FaBicycle, FaCar, FaWalking, FaEdit, FaSignOutAlt, FaChevronLeft, FaCheck, FaTimes, FaCrown, FaBell, FaLock, FaQuestionCircle, FaCog, FaShieldAlt, FaCamera, FaCoins, FaList, FaGift, FaShare, FaComment, FaFileAlt, FaUsers, FaTimes as FaClose, FaCopy } from 'react-icons/fa';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -295,8 +296,8 @@ export default function SettingsPage() {
               <p>이 약관은 배달킹(이하 "회사")이 제공하는 서비스의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
               <p>제2조 (정의)</p>
               <p>이 약관에서 사용하는 용어의 정의는 다음과 같습니다.</p>
-              <p>1. "서비스"란 회사가 제공하는 배달킹 애플리케이션 및 관련 서비스를 말합니다.</p>
-              <p>2. "회원"이란 회사와 서비스 이용계약을 체결한 자를 말합니다.</p>
+              <p>1. &quot;서비스&quot;란 회사가 제공하는 배달킹 애플리케이션 및 관련 서비스를 말합니다.</p>
+              <p>2. &quot;회원&quot;이란 회사와 서비스 이용계약을 체결한 자를 말합니다.</p>
             </div>
           </div>
         );
@@ -379,9 +380,11 @@ export default function SettingsPage() {
                 <div className="relative">
                   <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
                     {profileImage ? (
-                      <img 
+                      <Image 
                         src={profileImage} 
                         alt="프로필" 
+                        width={80}
+                        height={80}
                         className="w-full h-full object-cover"
                       />
                     ) : (

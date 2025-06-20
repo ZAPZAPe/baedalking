@@ -9,6 +9,7 @@ import { getFraudRecords, updateFraudStatus } from '@/services/adminService';
 import { FraudRecord } from '@/types/fraud';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import Image from 'next/image';
 
 export default function FraudDetectionPage() {
   const [records, setRecords] = useState<FraudRecord[]>([]);
@@ -134,9 +135,11 @@ export default function FraudDetectionPage() {
                 {record.imageUrl && (
                   <div>
                     <h3 className="font-semibold mb-2">증거 이미지</h3>
-                    <img
+                    <Image
                       src={record.imageUrl}
                       alt="증거 이미지"
+                      width={400}
+                      height={300}
                       className="max-w-md rounded-lg"
                     />
                   </div>
