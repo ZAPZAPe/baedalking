@@ -52,23 +52,66 @@ function CallbackContent() {
         console.log('현재 세션:', { session: !!session, error: sessionError });
 
         if (session) {
-          console.log('로그인 성공, 프로필 설정으로 이동');
+          console.log('로그인 성공, 프로필 완료 여부 확인 중...');
+          
+          // 프로필 완료 여부 확인
+          const { data: userProfile } = await supabase
+            .from('users')
+            .select('nickname, region, vehicle, phone')
+            .eq('id', session.user.id)
+            .single();
+          
+          // 프로필이 완료되었는지 확인
+          const isProfileComplete = userProfile && 
+            userProfile.nickname && userProfile.nickname.trim() &&
+            userProfile.region && userProfile.region.trim() &&
+            userProfile.vehicle && userProfile.vehicle.trim() &&
+            userProfile.phone && userProfile.phone.trim();
+          
           // AuthContext가 세션을 인식할 때까지 추가 대기
           await new Promise(resolve => setTimeout(resolve, 500));
-          router.push('/profile-setup');
+          
+          if (isProfileComplete) {
+            console.log('프로필 완료됨, 홈으로 이동');
+            router.push('/');
+          } else {
+            console.log('프로필 미완료, 프로필 설정으로 이동');
+            router.push('/profile-setup');
+          }
         } else {
           console.log('세션 없음, 2초 후 재확인');
-          setTimeout(async () => {
-            const { data: { session: retrySession } } = await supabase.auth.getSession();
-            if (retrySession) {
-              // AuthContext가 세션을 인식할 때까지 추가 대기
-              await new Promise(resolve => setTimeout(resolve, 500));
-              router.push('/profile-setup');
-            } else {
-              console.log('재확인 후에도 세션 없음, 로그인 페이지로 이동');
-              router.push('/login?error=session_not_found');
-            }
-          }, 2000);
+                      setTimeout(async () => {
+              const { data: { session: retrySession } } = await supabase.auth.getSession();
+              if (retrySession) {
+                // 프로필 완료 여부 확인
+                const { data: userProfile } = await supabase
+                  .from('users')
+                  .select('nickname, region, vehicle, phone')
+                  .eq('id', retrySession.user.id)
+                  .single();
+                
+                // 프로필이 완료되었는지 확인
+                const isProfileComplete = userProfile && 
+                  userProfile.nickname && userProfile.nickname.trim() &&
+                  userProfile.region && userProfile.region.trim() &&
+                  userProfile.vehicle && userProfile.vehicle.trim() &&
+                  userProfile.phone && userProfile.phone.trim();
+                
+                // AuthContext가 세션을 인식할 때까지 추가 대기
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                if (isProfileComplete) {
+                  console.log('프로필 완료됨, 홈으로 이동');
+                  router.push('/');
+                } else {
+                  console.log('프로필 미완료, 프로필 설정으로 이동');
+                  router.push('/profile-setup');
+                }
+              } else {
+                console.log('재확인 후에도 세션 없음, 로그인 페이지로 이동');
+                router.push('/login?error=session_not_found');
+              }
+            }, 2000);
         }
       } catch (error) {
         console.error('카카오 로그인 콜백 처리 중 에러:', error);
