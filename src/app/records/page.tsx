@@ -614,7 +614,7 @@ export default function RecordsPage() {
                           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
                             {record.platform === '배민커넥트' ? (
                               <Image
-                                src="/images/baemin-logo.svg"
+                                src="/baemin-logo.svg"
                                 alt="배민커넥트"
                                 width={20}
                                 height={20}
@@ -622,7 +622,7 @@ export default function RecordsPage() {
                               />
                             ) : (
                               <Image
-                                src="/images/coupang-logo.svg"
+                                src="/coupang-logo.svg"
                                 alt="쿠팡"
                                 width={20}
                                 height={20}

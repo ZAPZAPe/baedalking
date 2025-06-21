@@ -31,7 +31,7 @@ export default function PlatformSelector({ onSelect }: PlatformSelectorProps) {
         >
           <div className="flex flex-col items-center">
             <Image
-              src="/images/baemin-logo.png"
+              src="/baemin-logo.svg"
               alt="배민"
               width={64}
               height={64}
@@ -50,7 +50,7 @@ export default function PlatformSelector({ onSelect }: PlatformSelectorProps) {
         >
           <div className="flex flex-col items-center">
             <Image
-              src="/images/coupang-logo.png"
+              src="/coupang-logo.svg"
               alt="쿠팡이츠"
               width={64}
               height={64}
