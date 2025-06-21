@@ -268,14 +268,19 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div className="space-y-6">
               <div className="border-b border-white/10 pb-4">
-                <p className="text-sm text-gray-400">2024.03.20</p>
-                <h4 className="font-bold mb-2">배달킹 서비스 오픈 안내</h4>
-                <p className="text-sm text-gray-300">배달킹 서비스가 정식 오픈되었습니다. 많은 이용 부탁드립니다.</p>
+                <p className="text-sm text-gray-400">2024.12.20</p>
+                <h4 className="font-bold mb-2">배달킹 정식 서비스 오픈! 🎉</h4>
+                <p className="text-sm text-gray-300">배달 라이더들을 위한 실적 관리 및 랭킹 서비스 배달킹이 정식 오픈되었습니다. 매일 실적을 업로드하고 다른 라이더들과 선의의 경쟁을 펼쳐보세요!</p>
               </div>
               <div className="border-b border-white/10 pb-4">
-                <p className="text-sm text-gray-400">2024.03.15</p>
-                <h4 className="font-bold mb-2">시스템 점검 안내</h4>
-                <p className="text-sm text-gray-300">3월 16일 02:00 ~ 04:00 동안 시스템 점검이 진행됩니다.</p>
+                <p className="text-sm text-gray-400">2024.12.15</p>
+                <h4 className="font-bold mb-2">랭킹 보상 시스템 안내 💰</h4>
+                <p className="text-sm text-gray-300">매일 오전 5시 59분에 전날 랭킹 기준으로 포인트가 자동 지급됩니다. 1등 500P, 2등 400P, 3등 300P, 4-10등 100P가 지급되니 열심히 활동해주세요!</p>
+              </div>
+              <div className="border-b border-white/10 pb-4">
+                <p className="text-sm text-gray-400">2024.12.10</p>
+                <h4 className="font-bold mb-2">친구 초대 이벤트 🎁</h4>
+                <p className="text-sm text-gray-300">친구를 초대하면 가입자와 추천인 모두 500P씩 지급됩니다. 내 추천 코드를 공유하고 함께 배달킹을 즐겨보세요!</p>
               </div>
             </div>
           </div>
@@ -286,11 +291,19 @@ export default function SettingsPage() {
             <div className="space-y-6">
               <div className="border-b border-white/10 pb-4">
                 <h4 className="font-bold mb-2">Q. 포인트는 어떻게 적립되나요?</h4>
-                <p className="text-sm text-gray-300">배달 완료 시 자동으로 포인트가 적립됩니다.</p>
+                <p className="text-sm text-gray-300">신규 가입 시 300P, 출석체크 시 50P, 실적 업로드 시 50P가 적립되며, 매일 랭킹에 따라 추가 포인트가 지급됩니다.</p>
               </div>
               <div className="border-b border-white/10 pb-4">
                 <h4 className="font-bold mb-2">Q. 포인트는 어떻게 사용하나요?</h4>
-                <p className="text-sm text-gray-300">적립된 포인트는 리워드 상품 교환에 사용할 수 있습니다.</p>
+                <p className="text-sm text-gray-300">현재는 포인트 적립 기능만 제공되며, 향후 다양한 리워드 기능이 추가될 예정입니다.</p>
+              </div>
+              <div className="border-b border-white/10 pb-4">
+                <h4 className="font-bold mb-2">Q. 랭킹은 어떻게 산정되나요?</h4>
+                <p className="text-sm text-gray-300">업로드된 실적의 일일 매출액을 기준으로 랭킹이 결정됩니다. 매일 오전 6시에 전날 랭킹이 확정됩니다.</p>
+              </div>
+              <div className="border-b border-white/10 pb-4">
+                <h4 className="font-bold mb-2">Q. 개인정보는 안전한가요?</h4>
+                <p className="text-sm text-gray-300">모든 개인정보는 암호화되어 안전하게 보관되며, 서비스 운영 목적 외에는 사용되지 않습니다.</p>
               </div>
             </div>
           </div>
@@ -299,12 +312,56 @@ export default function SettingsPage() {
         return (
           <div className="space-y-4">
             <div className="space-y-4 text-sm text-gray-300">
-              <p>제1조 (목적)</p>
-              <p>이 약관은 배달킹(이하 &quot;회사&quot;)이 제공하는 서비스의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
-              <p>제2조 (정의)</p>
-              <p>이 약관에서 사용하는 용어의 정의는 다음과 같습니다.</p>
-              <p>1. &quot;서비스&quot;란 회사가 제공하는 배달킹 애플리케이션 및 관련 서비스를 말합니다.</p>
-              <p>2. &quot;회원&quot;이란 회사와 서비스 이용계약을 체결한 자를 말합니다.</p>
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-bold text-white">배달킹 서비스 이용약관</h3>
+                <p className="text-xs text-gray-400 mt-1">시행일: 2024년 12월 20일</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">제1조 (목적)</h4>
+                <p>이 약관은 배달킹(이하 "회사")이 제공하는 배달 실적 관리 및 랭킹 서비스의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">제2조 (정의)</h4>
+                <p>① "서비스"란 회사가 제공하는 배달킹 모바일 애플리케이션 및 관련 서비스를 말합니다.</p>
+                <p>② "회원"이란 이 약관에 동의하고 회사와 서비스 이용계약을 체결한 개인을 말합니다.</p>
+                <p>③ "실적"이란 회원이 업로드한 배달 관련 수익 정보를 말합니다.</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">제3조 (서비스의 내용)</h4>
+                <p>① 배달 실적 업로드 및 관리</p>
+                <p>② 일일/월간 랭킹 제공</p>
+                <p>③ 포인트 적립 및 관리</p>
+                <p>④ 친구 초대 시스템</p>
+                <p>⑤ 기타 회사가 정하는 서비스</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">제4조 (회원의 의무)</h4>
+                <p>① 회원은 정확하고 진실한 정보를 제공해야 합니다.</p>
+                <p>② 허위 실적 업로드, 부정한 방법으로 포인트 획득 등의 행위를 해서는 안 됩니다.</p>
+                <p>③ 다른 회원의 개인정보를 무단으로 수집, 이용해서는 안 됩니다.</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">제5조 (서비스 이용제한)</h4>
+                <p>회사는 회원이 다음 행위를 하는 경우 서비스 이용을 제한할 수 있습니다.</p>
+                <p>① 허위 정보 제공 또는 조작된 실적 업로드</p>
+                <p>② 타인의 명의를 도용하거나 허위사실을 유포하는 경우</p>
+                <p>③ 서비스의 안정적 운영을 방해하는 경우</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">제6조 (면책조항)</h4>
+                <p>① 회사는 천재지변, 전쟁, 시스템 장애 등 불가항력으로 인한 서비스 중단에 대해 책임지지 않습니다.</p>
+                <p>② 회원이 서비스를 이용하여 얻은 정보로 인한 손해에 대해서는 책임지지 않습니다.</p>
+              </div>
+              
+              <div className="text-center pt-4">
+                <p className="text-xs text-gray-400">문의: support@baedalrank.com</p>
+              </div>
             </div>
           </div>
         );
@@ -312,14 +369,63 @@ export default function SettingsPage() {
         return (
           <div className="space-y-4">
             <div className="space-y-4 text-sm text-gray-300">
-              <p>1. 수집하는 개인정보 항목</p>
-              <p>- 필수항목: 이메일, 닉네임, 프로필 이미지</p>
-              <p>- 선택항목: 지역, 선호 배달 수단</p>
-              <p>2. 개인정보의 수집 및 이용목적</p>
-              <p>- 서비스 제공 및 회원 관리</p>
-              <p>- 포인트 적립 및 사용 내역 관리</p>
-              <p>3. 개인정보의 보유 및 이용기간</p>
-              <p>- 회원 탈퇴 시까지</p>
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-bold text-white">개인정보 처리방침</h3>
+                <p className="text-xs text-gray-400 mt-1">시행일: 2024년 12월 20일</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">1. 개인정보 수집 항목</h4>
+                <p className="mb-2"><strong>필수항목:</strong></p>
+                <p>- 카카오톡 로그인: 카카오 계정 ID, 닉네임, 프로필 이미지</p>
+                <p>- 서비스 이용: 지역, 운송수단, 전화번호</p>
+                <p className="mb-2 mt-3"><strong>자동 수집 정보:</strong></p>
+                <p>- 서비스 이용 기록, 접속 로그, 쿠키, 접속 IP 주소</p>
+                <p>- 기기 정보 (OS 버전, 기기 모델명)</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">2. 개인정보 수집 및 이용 목적</h4>
+                <p>- 회원 가입 및 본인 확인</p>
+                <p>- 서비스 제공 및 맞춤형 서비스 제공</p>
+                <p>- 포인트 적립 및 랭킹 산정</p>
+                <p>- 고객 상담 및 불만 처리</p>
+                <p>- 서비스 개선 및 통계 분석</p>
+                <p>- 부정 이용 방지 및 서비스 안정성 확보</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">3. 개인정보 제3자 제공</h4>
+                <p>회사는 원칙적으로 회원의 개인정보를 제3자에게 제공하지 않습니다. 다만, 다음의 경우 예외로 합니다:</p>
+                <p>- 법령에 의해 요구되는 경우</p>
+                <p>- 서비스 제공을 위해 필요한 경우 (암호화하여 최소한으로 제공)</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">4. 개인정보 보유 및 이용 기간</h4>
+                <p>- 회원 탈퇴 시: 즉시 삭제 (법령에서 보관을 요구하는 경우 제외)</p>
+                <p>- 서비스 이용 기록: 3개월</p>
+                <p>- 부정 이용 기록: 1년</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">5. 개인정보 안전성 확보 조치</h4>
+                <p>- 개인정보 암호화 저장</p>
+                <p>- 해킹 등에 대비한 기술적 대책</p>
+                <p>- 개인정보 처리 시스템 접근 권한 관리</p>
+                <p>- 개인정보 처리 현황 점검</p>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-white mb-2">6. 개인정보 처리에 관한 문의</h4>
+                <p>개인정보 처리에 관한 문의사항이 있으시면 아래로 연락해 주시기 바랍니다.</p>
+                <p className="mt-2">이메일: support@baedalrank.com</p>
+                <p>카카오톡: 배달킹 고객센터</p>
+              </div>
+              
+              <div className="text-center pt-4 border-t border-white/10">
+                <p className="text-xs text-gray-400">본 방침은 2024년 12월 20일부터 시행됩니다.</p>
+              </div>
             </div>
           </div>
         );

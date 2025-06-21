@@ -19,19 +19,31 @@ export default function SupportPage() {
     },
     {
       question: '포인트는 어떻게 얻나요?',
-      answer: '실적을 업로드하거나 매일 출석체크를 하면 포인트를 얻을 수 있습니다. 또한 친구를 추천하면 추가 포인트를 받을 수 있습니다.'
+      answer: '신규 가입 시 300P, 출석체크 시 50P, 실적 업로드 시 50P가 적립됩니다. 또한 친구를 추천하면 추가 포인트를 받을 수 있습니다.'
     },
     {
       question: '포인트는 어디에 사용하나요?',
-      answer: '포인트 상점에서 다양한 상품권이나 쿠폰으로 교환할 수 있습니다. 또한 프리미엄 기능을 이용하는 데에도 사용됩니다.'
+      answer: '현재는 포인트 적립 기능만 제공되며, 향후 다양한 리워드 기능이 추가될 예정입니다. 업데이트를 기대해주세요!'
     },
     {
       question: '실적이 제대로 인식되지 않아요',
-      answer: '이미지가 선명하고 전체 화면이 보이도록 캡처해주세요. 계속 문제가 발생하면 고객센터로 문의해주시기 바랍니다.'
+      answer: '이미지가 선명하고 전체 화면이 보이도록 캡처해주세요. 계속 문제가 발생하면 1:1 카카오톡 문의로 연락주시기 바랍니다.'
     },
     {
-      question: '탈퇴는 어떻게 하나요?',
-      answer: '설정 > 개인정보 설정 > 계정 삭제에서 탈퇴할 수 있습니다. 탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.'
+      question: '랭킹은 언제 업데이트되나요?',
+      answer: '실적 업로드 즉시 실시간으로 랭킹이 업데이트됩니다. 최종 랭킹은 매일 오전 6시에 확정되며, 전날 랭킹 기준으로 포인트가 지급됩니다.'
+    },
+    {
+      question: '친구 초대는 어떻게 하나요?',
+      answer: '설정 > 친구 초대에서 내 추천 코드를 확인하고 친구에게 공유해주세요. 친구가 가입하면 양쪽 모두 500P를 받습니다.'
+    },
+    {
+      question: '계정을 삭제하고 싶어요',
+      answer: '현재 계정 삭제 기능은 개발 중입니다. 계정 삭제를 원하시면 1:1 카카오톡 문의로 연락주시기 바랍니다.'
+    },
+    {
+      question: '앱이 느려요 / 오류가 발생해요',
+      answer: '앱을 완전히 종료한 후 다시 실행해보세요. 계속 문제가 발생하면 기기 정보와 함께 1:1 문의로 연락주시면 빠르게 해결해드리겠습니다.'
     }
   ];
 
@@ -194,11 +206,11 @@ export default function SupportPage() {
               <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl p-3 border border-yellow-400/30">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-yellow-400/20 rounded-full flex items-center justify-center">
-                    <FaPhone className="text-yellow-400" size={14} />
+                    <FaComments className="text-yellow-400" size={14} />
                   </div>
                   <div>
-                    <h4 className="text-white font-bold text-sm">전화</h4>
-                    <p className="text-yellow-200 text-xs">1588-0000 (평일 09:00-18:00)</p>
+                    <h4 className="text-white font-bold text-sm">카카오톡 1:1 문의</h4>
+                    <p className="text-yellow-200 text-xs">빠른 답변을 원하시면 카카오톡으로 문의하세요</p>
                   </div>
                 </div>
               </div>
