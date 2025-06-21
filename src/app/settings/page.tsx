@@ -40,6 +40,7 @@ export default function SettingsPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isCheckingNickname, setIsCheckingNickname] = useState(false);
   const [nicknameError, setNicknameError] = useState('');
+  const [nicknameAvailable, setNicknameAvailable] = useState<boolean | null>(null);
   const nicknameCheckTimeout = useRef<NodeJS.Timeout>();
   const [modalType, setModalType] = useState<'notice' | 'faq' | 'terms' | 'privacy' | null>(null);
   const [copied, setCopied] = useState(false);
@@ -114,11 +115,13 @@ export default function SettingsPage() {
   const checkNicknameDuplicate = async (newNickname: string) => {
     if (!newNickname || newNickname === userProfile?.nickname) {
       setNicknameError('');
+      setNicknameAvailable(null);
       return true;
     }
 
     setIsCheckingNickname(true);
     setNicknameError('');
+    setNicknameAvailable(null);
 
     try {
       const response = await fetch('/api/check-nickname', {
@@ -138,15 +141,18 @@ export default function SettingsPage() {
         throw new Error(data.error || '닉네임 확인 중 오류가 발생했습니다.');
       }
 
-      if (!data.isAvailable) {
+      if (!data.available) {
         setNicknameError('이미 사용 중인 닉네임입니다.');
+        setNicknameAvailable(false);
         return false;
       }
 
+      setNicknameAvailable(true);
       return true;
     } catch (error) {
       console.error('닉네임 중복 검사 오류:', error);
       setNicknameError('닉네임 중복 검사 중 오류가 발생했습니다.');
+      setNicknameAvailable(false);
       return false;
     } finally {
       setIsCheckingNickname(false);
@@ -158,6 +164,7 @@ export default function SettingsPage() {
     const newNickname = e.target.value;
     setNickname(newNickname);
     setNicknameError('');
+    setNicknameAvailable(null);
 
     // 이전 타임아웃 취소
     if (nicknameCheckTimeout.current) {
@@ -436,7 +443,7 @@ export default function SettingsPage() {
               {/* 닉네임 */}
               <div className="text-center mb-4">
                 {isEditMode ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <input
                       type="text"
                       value={nickname}
@@ -444,12 +451,43 @@ export default function SettingsPage() {
                       className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-center text-lg font-bold w-full"
                       placeholder="닉네임"
                     />
-                    {nicknameError && (
-                      <p className="text-red-400 text-sm">{nicknameError}</p>
-                    )}
-                    {isCheckingNickname && (
-                      <p className="text-blue-400 text-sm">닉네임 확인 중...</p>
-                    )}
+                    
+                    {/* 닉네임 검사 결과 표시 */}
+                    <div className="min-h-[24px]">
+                      {isCheckingNickname && (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></div>
+                          <p className="text-blue-400 text-sm font-medium">🔄 닉네임 확인 중...</p>
+                        </div>
+                      )}
+                      
+                      {!isCheckingNickname && nicknameAvailable === true && !nicknameError && (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-5 h-5 bg-green-400 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">✓</span>
+                          </div>
+                          <p className="text-green-400 text-sm font-bold">✅ 사용 가능한 멋진 닉네임입니다!</p>
+                        </div>
+                      )}
+                      
+                      {!isCheckingNickname && nicknameAvailable === false && nicknameError && (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-5 h-5 bg-red-400 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">✕</span>
+                          </div>
+                          <p className="text-red-400 text-sm font-bold">❌ {nicknameError}</p>
+                        </div>
+                      )}
+                      
+                      {!isCheckingNickname && nicknameAvailable === null && !nicknameError && nickname && nickname !== userProfile?.nickname && (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">?</span>
+                          </div>
+                          <p className="text-gray-400 text-sm">닉네임을 입력해주세요</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center gap-2">

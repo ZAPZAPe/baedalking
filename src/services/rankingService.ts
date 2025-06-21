@@ -149,7 +149,7 @@ const getDefaultRankingData = (): RankingData[] => {
       userId: 'default-1',
       nickname: '배달왕',
       region: '서울',
-      totalAmount: 2850000,
+      totalAmount: 313400,
       totalOrders: 89,
       rank: 1,
       platform: '배민커넥트'
@@ -158,7 +158,7 @@ const getDefaultRankingData = (): RankingData[] => {
       userId: 'default-2',
       nickname: '음식마니아',
       region: '부산',
-      totalAmount: 2650000,
+      totalAmount: 301000,
       totalOrders: 82,
       rank: 2,
       platform: '쿠팡이츠'
@@ -167,7 +167,7 @@ const getDefaultRankingData = (): RankingData[] => {
       userId: 'default-3',
       nickname: '맛집탐험가',
       region: '대구',
-      totalAmount: 2450000,
+      totalAmount: 282300,
       totalOrders: 76,
       rank: 3,
       platform: '배민커넥트'

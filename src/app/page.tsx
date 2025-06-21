@@ -33,9 +33,9 @@ const PlatformStatistics = dynamic(
 );
 
 const DEFAULT_RANKERS: RankingData[] = [
-  { rank: 1, userId: '', nickname: '배달왕', region: '서울', totalAmount: 2850000, totalOrders: 89, platform: '배민커넥트', vehicle: 'motorcycle' },
-  { rank: 2, userId: '', nickname: '음식마니아', region: '부산', totalAmount: 2650000, totalOrders: 82, platform: '쿠팡이츠', vehicle: 'bicycle' },
-  { rank: 3, userId: '', nickname: '맛집탐험가', region: '대구', totalAmount: 2450000, totalOrders: 76, platform: '배민커넥트', vehicle: 'motorcycle' }
+  { rank: 1, userId: '', nickname: '배달왕', region: '서울', totalAmount: 321000, totalOrders: 89, platform: '배민커넥트', vehicle: 'motorcycle' },
+  { rank: 2, userId: '', nickname: '음식마니아', region: '부산', totalAmount: 312000, totalOrders: 82, platform: '쿠팡이츠', vehicle: 'bicycle' },
+  { rank: 3, userId: '', nickname: '맛집탐험가', region: '대구', totalAmount: 284000, totalOrders: 76, platform: '배민커넥트', vehicle: 'motorcycle' }
 ];
 
 // TopRankers 컴포넌트를 메모이제이션하여 성능 개선

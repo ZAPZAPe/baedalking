@@ -1,69 +1,5 @@
 import { supabase } from '@/lib/supabase';
 
-// 리다이렉트 URL 가져오기 헬퍼 함수
-const getRedirectUrl = (path: string = '/auth/callback'): string => {
-  // 환경 변수에서 먼저 확인
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return `${process.env.NEXT_PUBLIC_APP_URL}${path}`;
-  }
-  
-  // 클라이언트 사이드에서만 window.location 사용
-  if (typeof window !== 'undefined' && window.location) {
-    return `${window.location.origin}${path}`;
-  }
-  
-  // 기본값
-  return `https://www.baedalrank.com${path}`;
-};
-
-// 회원가입
-export const signUp = async (email: string, password: string, nickname: string) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: getRedirectUrl('/auth/callback'),
-      data: {
-        nickname,
-      }
-    }
-  });
-  
-  if (error) throw error;
-  
-  // 프로필 생성
-  if (data.user) {
-    const { error: profileError } = await supabase
-      .from('users')
-      .insert({
-        id: data.user.id,
-        username: email,
-        email,
-        nickname,
-        points: 500, // 가입 보너스
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-      
-    if (profileError) {
-      console.error('프로필 생성 실패:', profileError);
-    }
-  }
-  
-  return data;
-};
-
-// 로그인
-export const signIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  
-  if (error) throw error;
-  return data;
-};
-
 // 로그아웃
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
@@ -101,25 +37,4 @@ export const checkNicknameAvailability = async (nickname: string): Promise<boole
   }
 
   return !data;
-};
-
-// 이메일 인증 확인
-export const confirmSignUp = async (email: string, code: string): Promise<void> => {
-  const { error } = await supabase.auth.verifyOtp({
-    email,
-    token: code,
-    type: 'signup'
-  });
-
-  if (error) throw error;
-};
-
-// 인증 코드 재전송
-export const resendConfirmationCode = async (email: string): Promise<void> => {
-  const { error } = await supabase.auth.resend({
-    type: 'signup',
-    email,
-  });
-
-  if (error) throw error;
 }; 

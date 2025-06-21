@@ -2,20 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaComment, FaCrown, FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
+import { FaComment, FaCrown } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, clearOldSession } from '../../lib/supabase';
 import KakaoAdGlobal from '@/components/KakaoAdGlobal';
-import Link from 'next/link';
-import { toast } from 'react-hot-toast';
 
 const Login = () => {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const checkingSession = useRef(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
 
@@ -108,35 +104,6 @@ const Login = () => {
     }
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      if (data.session) {
-        toast.success('로그인 성공!');
-        router.push('/');
-      }
-    } catch (err: any) {
-      console.error('이메일 로그인 오류:', err);
-      if (err.message.includes('Invalid login credentials')) {
-        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
-      } else {
-        setError('로그인에 실패했습니다. 다시 시도해주세요.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // 로딩 중이거나 이미 로그인된 경우
   if (authLoading || user) {
     return (
@@ -156,129 +123,88 @@ const Login = () => {
         <section className="mt-8 mb-4"></section>
 
         {/* 로고 및 제목 */}
-        <section className="mb-4">
+        <section className="mb-8">
           <div className="text-center">
-            <div className="animate-bounce mb-4">
-              <FaCrown size={60} className="mx-auto text-yellow-400 drop-shadow-lg" />
+            <div className="animate-bounce mb-6">
+              <FaCrown size={80} className="mx-auto text-yellow-400 drop-shadow-lg" />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 mb-2">
+            <h1 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 mb-4">
               배달킹
             </h1>
-            <p className="text-purple-200">실시간 배달 랭킹 서비스</p>
+            <p className="text-xl text-purple-200 mb-2">실시간 배달 랭킹 서비스</p>
+            <p className="text-purple-300 text-sm">카카오톡으로 간편하게 시작하세요!</p>
           </div>
         </section>
 
-        {/* 로그인 폼 */}
-        <section className="mb-4">
-          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-purple-500/30 relative overflow-hidden">
+        {/* 카카오 로그인 섹션 */}
+        <section className="mb-8">
+          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-purple-500/30 relative overflow-hidden">
             {/* 배경 애니메이션 효과 */}
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 animate-pulse"></div>
             
             <div className="relative z-10">
-              <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 mb-6 text-center">
-                로그인
-              </h2>
-              
               {/* 초대 코드 안내 */}
               {inviteCode && (
-                <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-xl p-3 mb-4">
-                  <p className="text-green-200 text-sm text-center">
-                    친구 초대로 가입하면 300P를 즉시 받을 수 있어요! 🎁
-                  </p>
+                <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-xl p-4 mb-6">
+                  <div className="text-center">
+                    <p className="text-green-200 font-bold mb-1">🎁 친구 초대 혜택!</p>
+                    <p className="text-green-300 text-sm">
+                      가입하면 <span className="font-bold text-green-200">300P</span>를 즉시 받을 수 있어요!
+                    </p>
+                  </div>
                 </div>
               )}
               
-              {/* 이메일/비밀번호 로그인 폼 */}
-              <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    이메일
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaEnvelope className="text-purple-400" />
-                    </div>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200/60 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-                      placeholder="이메일 주소"
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    비밀번호
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaLock className="text-purple-400" />
-                    </div>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200/60 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-                      placeholder="비밀번호"
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white py-3 px-4 rounded-xl font-bold hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                >
-                  <FaSignInAlt size={18} />
-                  {loading ? '로그인 중...' : '로그인'}
-                </button>
-              </form>
-
-              {/* 구분선 */}
-              <div className="relative mb-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-white/20"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-transparent text-purple-200/60">또는</span>
-                </div>
-              </div>
-              
               {/* 카카오 로그인 버튼 */}
-              <button
-                onClick={handleKakaoLogin}
-                disabled={loading}
-                className="w-full bg-[#FEE500] text-[#000000D9] py-3 px-4 rounded-xl font-bold hover:bg-[#FDD835] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#FEE500]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-              >
-                <FaComment size={18} />
-                카카오로 시작하기
-              </button>
-
-              {/* 회원가입 링크 */}
-              <div className="mt-6 text-center">
-                <p className="text-purple-200/60 text-sm">
-                  아직 계정이 없으신가요?{' '}
-                  <Link 
-                    href="/signup" 
-                    className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 hover:from-yellow-300 hover:to-pink-300 font-bold transition-all"
-                  >
-                    회원가입
-                  </Link>
+              <div className="text-center">
+                <button
+                  onClick={handleKakaoLogin}
+                  disabled={loading}
+                  className="w-full bg-[#FEE500] text-[#000000D9] py-4 px-6 rounded-2xl font-bold text-lg hover:bg-[#FDD835] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#FEE500]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-lg"
+                >
+                  <FaComment size={24} />
+                  {loading ? '로그인 중...' : '카카오로 시작하기'}
+                </button>
+                
+                <p className="text-purple-200/60 text-sm mt-4">
+                  카카오톡 계정으로 간편하게 로그인하세요
                 </p>
               </div>
 
               {/* 에러 메시지 */}
               {error && (
-                <div className="mt-4 bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-xl p-3">
-                  <p className="text-red-200 text-sm">{error}</p>
+                <div className="mt-6 bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-xl p-4">
+                  <p className="text-red-200 text-center">{error}</p>
                 </div>
               )}
+            </div>
+          </div>
+        </section>
+
+        {/* 서비스 소개 */}
+        <section className="mb-8">
+          <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-blue-500/30">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 mb-4">
+                배달킹이 처음이신가요?
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div className="bg-white/5 rounded-xl p-4">
+                  <div className="text-3xl mb-2">🏆</div>
+                  <h4 className="text-white font-bold mb-1">실시간 랭킹</h4>
+                  <p className="text-purple-200 text-sm">다른 라이더들과 실시간으로 경쟁해보세요</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4">
+                  <div className="text-3xl mb-2">📱</div>
+                  <h4 className="text-white font-bold mb-1">간편한 기록</h4>
+                  <p className="text-purple-200 text-sm">배달 완료 화면을 찍기만 하면 자동 등록</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4">
+                  <div className="text-3xl mb-2">🎁</div>
+                  <h4 className="text-white font-bold mb-1">포인트 혜택</h4>
+                  <p className="text-purple-200 text-sm">랭킹 참여로 다양한 리워드를 받아보세요</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
