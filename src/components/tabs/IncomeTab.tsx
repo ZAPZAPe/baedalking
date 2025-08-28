@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import PlatformSettingsPanel from '@/components/modals/PlatformSettingsPanel'
-import GoalSettingsPanel from '@/components/modals/GoalSettingsPanel'
+
+
 import { Platform } from '@/hooks/useAppState'
 import DailyView from './income/DailyView'
 import WeeklyView from './income/WeeklyView'
@@ -24,6 +24,12 @@ interface IncomeTabProps {
   weeklyGoal: number
   monthlyGoal: number
   updateGoals: (daily: number, weekly: number, monthly: number) => void
+  setShowGoalSettings: (show: boolean) => void
+  setShowPlatformSettings: (show: boolean) => void
+  setShowDetailModal: (show: boolean) => void
+  setSelectedDate: (date: string | null) => void
+  selectedDate: string | null
+  showDetailModal: boolean
 }
 
 export default function IncomeTab({
@@ -41,15 +47,19 @@ export default function IncomeTab({
   dailyGoal,
   weeklyGoal,
   monthlyGoal,
-  updateGoals
+  updateGoals,
+  setShowGoalSettings,
+  setShowPlatformSettings,
+  setShowDetailModal,
+  setSelectedDate,
+  selectedDate,
+  showDetailModal
 }: IncomeTabProps) {
   const [activeView, setActiveView] = useState<'daily' | 'weekly' | 'monthly'>('daily')
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
-  const [showDetailModal, setShowDetailModal] = useState(false)
-  const [showPlatformSettings, setShowPlatformSettings] = useState(false)
-  const [showGoalSettings, setShowGoalSettings] = useState(false)
+
+
 
   // 오늘 날짜 (로컬 시간 기준)
   const today = new Date()
@@ -209,20 +219,12 @@ export default function IncomeTab({
       {activeView === 'weekly' && renderWeeklyView()}
       {activeView === 'monthly' && renderMonthlyView()}
 
-      {/* 플랫폼 설정 모달 */}
-      <PlatformSettingsPanel
-        isOpen={showPlatformSettings}
-        onClose={() => setShowPlatformSettings(false)}
-        platforms={platforms}
-        onTogglePlatform={togglePlatform}
-        onAddCustomPlatform={addCustomPlatform}
-        onRemoveCustomPlatform={removeCustomPlatform}
-      />
+
 
       {/* 상세 정보 모달 */}
       {showDetailModal && selectedDate && (
         <div 
-          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          className="fixed inset-0 z-[999999] bg-black flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -424,7 +426,7 @@ export default function IncomeTab({
                                     </div>
                                     <div>
                                       <div className="text-white font-bold text-sm font-mono">{config.name}</div>
-                                      <div className="text-xs text-gray-400 font-mono">Delivery Record</div>
+                                      <div className="text-xs text-gray-400 font-mono tracking-wider">DELIVERY RECORD</div>
                                     </div>
                                   </div>
                                   <div className="px-3 py-1 rounded-lg border font-bold text-sm font-mono"
@@ -452,7 +454,7 @@ export default function IncomeTab({
                                   {/* 배달 금액 */}
                                   <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
                                        style={{borderColor: `${config.color}30`}}>
-                                    <div className="text-xs text-gray-400 font-mono mb-1">배달금액</div>
+                                    <div className="text-white text-xs font-mono font-bold mb-1">배달금액</div>
                                     <div className="text-sm font-bold font-mono text-white">
                                       ₩{record.amount.toLocaleString()}
                                     </div>
@@ -461,7 +463,7 @@ export default function IncomeTab({
                                   {/* 미션비 */}
                                   <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
                                        style={{borderColor: `${config.color}30`}}>
-                                    <div className="text-xs text-gray-400 font-mono mb-1">미션비</div>
+                                    <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
                                     <div className="text-sm font-bold font-mono"
                                          style={{color: config.color}}>
                                       ₩{record.missionAmount.toLocaleString()}
@@ -526,7 +528,7 @@ export default function IncomeTab({
                       >
                         <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                           <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#ff6b6b] border border-white" style={{borderRadius: '1px'}}></div>
-                          <span className="text-sm sm:text-base">CLOSE</span>
+                          <span className="text-sm sm:text-base font-mono tracking-wider">CLOSE</span>
                           <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#ff6b6b] border border-white" style={{borderRadius: '1px'}}></div>
                         </div>
                         
@@ -545,15 +547,7 @@ export default function IncomeTab({
         </div>
       )}
 
-      {/* 목표 설정 모달 */}
-      <GoalSettingsPanel
-        isOpen={showGoalSettings}
-        onClose={() => setShowGoalSettings(false)}
-        dailyGoal={dailyGoal}
-        weeklyGoal={weeklyGoal}
-        monthlyGoal={monthlyGoal}
-        onUpdateGoals={updateGoals}
-      />
+
       
       {/* 하단 여백 - 홈탭과 동일하게 */}
       <div className="mb-2 sm:mb-3 lg:mb-4"></div>

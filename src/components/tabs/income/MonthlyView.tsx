@@ -174,7 +174,10 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
                 }}>
                   월간 수익
                 </h3>
-                <p className="text-gray-400 text-xs font-mono">Monthly Earnings</p>
+
+                <p className="text-[#ffd93d] text-xs font-mono mt-1">
+                  {year}년 {month + 1}월
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -193,11 +196,7 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
                 >
                   ◀
                 </button>
-                <div className="bg-[#1a202c] border-2 border-[#ffd93d]/30 px-3 py-1 rounded">
-                  <span className="text-xs text-[#ffd93d] font-mono">
-                    {year}년 {month + 1}월
-                  </span>
-                </div>
+
                 <button
                   onClick={() => {
                     if (onMonthChange) {
@@ -306,7 +305,7 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
 
           {/* 배달금액 */}
           <div className="bg-[#1a202c] border-2 border-[#00ff88]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
-            <p className="text-gray-300 text-xs font-mono mb-1">배달금액</p>
+            <p className="text-white text-xs font-mono font-bold mb-1">배달금액</p>
             <p className="text-white font-bold text-sm font-mono">
               ₩{monthAmount.toLocaleString()}
             </p>
@@ -318,7 +317,7 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
 
           {/* 미션비 */}
           <div className="bg-[#1a202c] border-2 border-[#9c88ff]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
-            <p className="text-gray-300 text-xs font-mono mb-1">미션비</p>
+            <p className="text-white text-xs font-mono font-bold mb-1">미션비</p>
             <p className="text-white font-bold text-sm font-mono">
               ₩{monthMissionAmount.toLocaleString()}
             </p>

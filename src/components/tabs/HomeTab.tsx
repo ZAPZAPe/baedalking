@@ -302,7 +302,7 @@ export default function HomeTab({
 
           {/* 배달금액 */}
           <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center relative" style={{borderRadius: '4px'}}>
-            <p className="text-gray-300 text-xs font-mono mb-2">배달금액</p>
+                            <p className="text-white text-xs font-mono font-bold mb-2">배달금액</p>
             <p className="text-white font-bold text-lg font-mono">
               ₩{incomeRecords.filter(record => record.date === todayStr)
                 .reduce((sum, record) => sum + (record.amount || 0), 0).toLocaleString()}
@@ -316,7 +316,7 @@ export default function HomeTab({
 
           {/* 미션비 */}
           <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center relative" style={{borderRadius: '4px'}}>
-            <p className="text-gray-300 text-xs font-mono mb-2">미션비</p>
+                            <p className="text-white text-xs font-mono font-bold mb-2">미션비</p>
             <p className="text-white font-bold text-lg font-mono">
               ₩{incomeRecords.filter(record => record.date === todayStr)
                 .reduce((sum, record) => sum + (record.missionAmount || 0), 0).toLocaleString()}

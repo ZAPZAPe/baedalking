@@ -17,7 +17,7 @@ export default function CustomizePanel({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]" 
+              className="fixed inset-0 z-[999999] bg-black flex items-center justify-center p-2 sm:p-4 overflow-y-auto" 
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()

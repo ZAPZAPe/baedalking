@@ -2,8 +2,9 @@
 
 export interface UserProfile {
   id: string
+  minihomeId: string // 고유한 미니홈피 주소 (변경 불가)
   email: string
-  nickname: string
+  nickname: string // 변경 가능한 닉네임
   statusMessage?: string
   totalVisitors: number
   dailyVisitors: number

@@ -35,7 +35,7 @@ export default function IncomePanel({
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto" 
+              className="fixed inset-0 z-[999999] bg-black flex items-center justify-center p-2 sm:p-4 overflow-y-auto" 
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -78,7 +78,7 @@ export default function IncomePanel({
                   <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white" style={{borderRadius: '1px'}}></div>
                 </div>
               </div>
-              <h3 className="text-[#00d4ff] font-bold text-sm sm:text-lg font-mono tracking-wide" 
+              <h3 className="text-[#00d4ff] font-bold text-sm sm:text-lg font-mono tracking-wider" 
                   style={{textShadow: '0 0 8px rgba(0, 212, 255, 0.5)'}}>
                 INCOME MANAGER
               </h3>
@@ -116,15 +116,15 @@ export default function IncomePanel({
               </h4>
               <div className="grid grid-cols-3 gap-2">
                 <div className="bg-[#0a0a23]/80 border border-[#ffd93d]/30 p-2 text-center relative" style={{borderRadius: '4px'}}>
-                  <p className="text-gray-300 text-xs font-mono mb-1">총 수입</p>
+                  <p className="text-white text-xs font-mono font-bold mb-1">총 수입</p>
                   <p className="text-[#ffd93d] text-sm sm:text-base font-bold font-mono">₩{totalIncome.toLocaleString()}</p>
                 </div>
                 <div className="bg-[#0a0a23]/80 border border-[#00d4ff]/30 p-2 text-center relative" style={{borderRadius: '4px'}}>
-                  <p className="text-gray-300 text-xs font-mono mb-1">총 건수</p>
+                  <p className="text-white text-xs font-mono font-bold mb-1">총 건수</p>
                   <p className="text-[#00d4ff] text-sm sm:text-base font-bold font-mono">{incomeRecords.reduce((sum, record) => sum + record.count, 0)}건</p>
                 </div>
                 <div className="bg-[#0a0a23]/80 border border-[#9c88ff]/30 p-2 text-center relative" style={{borderRadius: '4px'}}>
-                  <p className="text-gray-300 text-xs font-mono mb-1">평균</p>
+                  <p className="text-white text-xs font-mono font-bold mb-1">평균</p>
                   <p className="text-[#9c88ff] text-sm sm:text-base font-bold font-mono">₩{incomeRecords.length > 0 ? Math.round(totalIncome / incomeRecords.reduce((sum, record) => sum + record.count, 0)) : 0}</p>
                 </div>
               </div>
@@ -186,7 +186,7 @@ export default function IncomePanel({
                           </div>
                           <div>
                             <div className="text-white font-bold text-sm font-mono">{platform.name}</div>
-                            <div className="text-xs text-gray-400 font-mono">Delivery Platform</div>
+                            <div className="text-xs text-gray-400 font-mono tracking-wider">DELIVERY PLATFORM</div>
                           </div>
                         </div>
                         <div className={`px-3 py-1 rounded-lg border font-bold text-sm font-mono`}
@@ -205,7 +205,7 @@ export default function IncomePanel({
                           {/* 배달 금액 */}
                           <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
                                style={{borderColor: `${config.borderColor}30`}}>
-                            <div className="text-xs text-gray-400 font-mono mb-1">배달금액</div>
+                            <div className="text-white text-xs font-mono font-bold mb-1">배달금액</div>
                             <div className="text-sm font-bold font-mono text-white">
                               ₩{platformAmount.toLocaleString()}
                             </div>
@@ -214,7 +214,7 @@ export default function IncomePanel({
                           {/* 미션비 */}
                           <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
                                style={{borderColor: `${config.borderColor}30`}}>
-                            <div className="text-xs text-gray-400 font-mono mb-1">미션비</div>
+                            <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
                             <div className="text-sm font-bold font-mono"
                                  style={{color: config.borderColor}}>
                               ₩{platformMissionAmount.toLocaleString()}
@@ -224,7 +224,7 @@ export default function IncomePanel({
                           {/* 건당 평균 */}
                           <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
                                style={{borderColor: `${config.borderColor}30`}}>
-                            <div className="text-xs text-gray-400 font-mono mb-1">건당평균</div>
+                            <div className="text-white text-xs font-mono font-bold mb-1">건당평균</div>
                             <div className="text-sm font-bold font-mono text-[#ffd93d]">
                               ₩{Math.round(platformIncome / platformCount).toLocaleString()}
                             </div>
@@ -241,7 +241,7 @@ export default function IncomePanel({
                       {/* 총 수입 하단 */}
                       <div className="mt-3 pt-3 border-t flex items-center justify-between"
                            style={{borderColor: `${config.borderColor}30`}}>
-                        <div className="text-sm text-gray-400 font-mono">총 수입</div>
+                        <div className="text-white text-sm font-mono font-bold">총 수입</div>
                         <div className="text-lg font-bold font-mono text-[#ffd93d]">
                           ₩{platformIncome.toLocaleString()}
                         </div>
@@ -318,7 +318,7 @@ export default function IncomePanel({
           >
             <div className="flex items-center justify-center gap-1.5 sm:gap-2">
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#ff6b6b] border border-white" style={{borderRadius: '1px'}}></div>
-              <span className="text-sm sm:text-base">CLOSE</span>
+                              <span className="text-sm sm:text-base font-mono tracking-wider">CLOSE</span>
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#ff6b6b] border border-white" style={{borderRadius: '1px'}}></div>
             </div>
             

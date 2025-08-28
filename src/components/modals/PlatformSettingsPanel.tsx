@@ -33,7 +33,7 @@ export default function PlatformSettingsPanel({
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+              className="fixed inset-0 z-[999999] bg-black flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -75,10 +75,10 @@ export default function PlatformSettingsPanel({
                   <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white" style={{borderRadius: '1px'}}></div>
                 </div>
               </div>
-              <h3 className="text-[#00ff88] font-bold text-sm sm:text-lg font-mono tracking-wide" 
-                  style={{textShadow: '0 0 8px rgba(0, 255, 136, 0.5)'}}>
-                PLATFORM SETTINGS
-              </h3>
+                          <h3 className="text-[#00ff88] font-bold text-sm sm:text-lg font-mono tracking-wider" 
+                style={{textShadow: '0 0 8px rgba(0, 255, 136, 0.5)'}}>
+              PLATFORM SETTINGS
+            </h3>
             </div>
             <button
               onClick={onClose}
@@ -107,7 +107,7 @@ export default function PlatformSettingsPanel({
           <div className="space-y-2 sm:space-y-3 relative">
             <div className="bg-gradient-to-r from-[#00d4ff]/20 to-[#9c88ff]/20 border border-[#00d4ff]/50 p-2 sm:p-3 relative"
                  style={{borderRadius: '4px'}}>
-              <h4 className="text-[#00d4ff] text-center font-bold text-xs sm:text-sm font-mono tracking-wide mb-2 sm:mb-3" 
+              <h4 className="text-[#00d4ff] text-center font-bold text-xs sm:text-sm font-mono tracking-wider mb-2 sm:mb-3" 
                   style={{textShadow: '0 0 6px rgba(0, 212, 255, 0.5)'}}>
                 ACTIVE PLATFORMS
               </h4>
@@ -147,8 +147,8 @@ export default function PlatformSettingsPanel({
           <div className="space-y-2 sm:space-y-3 relative">
             <div className="bg-gradient-to-r from-[#9c88ff]/20 to-[#ffd93d]/20 border border-[#9c88ff]/50 p-2 sm:p-3 relative"
                  style={{borderRadius: '4px'}}>
-              <h4 className="text-[#9c88ff] text-center font-bold text-xs sm:text-sm font-mono tracking-wide mb-2 sm:mb-3" 
-                  style={{textShadow: '0 0 6px rgba(156, 136, 255, 0.5)'}}>
+              <h4 className="text-[#00ff88] text-center font-bold text-xs sm:text-sm font-mono tracking-wider mb-2 sm:mb-3" 
+                  style={{textShadow: '0 0 6px rgba(0, 255, 136, 0.5)'}}>
                 INACTIVE PLATFORMS
               </h4>
               <div className="space-y-2">
@@ -199,7 +199,7 @@ export default function PlatformSettingsPanel({
             <div className="space-y-2 sm:space-y-3 relative">
               <div className="bg-gradient-to-r from-[#ffd93d]/20 to-[#ff6b6b]/20 border border-[#ffd93d]/50 p-2 sm:p-3 relative"
                    style={{borderRadius: '4px'}}>
-                <h4 className="text-[#ffd93d] text-center font-bold text-xs sm:text-sm font-mono tracking-wide mb-2 sm:mb-3" 
+                <h4 className="text-[#ffd93d] text-center font-bold text-xs sm:text-sm font-mono tracking-wider mb-2 sm:mb-3" 
                     style={{textShadow: '0 0 6px rgba(255, 217, 61, 0.5)'}}>
                   ADD NEW PLATFORM
                 </h4>
@@ -245,7 +245,7 @@ export default function PlatformSettingsPanel({
             >
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                 <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#00ff88] border border-white" style={{borderRadius: '1px'}}></div>
-                <span className="text-sm sm:text-base">COMPLETE</span>
+                <span className="text-sm sm:text-base font-mono tracking-wider">COMPLETE</span>
                 <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#00ff88] border border-white" style={{borderRadius: '1px'}}></div>
               </div>
               

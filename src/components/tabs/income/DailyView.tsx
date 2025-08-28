@@ -151,7 +151,14 @@ export default function DailyView({
                 }}>
                   일간 수익
                 </h3>
-                <p className="text-gray-400 text-xs font-mono">Daily Earnings</p>
+                <p className="text-[#00ff88] text-xs font-mono mt-1">
+                  {new Date(currentDate).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -171,11 +178,7 @@ export default function DailyView({
                 >
                   ◀
                 </button>
-                <div className="bg-[#1a202c] border-2 border-[#00ff88]/30 px-3 py-1 rounded">
-                  <span className="text-xs text-[#00ff88] font-mono">
-                    {new Date(currentDate).toLocaleDateString('ko-KR')}
-                  </span>
-                </div>
+
                 <button
                   onClick={() => {
                     if (onDateChange) {
@@ -337,7 +340,7 @@ export default function DailyView({
                 }}>
                   플랫폼별 수익 현황
                 </h3>
-                <p className="text-gray-400 text-xs font-mono">Platform Income</p>
+                <p className="text-gray-400 text-xs font-mono tracking-wider">PLATFORM INCOME</p>
               </div>
             </div>
             <button
@@ -400,7 +403,7 @@ export default function DailyView({
                             </div>
                             <div>
                               <div className="text-white font-bold text-sm font-mono">{config.name}</div>
-                              <div className="text-xs text-gray-400 font-mono">Delivery Record</div>
+                              <div className="text-xs text-gray-400 font-mono tracking-wider">DELIVERY RECORD</div>
                             </div>
                           </div>
                           <div className="px-3 py-1 rounded-lg border font-bold text-sm font-mono"
@@ -418,7 +421,7 @@ export default function DailyView({
                           {/* 건수 */}
                           <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
                                style={{borderColor: `${config.color}30`}}>
-                            <div className="text-xs text-gray-400 font-mono mb-1">건수</div>
+                            <div className="text-white text-xs font-mono font-bold mb-1">건수</div>
                             <div className="text-sm font-bold font-mono"
                                  style={{color: config.color}}>
                               {record.count}건
@@ -428,7 +431,7 @@ export default function DailyView({
                           {/* 배달 금액 */}
                           <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
                                style={{borderColor: `${config.color}30`}}>
-                            <div className="text-xs text-gray-400 font-mono mb-1">배달금액</div>
+                            <div className="text-white text-xs font-mono font-bold mb-1">배달금액</div>
                             <div className="text-sm font-bold font-mono text-white">
                               ₩{record.amount.toLocaleString()}
                             </div>
@@ -437,7 +440,7 @@ export default function DailyView({
                           {/* 미션비 */}
                           <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
                                style={{borderColor: `${config.color}30`}}>
-                            <div className="text-xs text-gray-400 font-mono mb-1">미션비</div>
+                            <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
                             <div className="text-sm font-bold font-mono"
                                  style={{color: config.color}}>
                               ₩{record.missionAmount.toLocaleString()}

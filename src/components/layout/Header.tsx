@@ -1,5 +1,7 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 interface HeaderProps {
   userNickname: string
   totalPoints: number
@@ -20,6 +22,8 @@ export default function Header({
   emotions,
   onShowHeaderCharacterPanel
 }: HeaderProps) {
+  const router = useRouter()
+  
   return (
     <div 
       className="relative z-10 bg-gradient-to-r from-[#0a0a23] via-[#16213e] to-[#0a0a23] border-b-4 border-[#00ff88]/30 flex-shrink-0 shadow-xl"
@@ -84,9 +88,12 @@ export default function Header({
                  style={{borderRadius: '6px'}}></div>
           </button>
           
-          {/* 우측 - 다이아 포인트 디스플레이 */}
-          <div className="bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#ffd93d]/40 px-4 py-2 relative backdrop-blur-sm"
-               style={{borderRadius: '6px'}}>
+          {/* 우측 - 다이아 포인트 디스플레이 (클릭 가능) */}
+          <button
+            onClick={() => router.push('/shop')}
+            className="bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#ffd93d]/40 hover:border-[#ffd93d]/70 px-4 py-2 relative backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg group"
+            style={{borderRadius: '6px'}}
+          >
             <div className="flex items-center gap-2">
               {/* 픽셀 다이아 아이콘 */}
               <div className="relative">
@@ -104,7 +111,11 @@ export default function Header({
             {/* 포인트 글로우 */}
             <div className="absolute -inset-1 bg-gradient-to-r from-[#ffd93d]/20 via-[#ffd93d]/10 to-[#ffd93d]/20 blur-sm -z-10" 
                  style={{borderRadius: '8px'}}></div>
-          </div>
+            
+            {/* 호버 글로우 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#ffd93d]/0 via-[#ffd93d]/10 to-[#ffd93d]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+                 style={{borderRadius: '6px'}}></div>
+          </button>
         </div>
 
         {/* 장식용 사이드 라인들 */}

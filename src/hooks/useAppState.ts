@@ -77,6 +77,8 @@ export interface AppState {
   setIsVerified: (isVerified: boolean) => void
   level: number
   setLevel: (level: number) => void
+  isIncomePrivate: boolean
+  setIsIncomePrivate: (isPrivate: boolean) => void
   
   // 친구/소셜 관련 상태들
   friends: { id: number; name: string; level: number; totalIncome: number; isOnline: boolean; avatar: string }[]
@@ -174,14 +176,23 @@ export function useAppState() {
   const [totalPoints, setTotalPoints] = useState(1234)
   const [userLevel, setUserLevel] = useState(10)
   const [userNickname, setUserNickname] = useState('배달킹')
-  const [userLocation, setUserLocation] = useState('서울')
+  const [userLocation, setUserLocation] = useState('서울특별시 강남구')
   const [currentWeather, setCurrentWeather] = useState({ temp: 22, condition: 'sunny' })
   const [todayVisitors, setTodayVisitors] = useState(12)
   const [totalVisitors, setTotalVisitors] = useState(247)
   const [isClient, setIsClient] = useState(false)
   const [garageIntro, setGarageIntro] = useState('열심히 달리는 배달킹입니다! 🛵💨')
   const [isVerified, setIsVerified] = useState(true) // 인증 상태 (임시로 true 설정)
-  const [level, setLevel] = useState(1) // 플레이어 레벨
+  const [level, setLevel] = useState(1)
+  const [isIncomePrivate, setIsIncomePrivate] = useState(() => {
+    // 로컬스토리지에서 수익 비공개 설정 불러오기
+    try {
+      const saved = localStorage.getItem('userIncomePrivate')
+      return saved ? JSON.parse(saved) : false
+    } catch {
+      return false
+    }
+  }) // 수익 비공개 설정 // 플레이어 레벨
 
   // 플랫폼 설정 상태
   const [platforms, setPlatforms] = useState<Platform[]>([
@@ -367,6 +378,12 @@ export function useAppState() {
     }
   }, [incomeRecords])
 
+  // 수익 비공개 설정 변경시 로컬스토리지에 저장
+  useEffect(() => {
+    localStorage.setItem('userIncomePrivate', JSON.stringify(isIncomePrivate))
+    console.log('🔒 수익 비공개 설정 저장:', isIncomePrivate ? '비공개' : '공개')
+  }, [isIncomePrivate])
+
   return {
     // 상태들
     currentEmotion, setCurrentEmotion,
@@ -402,6 +419,7 @@ export function useAppState() {
     garageIntro, setGarageIntro,
     isVerified, setIsVerified,
     level, setLevel,
+    isIncomePrivate, setIsIncomePrivate,
     
     // 친구/소셜 관련 상태들
     friends, setFriends,

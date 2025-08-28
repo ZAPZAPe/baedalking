@@ -182,7 +182,15 @@ export default function WeeklyView({
                 }}>
                   주간 수익
                 </h3>
-                <p className="text-gray-400 text-xs font-mono">Weekly Earnings</p>
+                <p className="text-[#ff6b6b] text-xs font-mono mt-1">
+                  {startOfWeek.toLocaleDateString('ko-KR', { 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })} ~ {new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', { 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -201,11 +209,7 @@ export default function WeeklyView({
                 >
                   ◀
                 </button>
-                <div className="bg-[#1a202c] border-2 border-[#ff6b6b]/30 px-3 py-1 rounded">
-                  <span className="text-xs text-[#ff6b6b] font-mono">
-                    {startOfWeek.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} ~ {new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                  </span>
-                </div>
+
                 <button
                   onClick={() => {
                     if (onWeekChange) {
@@ -234,7 +238,12 @@ export default function WeeklyView({
                   }
                 }}
                 className={`px-3 py-1 text-xs font-mono border-2 transition-all duration-200 ${
-                  startOfWeek.toDateString() === new Date().toDateString()
+                  startOfWeek.toISOString().split('T')[0] === (() => {
+                    const today = new Date()
+                    const startOfThisWeek = new Date(today)
+                    startOfThisWeek.setDate(today.getDate() - today.getDay())
+                    return startOfThisWeek.toISOString().split('T')[0]
+                  })()
                     ? 'bg-[#ff6b6b] text-black border-[#ff6b6b]'
                     : 'bg-transparent text-[#ff6b6b] border-[#ff6b6b]/60 hover:border-[#ff6b6b]'
                 }`}
@@ -386,7 +395,7 @@ export default function WeeklyView({
                 <div className="flex-1 p-3">
                   {/* 총액 헤더 */}
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm text-gray-400 font-mono">총 수입</div>
+                    <div className="text-white text-sm font-mono font-bold">총 수입</div>
                     <div className={`text-base font-bold font-mono ${
                       day.dayOfWeek === 0 ? 'text-red-400' : // 일요일: 빨간색
                       day.dayOfWeek === 6 ? 'text-blue-400' : // 토요일: 파란색
@@ -409,7 +418,7 @@ export default function WeeklyView({
 
                       {/* 배달 금액 */}
                       <div className="bg-[#2d3748]/50 p-2 text-center" style={{borderRadius: '4px'}}>
-                        <div className="text-xs text-gray-400 font-mono mb-1">배달금액</div>
+                        <div className="text-white text-xs font-mono font-bold mb-1">배달금액</div>
                         <div className="text-xs font-bold font-mono text-white">
                           ₩{day.amount.toLocaleString()}
                         </div>
@@ -417,7 +426,7 @@ export default function WeeklyView({
 
                       {/* 미션비 */}
                       <div className="bg-[#2d3748]/50 p-2 text-center" style={{borderRadius: '4px'}}>
-                        <div className="text-xs text-gray-400 font-mono mb-1">미션비</div>
+                        <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
                         <div className="text-xs font-bold font-mono text-[#00d4ff]">
                           ₩{day.missionAmount.toLocaleString()}
                         </div>
