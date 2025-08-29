@@ -126,13 +126,13 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
           }))
           setTopRankers(formattedRankers)
         } else {
-          // API 응답이 없으면 시뮬레이션 데이터 사용
-          setTopRankers(generateTopRankers())
+          // API 응답이 없으면 빈 배열
+          setTopRankers([])
         }
       } catch (error) {
         console.error('랭킹 데이터 로딩 오류:', error)
-        // 에러 시 시뮬레이션 데이터 사용
-        setTopRankers(generateTopRankers())
+        // 에러 시에도 빈 배열
+        setTopRankers([])
       } finally {
         setIsLoadingRanking(false)
       }
@@ -325,8 +325,20 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
           <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ff6b6b]/60" style={{borderRadius: '1px'}}></div>
         </div>
         
-        <div className="space-y-2 sm:space-y-3">
-          {topRankers.slice(0, 5).map((ranker, index) => (
+        {topRankers.length === 0 ? (
+          <div className="text-center py-8 text-gray-400 font-mono bg-[#1a202c]/30 rounded-lg border border-[#ff6b6b]/20 relative">
+            {/* 픽셀 도트들 */}
+            <div className="absolute top-1 left-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
+            <div className="absolute top-1 right-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
+            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
+            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
+            
+            <p className="text-lg mb-2">아직 랭킹 데이터가 없습니다</p>
+            <p className="text-sm">수입을 기록한 사용자가 나타나면 표시됩니다</p>
+          </div>
+        ) : (
+          <div className="space-y-2 sm:space-y-3">
+            {topRankers.slice(0, 5).map((ranker, index) => (
             <div key={index} className="bg-[#1a202c]/60 border-2 border-[#ff6b6b]/30 p-3 sm:p-4 relative">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -358,9 +370,10 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
               <div className="absolute top-1 right-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
               <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
               <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
 

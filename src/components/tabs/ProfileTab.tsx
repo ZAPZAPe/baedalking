@@ -44,6 +44,71 @@ export default function ProfileTab({
   const [isEditingLocation, setIsEditingLocation] = useState(false)
   const [tempNickname, setTempNickname] = useState(userNickname)
   const [tempLocation, setTempLocation] = useState(userLocation)
+  
+  // 🔍 닉네임 검증 상태
+  const [nicknameValidation, setNicknameValidation] = useState<{
+    isValid: boolean
+    message: string
+    isChecking: boolean
+  }>({ isValid: true, message: '', isChecking: false })
+
+  // 🔍 실시간 닉네임 검증
+  const checkNickname = async (nickname: string) => {
+    if (!nickname.trim()) {
+      setNicknameValidation({ isValid: false, message: '', isChecking: false })
+      return
+    }
+
+    // 최소 길이 체크 (즉시)
+    if (nickname.length < 2) {
+      setNicknameValidation({ 
+        isValid: false, 
+        message: '닉네임은 최소 2글자 이상이어야 합니다.', 
+        isChecking: false 
+      })
+      return
+    }
+
+    setNicknameValidation({ isValid: false, message: '', isChecking: true })
+
+    try {
+      const response = await fetch(`/api/users/check-nickname?nickname=${encodeURIComponent(nickname)}&userId=${userId}`)
+      const data = await response.json()
+
+      if (data.available) {
+        setNicknameValidation({ 
+          isValid: true, 
+          message: '✅ 사용 가능한 닉네임입니다!', 
+          isChecking: false 
+        })
+      } else {
+        setNicknameValidation({ 
+          isValid: false, 
+          message: data.error || '사용할 수 없는 닉네임입니다.', 
+          isChecking: false 
+        })
+      }
+    } catch (error) {
+      console.error('닉네임 체크 오류:', error)
+      setNicknameValidation({ 
+        isValid: false, 
+        message: '닉네임 확인 중 오류가 발생했습니다.', 
+        isChecking: false 
+      })
+    }
+  }
+
+  // 닉네임 입력 변경 시 검증 (디바운싱)
+  const handleNicknameChange = (value: string) => {
+    setTempNickname(value)
+    
+    // 디바운싱: 500ms 후에 검증 실행
+    const timeoutId = setTimeout(() => {
+      checkNickname(value)
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
+  }
 
   // 닉네임 저장
   const handleSaveNickname = async () => {
@@ -51,11 +116,23 @@ export default function ProfileTab({
       alert('닉네임을 입력해주세요.')
       return
     }
+
+    // 검증 상태 확인
+    if (!nicknameValidation.isValid) {
+      alert(nicknameValidation.message || '사용할 수 없는 닉네임입니다.')
+      return
+    }
+
+    if (nicknameValidation.isChecking) {
+      alert('닉네임 확인 중입니다. 잠시 후 다시 시도해주세요.')
+      return
+    }
     
     try {
       const success = await onUpdateProfile('nickname', tempNickname.trim())
       if (success) {
         setIsEditingNickname(false)
+        setNicknameValidation({ isValid: true, message: '', isChecking: false })
         alert('닉네임이 성공적으로 변경되었습니다.')
       } else {
         alert('닉네임 변경에 실패했습니다. 다시 시도해주세요.')
@@ -210,16 +287,40 @@ export default function ProfileTab({
               <input
                 type="text"
                 value={tempNickname}
-                onChange={(e) => setTempNickname(e.target.value)}
-                className="w-full bg-[#1a202c] border border-[#00ff88]/50 text-white text-sm p-2 rounded mb-2"
+                onChange={(e) => handleNicknameChange(e.target.value)}
+                className={`w-full bg-[#1a202c] border text-white text-sm p-2 rounded mb-1 ${
+                  nicknameValidation.isValid ? 'border-[#00ff88]/50' : 'border-red-500/50'
+                }`}
                 style={{borderRadius: '4px'}}
-                placeholder="새 닉네임을 입력하세요"
-                maxLength={20}
+                placeholder="새 닉네임을 입력하세요 (2-10글자)"
+                maxLength={10}
               />
+              
+              {/* 🔍 실시간 검증 메시지 */}
+              {nicknameValidation.isChecking && (
+                <div className="text-yellow-400 text-xs mb-2 flex items-center">
+                  <span className="animate-spin mr-1">⏳</span>
+                  닉네임 확인 중...
+                </div>
+              )}
+              
+              {!nicknameValidation.isChecking && nicknameValidation.message && (
+                <div className={`text-xs mb-2 ${
+                  nicknameValidation.isValid ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {nicknameValidation.message}
+                </div>
+              )}
+              
               <div className="flex gap-2">
                 <button
                   onClick={handleSaveNickname}
-                  className="flex-1 bg-[#00ff88]/20 border border-[#00ff88]/50 text-[#00ff88] hover:bg-[#00ff88]/30 py-2 rounded text-sm font-bold transition-all"
+                  disabled={!nicknameValidation.isValid || nicknameValidation.isChecking}
+                  className={`flex-1 border py-2 rounded text-sm font-bold transition-all ${
+                    nicknameValidation.isValid && !nicknameValidation.isChecking
+                      ? 'bg-[#00ff88]/20 border-[#00ff88]/50 text-[#00ff88] hover:bg-[#00ff88]/30'
+                      : 'bg-gray-500/20 border-gray-500/50 text-gray-400 cursor-not-allowed'
+                  }`}
                   style={{borderRadius: '4px'}}
                 >
                   저장
@@ -379,7 +480,7 @@ export default function ProfileTab({
         
         <div className="space-y-2">
           <button 
-            onClick={() => window.location.href = `/minihompy/${userNickname || 'temp'}`}
+            onClick={() => window.location.href = `/minihompy/${userId || 'temp'}`}
             className="w-full bg-[#1a202c]/60 border border-[#9c88ff]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
             style={{borderRadius: '4px'}}
           >

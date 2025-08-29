@@ -59,14 +59,16 @@ export async function POST(request: NextRequest) {
   try {
     const { 
       userId, 
-      amount, 
-      date, 
-      screenshotUrl, 
-      screenshotText, 
-      source 
+      platform,
+      delivery_count,
+      delivery_amount,
+      mission_amount,
+      date,
+      screenshotUrl,
+      screenshotText
     } = await request.json()
 
-    if (!userId || !amount || !date || !screenshotUrl) {
+    if (!userId || !platform || !date) {
       return NextResponse.json(
         { error: '필수 정보가 누락되었습니다.' },
         { status: 400 }
@@ -74,20 +76,21 @@ export async function POST(request: NextRequest) {
     }
 
     // 수익 금액 검증
-    if (amount < 0 || amount > 10000000) {
+    const totalAmount = (delivery_amount || 0) + (mission_amount || 0)
+    if (totalAmount < 0 || totalAmount > 10000000) {
       return NextResponse.json(
         { error: '수익 금액이 유효하지 않습니다.' },
         { status: 400 }
       )
     }
 
-    // 같은 날짜에 이미 등록된 수익이 있는지 확인
+    // 같은 날짜에 같은 플랫폼으로 이미 등록된 수익이 있는지 확인
     const { data: existingEarning, error: checkError } = await supabase
       .from('earnings')
       .select('id')
       .eq('user_id', userId)
       .eq('date', date)
-      .eq('source', source || 'other')
+      .eq('platform', platform)
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') {
@@ -103,8 +106,10 @@ export async function POST(request: NextRequest) {
       const { data: updatedEarning, error: updateError } = await supabase
         .from('earnings')
         .update({
-          amount,
-          screenshot_url: screenshotUrl,
+          delivery_count: delivery_count || 0,
+          delivery_amount: delivery_amount || 0,
+          mission_amount: mission_amount || 0,
+          screenshot_url: screenshotUrl || '',
           screenshot_text: screenshotText || '',
           updated_at: new Date().toISOString()
         })
@@ -132,12 +137,14 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           user_id: userId,
-          amount,
+          platform: platform,
+          delivery_count: delivery_count || 0,
+          delivery_amount: delivery_amount || 0,
+          mission_amount: mission_amount || 0,
           date,
-          screenshot_url: screenshotUrl,
+          screenshot_url: screenshotUrl || '',
           screenshot_text: screenshotText || '',
-          source: source || 'other',
-          points_awarded: Math.floor(amount / 1000) // 1000원당 1포인트
+          points_awarded: Math.floor(totalAmount / 1000) // 1000원당 1포인트
         }
       ])
       .select()

@@ -14,13 +14,13 @@ interface GuestbookMessage {
 
 interface GuestbookPreviewProps {
   userId: string
-  isOwnPage: boolean
-  onOpenGuestbook: () => void
+  isOwnPage?: boolean
+  onOpenGuestbook?: () => void
 }
 
 export default function GuestbookPreview({ 
   userId, 
-  isOwnPage, 
+  isOwnPage = false, 
   onOpenGuestbook 
 }: GuestbookPreviewProps) {
   const [recentMessages, setRecentMessages] = useState<GuestbookMessage[]>([])
@@ -37,7 +37,7 @@ export default function GuestbookPreview({
 
       if (response.ok) {
         // 최근 3개만 표시
-        setRecentMessages(data.messages?.slice(0, 3) || [])
+        setRecentMessages((data.messages || []).slice(0, 3))
       } else {
         console.error('방명록 미리보기 불러오기 실패:', data.error)
       }

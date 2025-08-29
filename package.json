@@ -16,7 +16,8 @@
     "db:push": "npx supabase db push",
     "db:seed": "npx supabase db seed",
     "data:generate": "node scripts/generate-sample-data.js",
-    "data:reset": "npx supabase db reset --linked"
+    "data:reset": "npx supabase db reset --linked",
+    "test:setup": "node scripts/test-setup.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.1.0",

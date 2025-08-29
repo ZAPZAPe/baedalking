@@ -30,67 +30,19 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
   }, [])
 
   const loadFriends = async () => {
-    // TODO: 실제 API 호출로 대체
-    const mockFriends: Friendship[] = [
-      {
-        id: '1',
-        userId: currentUserId,
-        friendId: 'friend1',
-        status: 'accepted',
-        requestedAt: new Date(),
-        acceptedAt: new Date(),
-        friend: {
-          id: 'friend1',
-          minihomeId: 'user_friend1',
-          email: 'friend1@example.com',
-          nickname: '배달왕김철수',
-          statusMessage: '오늘도 열심히 배달하자!',
-          totalVisitors: 42,
-          dailyVisitors: 5,
-          lastVisitorReset: new Date(),
-          createdAt: new Date()
-        }
-      },
-      {
-        id: '2',
-        userId: currentUserId,
-        friendId: 'friend2',
-        status: 'accepted',
-        requestedAt: new Date(),
-        acceptedAt: new Date(),
-        friend: {
-          id: 'friend2',
-          minihomeId: 'user_friend2',
-          email: 'friend2@example.com',
-          nickname: '쿠팡마스터',
-          statusMessage: '쿠팡으로 월 100만원 달성!',
-          totalVisitors: 28,
-          dailyVisitors: 3,
-          lastVisitorReset: new Date(),
-          createdAt: new Date()
-        }
-      },
-      {
-        id: '3',
-        userId: currentUserId,
-        friendId: 'friend3',
-        status: 'accepted',
-        requestedAt: new Date(),
-        acceptedAt: new Date(),
-        friend: {
-          id: 'friend3',
-          minihomeId: 'user_friend3',
-          email: 'friend3@example.com',
-          nickname: '배민러버',
-          statusMessage: '배민만의 맛집을 찾아서 배달해요',
-          totalVisitors: 35,
-          dailyVisitors: 4,
-          lastVisitorReset: new Date(),
-          createdAt: new Date()
-        }
+    try {
+      const response = await fetch(`/api/friends?userId=${currentUserId}`)
+      const data = await response.json()
+      
+      if (response.ok && data.friends) {
+        setFriends(data.friends)
+      } else {
+        setFriends([])
       }
-    ]
-    setFriends(mockFriends)
+    } catch (error) {
+      console.error('친구 목록 로딩 오류:', error)
+      setFriends([])
+    }
   }
 
   // 친구 요청 가져오기
@@ -99,72 +51,58 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
   }, [])
 
   const loadFriendRequests = async () => {
-    // TODO: 실제 API 호출로 대체
-    const mockRequests: Friendship[] = [
-      {
-        id: 'req1',
-        userId: 'requester1',
-        friendId: currentUserId,
-        status: 'pending',
-        requestedAt: new Date(),
-        friend: {
-          id: 'requester1',
-          minihomeId: 'user_requester1',
-          email: 'requester1@example.com',
-          nickname: '새로운친구',
-          statusMessage: '안녕하세요! 친구가 되고 싶어요',
-          totalVisitors: 15,
-          dailyVisitors: 2,
-          lastVisitorReset: new Date(),
-          createdAt: new Date()
-        }
+    try {
+      const response = await fetch(`/api/friends?userId=${currentUserId}&status=pending`)
+      const data = await response.json()
+      
+      if (response.ok && data.friends) {
+        // pending 상태의 친구 요청만 필터링 (내가 받은 요청만)
+        const receivedRequests = data.friends.filter((friendship: any) => 
+          !friendship.isRequester && friendship.status === 'pending'
+        )
+        setFriendRequests(receivedRequests)
+      } else {
+        setFriendRequests([])
       }
-    ]
-    setFriendRequests(mockRequests)
+    } catch (error) {
+      console.error('친구 요청 로딩 오류:', error)
+      setFriendRequests([])
+    }
   }
 
   // 친구 검색
-  const handleSearchFriend = () => {
-    // TODO: 실제 친구 검색 API 호출
-    console.log('친구 검색:', searchQuery)
+  const handleSearchFriend = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      return
+    }
     
-    if (searchQuery.trim()) {
-      // 목업 검색 결과
-      const mockResults = [
-        {
-          id: 'search1',
-          nickname: '배달맨김영희',
-          statusMessage: '오늘도 열심히 일하자!',
-          totalVisitors: 25,
-          dailyVisitors: 3
-        },
-        {
-          id: 'search2',
-          nickname: '쿠팡러버',
-          statusMessage: '쿠팡으로 월 80만원 달성!',
-          totalVisitors: 18,
-          dailyVisitors: 2
-        }
-      ]
-      setSearchResults(mockResults)
-    } else {
+    try {
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}&currentUserId=${currentUserId}`)
+      const data = await response.json()
+      
+      if (response.ok && data.users) {
+        setSearchResults(data.users)
+      } else {
+        setSearchResults([])
+      }
+    } catch (error) {
+      console.error('친구 검색 오류:', error)
       setSearchResults([])
     }
   }
 
   // 친구 상세보기 열기
-  const handleOpenFriendDetail = (friendship: Friendship) => {
-    if (!friendship.friend) return;
-    
+  const handleOpenFriendDetail = (friendship: any) => {
     // UserProfileModal을 위한 사용자 프로필 데이터 생성
     const userProfile = {
-      id: friendship.friend.id,
-      nickname: friendship.friend.nickname,
-      region: '서울특별시', // 기본값, 실제로는 API에서 가져와야 함
+      id: friendship.friendId || friendship.id,
+      nickname: friendship.nickname || '배달킹',
+      region: friendship.region || '서울특별시',
       income: 0, // 기본값, 실제로는 API에서 가져와야 함
       count: 0, // 기본값, 실제로는 API에서 가져와야 함
       platforms: [], // 기본값, 실제로는 API에서 가져와야 함
-      minihomeId: friendship.friend.minihomeId
+      minihomeId: friendship.friendId || friendship.id
     }
     
     onShowUserProfile(userProfile)
@@ -173,28 +111,80 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
 
 
   // 친구 요청 수락
-  const handleAcceptFriend = (requestId: string) => {
-    // TODO: 실제 친구 요청 수락 API 호출
-    setFriendRequests(prev => prev.filter(req => req.id !== requestId))
-    // 친구 목록에 추가
-    const acceptedRequest = friendRequests.find(req => req.id === requestId)
-    if (acceptedRequest) {
-      setFriends(prev => [...prev, { ...acceptedRequest, status: 'accepted', acceptedAt: new Date() }])
+  const handleAcceptFriend = async (requestId: string) => {
+    try {
+      const response = await fetch(`/api/friends/${requestId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'accept' }),
+      })
+
+      if (response.ok) {
+        // 친구 요청 목록에서 제거
+        setFriendRequests(prev => prev.filter(req => req.id !== requestId))
+        // 친구 목록 새로고침
+        loadFriends()
+      } else {
+        console.error('친구 요청 수락 실패')
+      }
+    } catch (error) {
+      console.error('친구 요청 수락 오류:', error)
     }
   }
 
   // 친구 요청 거절
-  const handleRejectFriend = (requestId: string) => {
-    // TODO: 실제 친구 요청 거절 API 호출
-    setFriendRequests(prev => prev.filter(req => req.id !== requestId))
+  const handleRejectFriend = async (requestId: string) => {
+    try {
+      const response = await fetch(`/api/friends/${requestId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'reject' }),
+      })
+
+      if (response.ok) {
+        // 친구 요청 목록에서 제거
+        setFriendRequests(prev => prev.filter(req => req.id !== requestId))
+      } else {
+        console.error('친구 요청 거절 실패')
+      }
+    } catch (error) {
+      console.error('친구 요청 거절 오류:', error)
+    }
   }
 
   // 친구 요청 보내기
-  const handleSendFriendRequest = (userId: string) => {
-    // TODO: 실제 친구 요청 API 호출
-    console.log('친구 요청 보내기:', userId)
-    // 검색 결과에서 제거
-    setSearchResults(prev => prev.filter(user => user.id !== userId))
+  const handleSendFriendRequest = async (userId: string) => {
+    try {
+      const response = await fetch('/api/friends', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+          friendId: userId
+        }),
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        alert(data.message || '친구 요청을 보냈습니다!')
+        // 검색 결과 업데이트 (friendStatus 변경)
+        setSearchResults(prev => prev.map(user => 
+          user.id === userId ? { ...user, friendStatus: 'pending_sent' } : user
+        ))
+      } else {
+        alert(data.error || '친구 요청에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('친구 요청 보내기 오류:', error)
+      alert('친구 요청에 실패했습니다.')
+    }
   }
 
         // 미니홈피 방문
@@ -373,7 +363,7 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
                 <div className="space-y-2">
                   {friends
                     .filter(friendship => 
-                      friendship.friend?.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
+                      friendship.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
                     )
                     .slice((currentPage - 1) * friendsPerPage, currentPage * friendsPerPage)
                     .map((friendship) => (
@@ -381,7 +371,7 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
                            style={{borderRadius: '4px'}}
                            onClick={() => handleOpenFriendDetail(friendship)}>
                         <div className="flex items-center justify-between">
-                          <p className="text-white font-bold font-mono text-sm">{friendship.friend?.nickname}</p>
+                          <p className="text-white font-bold font-mono text-sm">{friendship.nickname}</p>
                           <div className="text-[#00ff88] text-sm">▶</div>
                         </div>
                         
@@ -479,10 +469,10 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1">
                         <h4 className="text-white font-bold text-sm font-mono mb-1">
-                          {request.friend?.nickname}
+                          {request.nickname || '배달킹'}
                         </h4>
                         <p className="text-gray-300 text-xs font-mono">
-                          {request.friend?.statusMessage}
+                          {request.status_message || '친구가 되고 싶어요!'}
                         </p>
                       </div>
                       <div className="text-[#ff6b6b] text-sm">▶</div>

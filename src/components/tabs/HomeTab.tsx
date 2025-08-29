@@ -1,5 +1,7 @@
 'use client'
 
+import PixelButton from '@/components/ui/PixelButton'
+
 interface HomeTabProps {
   currentBackground: string
   currentEmotion: string
@@ -252,9 +254,9 @@ true
           <div className="text-center mt-4">
             <div className="text-3xl font-bold font-mono text-[#00ff88]">
               ₩{(incomeRecords.filter(record => record.date === todayStr)
-                  .reduce((sum, record) => sum + (record.amount || 0), 0) + 
+                  .reduce((sum, record) => sum + (record.delivery_amount || 0), 0) + 
                  incomeRecords.filter(record => record.date === todayStr)
-                  .reduce((sum, record) => sum + (record.missionAmount || 0), 0)).toLocaleString()}
+                  .reduce((sum, record) => sum + (record.mission_amount || 0), 0)).toLocaleString()}
             </div>
           </div>
 
@@ -289,7 +291,7 @@ true
             <p className="text-gray-300 text-xs font-mono mb-2">건수</p>
             <p className="text-white font-bold text-lg font-mono">
               {incomeRecords.filter(record => record.date === todayStr)
-                .reduce((sum, record) => sum + record.count, 0)}건
+                .reduce((sum, record) => sum + record.delivery_count, 0)}건
             </p>
             {/* 픽셀 도트들 */}
             <div className="absolute top-1 left-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
@@ -303,7 +305,7 @@ true
                             <p className="text-white text-xs font-mono font-bold mb-2">배달금액</p>
             <p className="text-white font-bold text-lg font-mono">
               ₩{incomeRecords.filter(record => record.date === todayStr)
-                .reduce((sum, record) => sum + (record.amount || 0), 0).toLocaleString()}
+                .reduce((sum, record) => sum + (record.delivery_amount || 0), 0).toLocaleString()}
             </p>
             {/* 픽셀 도트들 */}
             <div className="absolute top-1 left-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
@@ -317,7 +319,7 @@ true
                             <p className="text-white text-xs font-mono font-bold mb-2">미션비</p>
             <p className="text-white font-bold text-lg font-mono">
               ₩{incomeRecords.filter(record => record.date === todayStr)
-                .reduce((sum, record) => sum + (record.missionAmount || 0), 0).toLocaleString()}
+                .reduce((sum, record) => sum + (record.mission_amount || 0), 0).toLocaleString()}
             </p>
             {/* 픽셀 도트들 */}
             <div className="absolute top-1 left-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
@@ -330,27 +332,17 @@ true
 
       {/* 수입 입력 버튼 - 픽셀아트 스타일 */}
       <div className="mb-2 sm:mb-3 lg:mb-4 flex-shrink-0">
-        <button
+        <PixelButton
           onClick={() => setShowIncomeInputPanel(true)}
-          className="w-full bg-gradient-to-r from-[#1a202c] to-[#2d3748] border-2 border-[#00d4ff]/50 hover:border-[#00d4ff] text-white font-mono py-3 px-4 transition-all duration-200 relative"
-          style={{
-            borderRadius: '4px',
-            fontFamily: 'monospace',
-            imageRendering: 'pixelated'
-          }}
+          variant="secondary"
+          size="lg"
+          fullWidth
         >
-          <div className="flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-base font-bold">수입 기록하기</p>
-              <p className="text-xs text-gray-300">오늘의 배달 수익을 입력하세요</p>
-            </div>
+          <div className="text-center">
+            <p className="text-base font-bold">수입 기록하기</p>
+            <p className="text-xs opacity-80 mt-1">오늘의 배달 수익을 입력하세요</p>
           </div>
-          {/* 픽셀 도트들 */}
-          <div className="absolute top-1 left-1 w-1 h-1 bg-[#00d4ff]/60" style={{borderRadius: '1px'}}></div>
-          <div className="absolute top-1 right-1 w-1 h-1 bg-[#00d4ff]/60" style={{borderRadius: '1px'}}></div>
-          <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00d4ff]/60" style={{borderRadius: '1px'}}></div>
-          <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00d4ff]/60" style={{borderRadius: '1px'}}></div>
-        </button>
+        </PixelButton>
       </div>
       
       {/* 하단 여백 - 상단과 동일하게 */}

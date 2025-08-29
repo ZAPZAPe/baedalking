@@ -19,26 +19,56 @@ export async function GET(
       )
     }
 
-    // 사용자 기본 정보 조회
-    const { data: userProfile, error: userError } = await supabase
-      .from('users')
-      .select('id, email, nickname, region, avatar_config, garage_config, created_at')
-      .eq('id', userId)
-      .single()
+    // URL 디코딩 처리
+    const decodedUserId = decodeURIComponent(userId)
+    console.log('🔍 사용자 조회 요청:', decodedUserId)
+
+    let userProfile = null
+    let userError = null
+
+    // UUID 형식인지 확인 (36자리, 하이픈 포함)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decodedUserId)
+    
+    if (isUUID) {
+      // UUID로 검색
+      console.log('🆔 UUID로 사용자 검색:', decodedUserId)
+      const result = await supabase
+        .from('users')
+        .select('id, email, nickname, region, avatar_config, garage_config, created_at')
+        .eq('id', decodedUserId)
+        .single()
+      
+      userProfile = result.data
+      userError = result.error
+    } else {
+      // 닉네임으로 검색
+      console.log('👤 닉네임으로 사용자 검색:', decodedUserId)
+      const result = await supabase
+        .from('users')
+        .select('id, email, nickname, region, avatar_config, garage_config, created_at')
+        .eq('nickname', decodedUserId)
+        .single()
+      
+      userProfile = result.data
+      userError = result.error
+    }
 
     if (userError || !userProfile) {
+      console.error('❌ 사용자 조회 실패:', userError)
       return NextResponse.json(
         { error: '사용자를 찾을 수 없습니다.' },
         { status: 404 }
       )
     }
 
-    // 이번달 수익 계산
+    console.log('✅ 사용자 조회 성공:', userProfile.nickname)
+
+    // 이번달 수익 계산 (사용자 실제 ID 사용)
     const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM 형식
     const { data: earnings, error: earningsError } = await supabase
       .from('earnings')
       .select('amount')
-      .eq('user_id', userId)
+      .eq('user_id', userProfile.id)
       .gte('date', `${currentMonth}-01`)
       .lt('date', `${currentMonth}-31`)
 
@@ -72,7 +102,7 @@ export async function GET(
     const { data: platformData, error: platformError } = await supabase
       .from('earnings')
       .select('platform')
-      .eq('user_id', userId)
+      .eq('user_id', userProfile.id)
       .gte('date', `${currentMonth}-01`)
 
     const platforms = platformData 
@@ -140,6 +170,33 @@ export async function PUT(
       )
     }
 
+    // URL 디코딩 처리 및 실제 사용자 ID 추출
+    const decodedUserId = decodeURIComponent(userId)
+    console.log('🔍 사용자 업데이트 요청:', decodedUserId)
+
+    // UUID 형식인지 확인
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decodedUserId)
+    
+    let actualUserId = decodedUserId
+    
+    if (!isUUID) {
+      // 닉네임으로 사용자 ID 찾기
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('nickname', decodedUserId)
+        .single()
+      
+      if (error || !user) {
+        return NextResponse.json(
+          { error: '사용자를 찾을 수 없습니다.' },
+          { status: 404 }
+        )
+      }
+      
+      actualUserId = user.id
+    }
+
     // 업데이트할 필드 확인 및 필터링
     const allowedFields = ['nickname', 'region', 'status_message', 'avatar_config', 'garage_config']
     const updateData: any = {}
@@ -158,12 +215,49 @@ export async function PUT(
       )
     }
 
-    // 닉네임 중복 체크 (닉네임이 포함된 경우만)
+    // 🔍 닉네임 유효성 검사 및 중복 체크
     if (updateData.nickname) {
+      const nickname = updateData.nickname.trim()
+      
+      // 1. 최소 길이 검사 (2글자 이상)
+      if (nickname.length < 2) {
+        return NextResponse.json(
+          { error: '닉네임은 최소 2글자 이상이어야 합니다.' },
+          { status: 400 }
+        )
+      }
+      
+      // 2. 최대 길이 검사 (10글자 이하)
+      if (nickname.length > 10) {
+        return NextResponse.json(
+          { error: '닉네임은 최대 10글자까지 가능합니다.' },
+          { status: 400 }
+        )
+      }
+      
+      // 3. 특수문자 검사 (한글, 영문, 숫자만 허용)
+      const nicknameRegex = /^[가-힣a-zA-Z0-9]+$/
+      if (!nicknameRegex.test(nickname)) {
+        return NextResponse.json(
+          { error: '닉네임은 한글, 영문, 숫자만 사용 가능합니다.' },
+          { status: 400 }
+        )
+      }
+      
+      // 4. 금지어 검사
+      const bannedWords = ['관리자', 'admin', 'test', '배달킹', '운영자', 'null', 'undefined']
+      if (bannedWords.some(word => nickname.toLowerCase().includes(word.toLowerCase()))) {
+        return NextResponse.json(
+          { error: '사용할 수 없는 닉네임입니다.' },
+          { status: 400 }
+        )
+      }
+      
+      // 5. 중복 체크
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('id')
-        .eq('nickname', updateData.nickname)
+        .eq('nickname', nickname)
         .neq('id', userId)
         .single()
 
@@ -181,6 +275,9 @@ export async function PUT(
           { status: 409 }
         )
       }
+      
+      // 유효성 검사 통과 시 정제된 닉네임 사용
+      updateData.nickname = nickname
     }
 
     // updated_at 필드 추가
@@ -190,7 +287,7 @@ export async function PUT(
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update(updateData)
-      .eq('id', userId)
+              .eq('id', userId)
       .select('id, email, nickname, region, status_message, avatar_config, garage_config, updated_at')
       .single()
 

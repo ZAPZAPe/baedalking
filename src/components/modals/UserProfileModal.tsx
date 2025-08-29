@@ -230,14 +230,14 @@ export default function UserProfileModal({
                   // 미니홈피 방문 로직
                   console.log('UserProfileModal Visit 버튼 클릭:', user.id)
                   try {
-                    router.push(`/minihompy/${user.minihomeId || user.id}`)
+                    router.push(`/minihompy/${user.id}`)
                     console.log('UserProfileModal 라우터 푸시 완료')
                     onClose() // 모달 닫기
                   } catch (error) {
                     console.error('UserProfileModal 라우터 푸시 에러:', error)
                     // 폴백: window.location.href 사용
                     console.log('UserProfileModal 폴백 방법 사용: window.location.href')
-                    window.location.href = `/minihompy/${user.minihomeId || user.id}`
+                    window.location.href = `/minihompy/${user.id}`
                     onClose() // 모달 닫기
                   }
                 }}

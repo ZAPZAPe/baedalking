@@ -36,14 +36,14 @@ export interface UserProfile {
 
 export interface IncomeRecord {
   id: string
-  platform: Platform | string
-  count: number
-  deliveryAmount: number
-  missionAmount: number
-  amount: number
+  platform: string
+  delivery_count: number
+  delivery_amount: number
+  mission_amount: number
+  total_amount: number
   date: string
-  verified?: boolean
-  screenshot_url?: string
+  created_at: string
+  user_id?: string
 }
 
 export interface DailyIncomeData {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useAppState } from '@/hooks/useAppState'
-import { handleIncomeSubmit } from '@/lib/incomeUtils'
+// incomeUtils 더 이상 필요 없음 - useAppState에 통합됨
 import { emotions, platforms } from '@/data/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
@@ -39,6 +39,8 @@ export default function Home() {
 
   // 모든 Hooks를 항상 동일한 순서로 호출
   const {
+    // 🔥 사용자 정보 (새로 추가)
+    user: appUser, setUser: setAppUser,
     // 기본 상태들
     currentEmotion, setCurrentEmotion,
     speechText, setSpeechText,
@@ -57,13 +59,13 @@ export default function Home() {
     incomeAmount, setIncomeAmount,
     missionAmount, setMissionAmount,
     selectedPlatform, setSelectedPlatform,
-    incomeDate, setIncomeDate,
-    dailyIncomeData, setDailyIncomeData,
+    // incomeDate 제거됨 - 항상 오늘 날짜 사용
+    // dailyIncomeData 제거됨 - incomeRecords 사용
     incomeRecords, setIncomeRecords,
+    saveIncomeRecord, loadIncomeRecords,
     totalPoints, setTotalPoints,
     userLevel, setUserLevel,
-    userNickname, setUserNickname,
-    userLocation, setUserLocation,
+    // userNickname, userLocation은 user 객체에서 가져옴
     currentWeather, setCurrentWeather,
     todayVisitors, setTodayVisitors,
     totalVisitors, setTotalVisitors,
@@ -126,6 +128,14 @@ export default function Home() {
     console.log('useAuth loading:', loading)
   }, [user, loading])
 
+  // 🔥 useAuth 사용자 정보를 useAppState에 동기화
+  useEffect(() => {
+    if (user && user !== appUser) {
+      console.log('🔄 사용자 정보 동기화:', user)
+      setAppUser(user)
+    }
+  }, [user, appUser, setAppUser])
+
   // 인증 체크
   useEffect(() => {
     if (!loading && !user) {
@@ -134,27 +144,38 @@ export default function Home() {
     }
   }, [user, loading, router])
 
-  // 실제 날씨 데이터 가져오기
+  // 🌤️ 사용자 지역 기반 실제 날씨 데이터 가져오기
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const response = await fetch('/api/weather')
+        // 사용자 지역 정보 확인
+        const userRegion = user?.region || appUser?.region || '서울'
+        console.log('🌤️ 사용자 지역으로 날씨 조회:', userRegion)
+        
+        const response = await fetch(`/api/weather?region=${encodeURIComponent(userRegion)}`)
         const data = await response.json()
+        
+        console.log('🌤️ 날씨 응답:', data)
         
         if (response.ok) {
           setCurrentWeather({
             temp: data.temperature,
             condition: data.condition
           })
+          
+          if (data.error) {
+            console.warn('⚠️ 날씨 API 경고:', data.error)
+          }
         }
       } catch (error) {
-        console.error('날씨 데이터 로딩 오류:', error)
-        // 에러 시 기본값 유지
+        console.error('❌ 날씨 데이터 로딩 오류:', error)
+        // 에러 시 기본 날씨 설정
+        setCurrentWeather({ temp: 22, condition: 'sunny' })
       }
     }
 
     fetchWeather()
-  }, [])
+  }, [user?.region, appUser?.region])
 
   // 사용자 데이터 로딩
   useEffect(() => {
@@ -167,9 +188,7 @@ export default function Home() {
     if (!user?.id) return
 
     try {
-      // 사용자 기본 정보 설정
-      setUserNickname(user.nickname || '배달킹')
-      setUserLocation(user.region || '서울특별시')
+      console.log('💾 사용자 데이터 로딩 시작:', user.id)
 
       // 포인트 데이터 로딩
       const pointsResponse = await fetch(`/api/points?userId=${user.id}`)
@@ -178,44 +197,44 @@ export default function Home() {
         setTotalPoints(pointsData.totalPoints || 0)
       }
 
-      // 수익 데이터 로딩 (earnings API 호출)
-      const earningsResponse = await fetch(`/api/users/${user.id}`)
-      if (earningsResponse.ok) {
-        const earningsData = await earningsResponse.json()
-        // 수익 데이터를 incomeRecords 형식으로 변환
-        if (earningsData.user?.earnings) {
-          const formattedRecords = earningsData.user.earnings.map((earning: any, index: number) => ({
-            id: index,
-            platform: earning.source || 'other',
-            count: 1, // API에서 제공되지 않으면 기본값
-            deliveryAmount: earning.amount,
-            missionAmount: 0, // API에서 제공되지 않으면 기본값
-            amount: earning.amount,
-            date: earning.date
-          }))
-          setIncomeRecords(formattedRecords)
-        }
-      }
+      console.log('✅ 사용자 데이터 로딩 완료')
+
     } catch (error) {
-      console.error('사용자 데이터 로딩 오류:', error)
+      console.error('❌ 사용자 데이터 로딩 오류:', error)
     }
   }
 
-  // 수입 제출 핸들러
-  const onIncomeSubmit = () => {
-    handleIncomeSubmit(
-      incomeCount,
-      incomeAmount,
-      missionAmount,
-      selectedPlatform,
-      setDailyIncomeData,
-      setIncomeRecords,
-      addPoints,
-      setIncomeCount,
-      setIncomeAmount,
-      setMissionAmount,
-      user?.id // 실제 사용자 ID 전달
-    )
+  // 🔥 새로운 수입 제출 핸들러 - Supabase 중심
+  const onIncomeSubmit = async () => {
+    if (!incomeCount || (!incomeAmount && !missionAmount)) {
+      alert('배달 건수와 수입 금액을 입력해주세요.')
+      return
+    }
+
+    const count = parseInt(incomeCount) || 0
+    const deliveryAmount = parseInt(incomeAmount) || 0
+    const missionAmount_num = parseInt(missionAmount) || 0
+    const today = new Date().toISOString().split('T')[0]
+
+    const success = await saveIncomeRecord({
+      platform: selectedPlatform,
+      delivery_count: count,
+      delivery_amount: deliveryAmount,
+      mission_amount: missionAmount_num,
+      date: today
+    })
+
+    if (success) {
+      // 입력 필드 초기화
+      setIncomeCount('')
+      setIncomeAmount('')
+      setMissionAmount('')
+      setShowIncomeInputPanel(false)
+      
+      console.log('✅ 수입 기록 저장 완료!')
+    } else {
+      alert('수입 기록 저장에 실패했습니다. 다시 시도해주세요.')
+    }
   }
   
   // 오늘 날짜
@@ -250,7 +269,7 @@ export default function Home() {
 
       {/* 헤더 */}
       <Header
-        userNickname={userNickname}
+        userNickname={user?.nickname || '배달킹'}
         currentEmotion={currentEmotion}
         totalPoints={totalPoints}
         emotions={emotions}
@@ -392,9 +411,9 @@ export default function Home() {
             {/* PROFILE 탭 */}
             {activeTab === 'profile' && (
               <ProfileTab 
-                userNickname={userNickname}
+                userNickname={user?.nickname || '배달킹'}
                 currentEmotion={currentEmotion}
-                userLocation={userLocation}
+                userLocation={user?.region || '서울'}
                 emotions={emotions}
                 isIncomePrivate={isIncomePrivate}
                 setIsIncomePrivate={setIsIncomePrivate}
@@ -425,23 +444,20 @@ export default function Home() {
                     const data = await response.json()
 
                     if (response.ok) {
-                      // 로컬 상태 업데이트
-                      if (field === 'nickname') {
-                        setUserNickname(value)
+                      console.log('✅ 프로필 업데이트 성공:', { field, value })
+                      
+                      // 사용자 객체 업데이트
+                      if (user) {
+                        const updatedUser = { ...user, [field]: value }
+                        // useAuth의 user 상태 업데이트는 useAuth에서 관리
+                        // useAppState의 user 상태 업데이트
+                        setAppUser(updatedUser)
+                        
                         // 로컬스토리지의 사용자 정보도 업데이트
                         const kakaoUser = localStorage.getItem('kakaoUser')
                         if (kakaoUser) {
                           const userData = JSON.parse(kakaoUser)
-                          userData.nickname = value
-                          localStorage.setItem('kakaoUser', JSON.stringify(userData))
-                        }
-                      } else if (field === 'region') {
-                        setUserLocation(value)
-                        // 로컬스토리지의 사용자 정보도 업데이트
-                        const kakaoUser = localStorage.getItem('kakaoUser')
-                        if (kakaoUser) {
-                          const userData = JSON.parse(kakaoUser)
-                          userData.region = value
+                          userData[field] = value
                           localStorage.setItem('kakaoUser', JSON.stringify(userData))
                         }
                       }
@@ -485,8 +501,8 @@ export default function Home() {
         setMissionAmount={setMissionAmount}
         selectedPlatform={selectedPlatform}
         setSelectedPlatform={setSelectedPlatform}
-        incomeDate={incomeDate}
-        setIncomeDate={setIncomeDate}
+        incomeDate={new Date().toISOString().split('T')[0]}
+        setIncomeDate={() => {}} // 항상 오늘 날짜 사용
         onSubmit={onIncomeSubmit}
         platforms={appPlatforms}
       />
@@ -612,7 +628,7 @@ export default function Home() {
       <RankingDetailModal 
         isOpen={showRankingDetail}
         onClose={() => setShowRankingDetail(false)}
-        userRank={Object.keys(dailyIncomeData).length > 0 ? Math.floor(Math.random() * 100) + 1 : 0}
+        userRank={incomeRecords.length > 0 ? Math.floor(Math.random() * 100) + 1 : 0}
         userIncome={totalIncome}
         totalUsers={1000}
         topRankers={topRankers}

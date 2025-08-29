@@ -1,14 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// 환경 변수가 없을 경우 하드코딩된 값 사용 (개발 환경용)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dumdqkfzwhdegfbonfhd.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1bWRxa2Z6d2hkZWdmYm9uZmhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NzczODgsImV4cCI6MjA3MjA1MzM4OH0.7KUvjleLOyMpAs6cB8iiFgORUEJAelg2kVf1rvk8-E8'
 
 // 환경 변수 확인
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Supabase 환경 변수가 설정되지 않았습니다!')
-  console.error('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl)
-  console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '설정됨' : '설정되지 않음')
-}
+console.log('🔍 Supabase 설정:')
+console.log('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl)
+console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '설정됨' : '설정되지 않음')
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -68,40 +67,47 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          amount: number
+          platform: string
+          delivery_count: number
+          delivery_amount: number
+          mission_amount: number
+          total_amount: number
           date: string
           screenshot_url: string
           verified: boolean
           points_awarded: number
           screenshot_text: string
           verified_score: number
-          source: string
           created_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          amount: number
+          platform: string
+          delivery_count: number
+          delivery_amount: number
+          mission_amount: number
           date: string
-          screenshot_url: string
+          screenshot_url?: string
           verified?: boolean
           points_awarded?: number
           screenshot_text?: string
           verified_score?: number
-          source?: string
           created_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          amount?: number
+          platform?: string
+          delivery_count?: number
+          delivery_amount?: number
+          mission_amount?: number
           date?: string
           screenshot_url?: string
           verified?: boolean
           points_awarded?: number
           screenshot_text?: string
           verified_score?: number
-          source?: string
           created_at?: string
         }
       }

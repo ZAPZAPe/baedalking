@@ -17,6 +17,33 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // URL 디코딩 처리 및 실제 사용자 ID 추출
+    const decodedUserId = decodeURIComponent(userId)
+    console.log('🔍 방명록 조회 요청:', decodedUserId)
+
+    // UUID 형식인지 확인
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decodedUserId)
+    
+    let actualUserId = decodedUserId
+    
+    if (!isUUID) {
+      // 닉네임으로 사용자 ID 찾기
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('nickname', decodedUserId)
+        .single()
+      
+      if (error || !user) {
+        return NextResponse.json(
+          { error: '사용자를 찾을 수 없습니다.' },
+          { status: 404 }
+        )
+      }
+      
+      actualUserId = user.id
+    }
+
     const { data: messages, error } = await supabase
       .from('guestbook')
       .select(`

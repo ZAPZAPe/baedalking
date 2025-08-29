@@ -17,6 +17,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // UUID 형식인지 확인
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)
+    
+    if (!isUUID) {
+      return NextResponse.json(
+        { error: '잘못된 사용자 ID 형식입니다.' },
+        { status: 400 }
+      )
+    }
+
+    console.log('🔍 방문자 수 조회 요청:', userId)
+
     // 총 방문자 수 조회
     const { count: totalVisits, error: totalError } = await supabase
       .from('visits')

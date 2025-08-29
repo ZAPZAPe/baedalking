@@ -1,48 +1,141 @@
+'use client'
+
 import React from 'react'
-import { PixelButtonProps } from '@/types'
+
+interface PixelButtonProps {
+  children: React.ReactNode
+  onClick?: () => void
+  disabled?: boolean
+  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'info'
+  size?: 'sm' | 'md' | 'lg'
+  fullWidth?: boolean
+  className?: string
+  type?: 'button' | 'submit' | 'reset'
+}
 
 export default function PixelButton({
-  onClick,
   children,
+  onClick,
+  disabled = false,
   variant = 'primary',
   size = 'md',
-  disabled = false,
+  fullWidth = false,
   className = '',
   type = 'button'
 }: PixelButtonProps) {
-  const variantClasses = {
-    primary: 'bg-gradient-to-r from-[#ffd93d]/20 to-[#ff6b6b]/20 border-[#ffd93d]/50 text-[#ffd93d] hover:border-[#ffd93d]',
-    secondary: 'bg-gradient-to-r from-[#9c88ff]/20 to-[#ff6b6b]/20 border-[#9c88ff]/50 text-[#9c88ff] hover:border-[#9c88ff]',
-    success: 'bg-gradient-to-r from-[#00ff88]/20 to-[#9c88ff]/20 border-[#00ff88]/50 text-[#00ff88] hover:border-[#00ff88]',
-    warning: 'bg-gradient-to-r from-[#ffd93d]/20 to-[#ff9500]/20 border-[#ffd93d]/50 text-[#ffd93d] hover:border-[#ffd93d]',
-    danger: 'bg-gradient-to-r from-[#ff6b6b]/20 to-[#ff4757]/20 border-[#ff6b6b]/50 text-[#ff6b6b] hover:border-[#ff6b6b]'
+  
+  // 변형별 색상 정의 (USER PROFILE Visit 버튼 기반)
+  const variantStyles = {
+    primary: {
+      gradient: 'from-[#ffd93d]/20 to-[#ff6b6b]/20',
+      border: 'border-[#ffd93d]/50 hover:border-[#ffd93d]',
+      text: 'text-[#ffd93d] hover:text-white',
+      shadow: 'rgba(255, 217, 61, 0.2)',
+      textShadow: '0 0 6px rgba(255, 217, 61, 0.5)',
+      dotColor: 'bg-[#ffd93d]'
+    },
+    secondary: {
+      gradient: 'from-[#00d4ff]/20 to-[#9c88ff]/20',
+      border: 'border-[#00d4ff]/50 hover:border-[#00d4ff]',
+      text: 'text-[#00d4ff] hover:text-white',
+      shadow: 'rgba(0, 212, 255, 0.2)',
+      textShadow: '0 0 6px rgba(0, 212, 255, 0.5)',
+      dotColor: 'bg-[#00d4ff]'
+    },
+    success: {
+      gradient: 'from-[#00ff88]/20 to-[#00d4aa]/20',
+      border: 'border-[#00ff88]/50 hover:border-[#00ff88]',
+      text: 'text-[#00ff88] hover:text-white',
+      shadow: 'rgba(0, 255, 136, 0.2)',
+      textShadow: '0 0 6px rgba(0, 255, 136, 0.5)',
+      dotColor: 'bg-[#00ff88]'
+    },
+    danger: {
+      gradient: 'from-[#ff6b6b]/20 to-[#ff4757]/20',
+      border: 'border-[#ff6b6b]/50 hover:border-[#ff6b6b]',
+      text: 'text-[#ff6b6b] hover:text-white',
+      shadow: 'rgba(255, 107, 107, 0.2)',
+      textShadow: '0 0 6px rgba(255, 107, 107, 0.5)',
+      dotColor: 'bg-[#ff6b6b]'
+    },
+    info: {
+      gradient: 'from-[#9c88ff]/20 to-[#7b68ee]/20',
+      border: 'border-[#9c88ff]/50 hover:border-[#9c88ff]',
+      text: 'text-[#9c88ff] hover:text-white',
+      shadow: 'rgba(156, 136, 255, 0.2)',
+      textShadow: '0 0 6px rgba(156, 136, 255, 0.5)',
+      dotColor: 'bg-[#9c88ff]'
+    }
   }
 
-  const sizeClasses = {
-    xs: 'px-2 py-1 text-xs',
-    sm: 'px-3 py-1 text-xs',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base'
+  // 크기별 스타일 정의
+  const sizeStyles = {
+    sm: {
+      padding: 'py-2 px-3',
+      text: 'text-xs',
+      dot: 'w-1.5 h-1.5',
+      gap: 'gap-1'
+    },
+    md: {
+      padding: 'py-3 px-4',
+      text: 'text-sm sm:text-base',
+      dot: 'w-2.5 h-2.5 sm:w-3 sm:h-3',
+      gap: 'gap-1.5 sm:gap-2'
+    },
+    lg: {
+      padding: 'py-4 px-6',
+      text: 'text-base sm:text-lg',
+      dot: 'w-3 h-3 sm:w-4 sm:h-4',
+      gap: 'gap-2 sm:gap-3'
+    }
   }
 
-  const disabledClasses = disabled 
-    ? 'bg-gray-600 text-gray-400 border-gray-600 cursor-not-allowed hover:scale-100' 
-    : 'hover:scale-105'
+  const style = variantStyles[variant]
+  const sizeStyle = sizeStyles[size]
+
+  // Disabled 스타일
+  const disabledStyles = disabled ? {
+    gradient: 'from-gray-500/20 to-gray-600/20',
+    border: 'border-gray-500/50',
+    text: 'text-gray-400',
+    shadow: 'rgba(156, 163, 175, 0.1)',
+    textShadow: 'none',
+    dotColor: 'bg-gray-500'
+  } : style
 
   return (
     <button
       type={type}
-      onClick={disabled ? undefined : onClick}
+      onClick={onClick}
       disabled={disabled}
       className={`
-        border rounded font-mono font-bold transition-all duration-200
-        ${disabled ? disabledClasses : `${variantClasses[variant]} ${disabledClasses}`}
-        ${sizeClasses[size]}
+        ${fullWidth ? 'w-full' : ''}
+        bg-gradient-to-r ${disabledStyles.gradient}
+        border-2 ${disabledStyles.border}
+        ${disabledStyles.text}
+        font-bold ${sizeStyle.padding}
+        transition-all duration-300
+        ${disabled ? 'cursor-not-allowed' : 'hover:scale-105 hover:shadow-lg'}
+        relative font-mono tracking-wide
         ${className}
       `}
-      style={{ borderRadius: '4px' }}
+      style={{
+        borderRadius: '6px',
+        textShadow: disabledStyles.textShadow,
+        boxShadow: `0 0 15px ${disabledStyles.shadow}`
+      }}
     >
-      {children}
+      <div className={`flex items-center justify-center ${sizeStyle.gap}`}>
+        <div className={`${sizeStyle.dot} ${disabledStyles.dotColor} border border-white`} style={{borderRadius: '1px'}}></div>
+        <span className={sizeStyle.text}>{children}</span>
+        <div className={`${sizeStyle.dot} ${disabledStyles.dotColor} border border-white`} style={{borderRadius: '1px'}}></div>
+      </div>
+      
+      {/* 버튼 모서리 픽셀 도트 */}
+      <div className={`absolute top-1 left-1 w-1 h-1 ${disabledStyles.dotColor}`} style={{borderRadius: '1px'}}></div>
+      <div className={`absolute top-1 right-1 w-1 h-1 ${disabledStyles.dotColor}`} style={{borderRadius: '1px'}}></div>
+      <div className={`absolute bottom-1 left-1 w-1 h-1 ${disabledStyles.dotColor}`} style={{borderRadius: '1px'}}></div>
+      <div className={`absolute bottom-1 right-1 w-1 h-1 ${disabledStyles.dotColor}`} style={{borderRadius: '1px'}}></div>
     </button>
   )
 }

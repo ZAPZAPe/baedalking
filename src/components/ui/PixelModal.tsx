@@ -1,22 +1,29 @@
-import React from 'react'
-import { PixelModalProps } from '@/types'
+'use client'
 
-export default function PixelModal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
-  className = '',
-  maxWidth = 'lg'
+import React from 'react'
+
+interface PixelModalProps {
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  children: React.ReactNode
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl'
+}
+
+export default function PixelModal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  maxWidth = 'md'
 }: PixelModalProps) {
   if (!isOpen) return null
 
   const maxWidthClasses = {
     sm: 'max-w-sm',
-    md: 'max-w-md', 
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl'
+    md: 'max-w-sm sm:max-w-md',
+    lg: 'max-w-md sm:max-w-lg',
+    xl: 'max-w-lg sm:max-w-xl'
   }
 
   return (
@@ -30,7 +37,7 @@ export default function PixelModal({
       {/* 모달 컨테이너 */}
       <div className="fixed inset-0 z-[999999] flex items-center justify-center p-2 sm:p-4 overflow-y-auto pointer-events-none">
         <div 
-          className={`w-full ${maxWidthClasses[maxWidth]} bg-gradient-to-b from-[#0a0a23] via-[#16213e] to-[#1a1a2e] border-2 sm:border-4 border-[#ffd93d]/50 shadow-2xl relative max-h-[calc(100vh-32px)] overflow-y-auto pointer-events-auto ${className}`}
+          className={`w-full ${maxWidthClasses[maxWidth]} bg-gradient-to-b from-[#0a0a23] via-[#16213e] to-[#1a1a2e] border-2 sm:border-4 border-[#ffd93d]/50 shadow-2xl relative max-h-[calc(100vh-32px)] overflow-y-auto pointer-events-auto`}
           style={{
             borderRadius: '6px',
             fontFamily: 'monospace',
@@ -41,15 +48,21 @@ export default function PixelModal({
             e.preventDefault()
             e.stopPropagation()
           }}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
         >
           {/* 네온 글로우 테두리 */}
           <div className="absolute -inset-1 bg-gradient-to-r from-[#ffd93d]/20 via-[#ff6b6b]/20 to-[#ffd93d]/20 blur-sm -z-10" 
                style={{borderRadius: '12px'}}></div>
           
-          {/* 헤더 */}
+          {/* 헤더 - USER PROFILE과 동일한 스타일 */}
           <div className="bg-gradient-to-r from-[#0a0a23] to-[#16213e] p-3 sm:p-4 border-b-2 border-[#ffd93d]/30 relative">
+            {/* 상단 장식 라인 */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#ffd93d]/60 to-transparent"></div>
+            
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2 sm:gap-3">
+                {/* 픽셀 아이콘 */}
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-[#ffd93d] to-[#ff6b6b] border border-[#ffd93d]" 
                      style={{borderRadius: '3px'}}>
                   <div className="w-full h-full flex items-center justify-center">
@@ -69,18 +82,27 @@ export default function PixelModal({
                 ✕
               </button>
             </div>
+            
+            {/* 하단 장식 라인 */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#ffd93d]/40 to-transparent"></div>
           </div>
 
-          {/* 컨텐츠 */}
-          <div className="p-3 sm:p-4">
-            {children}
+          {/* 컨텐츠 영역 */}
+          <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 relative">
+            {/* 배경 패턴 */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="w-full h-full" 
+                   style={{
+                     backgroundImage: `radial-gradient(circle, #ffd93d 1px, transparent 1px)`,
+                     backgroundSize: '12px 12px'
+                   }}></div>
+            </div>
+            
+            {/* 컨텐츠 */}
+            <div className="relative z-10">
+              {children}
+            </div>
           </div>
-
-          {/* 모서리 픽셀 도트들 */}
-          <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-          <div className="absolute top-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-          <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-          <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
         </div>
       </div>
     </>
