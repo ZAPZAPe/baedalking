@@ -601,7 +601,7 @@ export default function Home() {
       <RankingDetailModal 
         isOpen={showRankingDetail}
         onClose={() => setShowRankingDetail(false)}
-        userRank={dailyIncomeData.length > 0 ? Math.floor(Math.random() * 100) + 1 : 0}
+        userRank={Object.keys(dailyIncomeData).length > 0 ? Math.floor(Math.random() * 100) + 1 : 0}
         userIncome={totalIncome}
         totalUsers={1000}
         topRankers={topRankers}
