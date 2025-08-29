@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function LoginPage() {
-  const { user, signInWithKakao, loading } = useAuth()
+  const { user, signIn, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -17,7 +17,8 @@ export default function LoginPage() {
 
   const handleKakaoLogin = async () => {
     try {
-      await signInWithKakao()
+      // Vercel 호환성을 위해 signIn 사용
+      await signIn('kakao', 'password')
     } catch (error) {
       console.error('카카오 로그인 오류:', error)
     }

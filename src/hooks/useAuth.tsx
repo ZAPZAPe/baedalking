@@ -15,7 +15,6 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   loading: boolean  // Vercel 호환성을 위해 추가
-  signInWithKakao: () => Promise<void>
   signOut: () => Promise<void>
   // Vercel 호환성을 위해 추가
   signUp: (email: string, password: string, nickname: string) => Promise<any>
@@ -72,22 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const signInWithKakao = async () => {
-    try {
-      // 카카오 로그인 URL로 리다이렉트
-      // 환경 변수가 제대로 로드되지 않을 경우를 대비해 하드코딩
-      const clientId = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || '2a6e20ac0ba97afb3b35ecefb5e1f8ed'
-      const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI || 'http://localhost:3000/auth/callback'
-      
-      const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`
-      
-      console.log('카카오 로그인 URL:', kakaoAuthUrl)
-      window.location.href = kakaoAuthUrl
-    } catch (error) {
-      console.error('카카오 로그인 오류:', error)
-      throw error
-    }
-  }
+
 
   const signOut = async () => {
     try {
@@ -110,7 +94,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     isLoading,
     loading: isLoading,  // Vercel 호환성을 위해 추가
-    signInWithKakao,
     signOut,
     // Vercel 호환성을 위해 추가
     signUp: async (email: string, password: string, nickname: string) => {
@@ -118,6 +101,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { data: { user: null, session: null }, error: null }
     },
     signIn: async (email: string, password: string) => {
+      // 카카오 로그인 처리
+      if (email === 'kakao') {
+        try {
+          // 카카오 로그인 URL로 리다이렉트
+          const clientId = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || '2a6e20ac0ba97afb3b35ecefb5e1f8ed'
+          const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI || 'http://localhost:3000/auth/callback'
+          
+          const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`
+          
+          console.log('카카오 로그인 URL:', kakaoAuthUrl)
+          window.location.href = kakaoAuthUrl
+          return { data: { user: null, session: null }, error: null }
+        } catch (error) {
+          console.error('카카오 로그인 오류:', error)
+          return { data: null, error }
+        }
+      }
       console.log('signIn called but not implemented')
       return { data: { user: null, session: null }, error: null }
     },
