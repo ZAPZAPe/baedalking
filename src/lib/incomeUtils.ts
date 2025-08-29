@@ -11,7 +11,8 @@ export const handleIncomeSubmit = async (
   addPoints: (amount: number, reason: string) => void,
   setIncomeCount: (count: string) => void,
   setIncomeAmount: (amount: string) => void,
-  setMissionAmount: (amount: string) => void
+  setMissionAmount: (amount: string) => void,
+  userId?: string
 ) => {
   try {
     if (incomeCount && (incomeAmount || missionAmount)) {
@@ -22,9 +23,11 @@ export const handleIncomeSubmit = async (
       const todayDate = new Date()
       const today = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`
       
-      // 임시 사용자 ID (인증 기능 제거로 인해)
-      // RLS 정책을 우회하기 위해 실제 존재하는 사용자 ID 사용
-      const userId = '00000000-0000-0000-0000-000000000000'
+      // 실제 사용자 ID 사용
+      if (!userId) {
+        console.error('사용자 ID가 필요합니다.')
+        return
+      }
       
       // Supabase에 수입 기록 저장
       // 참고: RLS 정책 오류가 발생한다면 Supabase 대시보드에서 RLS를 비활성화하세요

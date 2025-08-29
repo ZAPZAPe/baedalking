@@ -253,6 +253,15 @@ export default function ProfileTab({
           </button>
 
           <button 
+            onClick={() => window.location.href = '/shop'}
+            className="w-full bg-[#1a202c]/60 border border-[#ffd93d]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
+            style={{borderRadius: '4px'}}
+          >
+            <div className="text-[#ffd93d] text-sm font-bold font-mono">🏪 상점</div>
+            <div className="text-gray-400 text-xs font-mono">아이템 구매, 포인트 사용, 꾸미기</div>
+          </button>
+
+          <button 
             onClick={() => setShowPrivacyPolicy(true)}
             className="w-full bg-[#1a202c]/60 border border-[#ffd93d]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
             style={{borderRadius: '4px'}}
