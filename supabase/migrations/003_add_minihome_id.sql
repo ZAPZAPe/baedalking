@@ -64,6 +64,7 @@ CREATE TRIGGER trigger_set_minihome_id
 
 -- Update RLS policy to allow viewing minihome_id for public profiles
 -- Users can see other users' minihome_id for visiting their minihome
+DROP POLICY IF EXISTS "Users can view public minihome_id" ON users;
 CREATE POLICY "Users can view public minihome_id" ON users
     FOR SELECT USING (true);
 
@@ -71,9 +72,11 @@ CREATE POLICY "Users can view public minihome_id" ON users
 DROP POLICY IF EXISTS "Users can view own profile" ON users;
 
 -- Create new policy that allows viewing public profile info
+DROP POLICY IF EXISTS "Users can view public profiles" ON users;
 CREATE POLICY "Users can view public profiles" ON users
     FOR SELECT USING (true);
 
 -- Keep the update policy restricted to own profile
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
 CREATE POLICY "Users can update own profile" ON users
     FOR UPDATE USING (auth.uid() = id);

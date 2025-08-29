@@ -1,10 +1,9 @@
 -- 사용자 프로필 테이블 확장
-ALTER TABLE users ADD COLUMN IF NOT EXISTS
-  nickname VARCHAR(50) UNIQUE,
-  status_message TEXT,
-  total_visitors INTEGER DEFAULT 0,
-  daily_visitors INTEGER DEFAULT 0,
-  last_visitor_reset TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname VARCHAR(50);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS status_message TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS total_visitors INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_visitors INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_visitor_reset TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
 -- 미니홈피 설정 테이블
 CREATE TABLE IF NOT EXISTS minihome_settings (
@@ -59,7 +58,8 @@ CREATE TABLE IF NOT EXISTS minihome_visits (
   minihome_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   visitor_id UUID REFERENCES users(id) ON DELETE CASCADE,
   visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(minihome_user_id, visitor_id, DATE(visited_at))
+  visit_date DATE DEFAULT CURRENT_DATE,
+  UNIQUE(minihome_user_id, visitor_id, visit_date)
 );
 
 -- 방문 기록 인덱스

@@ -22,9 +22,11 @@ CREATE TABLE IF NOT EXISTS earnings (
     amount INTEGER NOT NULL,
     date DATE NOT NULL,
     screenshot_url TEXT NOT NULL,
+    verified BOOLEAN DEFAULT TRUE,
     points_awarded INTEGER DEFAULT 0,
     screenshot_text TEXT DEFAULT '',
-    source TEXT CHECK (source IN ('baemin', 'coupang', 'other')) DEFAULT 'other',
+    verified_score DECIMAL(5,2) DEFAULT 95.0,
+    platform TEXT CHECK (platform IN ('baemin', 'coupang', 'other')) DEFAULT 'baemin',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
