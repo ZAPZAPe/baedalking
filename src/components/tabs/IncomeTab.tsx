@@ -30,6 +30,8 @@ interface IncomeTabProps {
   setSelectedDate: (date: string | null) => void
   selectedDate: string | null
   showDetailModal: boolean
+  onEditRecord?: (record: any) => void
+  onDeleteRecord?: (recordId: string) => void
 }
 
 export default function IncomeTab({
@@ -53,7 +55,9 @@ export default function IncomeTab({
   setShowDetailModal,
   setSelectedDate,
   selectedDate,
-  showDetailModal
+  showDetailModal,
+  onEditRecord,
+  onDeleteRecord
 }: IncomeTabProps) {
   const [activeView, setActiveView] = useState<'daily' | 'weekly' | 'monthly'>('daily')
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
@@ -109,6 +113,8 @@ export default function IncomeTab({
       setShowPlatformSettings={setShowPlatformSettings}
       selectedDate={selectedDate || undefined}
       onDateChange={setSelectedDate}
+      onEditRecord={onEditRecord}
+      onDeleteRecord={onDeleteRecord}
     />
   )
 

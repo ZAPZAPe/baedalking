@@ -19,6 +19,8 @@ interface ProfileTabProps {
   setShowDeleteAccount: (show: boolean) => void
   setShowFriendsModal: (show: boolean) => void
   onLogout: () => void
+  onUpdateProfile: (field: string, value: string) => Promise<boolean>
+  userId: string
 }
 
 export default function ProfileTab({
@@ -32,7 +34,9 @@ export default function ProfileTab({
   setShowTermsOfService,
   setShowDeleteAccount,
   setShowFriendsModal,
-  onLogout
+  onLogout,
+  onUpdateProfile,
+  userId
 }: ProfileTabProps) {
   
   // 편집 상태 관리
@@ -42,17 +46,45 @@ export default function ProfileTab({
   const [tempLocation, setTempLocation] = useState(userLocation)
 
   // 닉네임 저장
-  const handleSaveNickname = () => {
-    // TODO: API 호출로 서버에 저장
-    console.log('닉네임 저장:', tempNickname)
-    setIsEditingNickname(false)
+  const handleSaveNickname = async () => {
+    if (!tempNickname.trim()) {
+      alert('닉네임을 입력해주세요.')
+      return
+    }
+    
+    try {
+      const success = await onUpdateProfile('nickname', tempNickname.trim())
+      if (success) {
+        setIsEditingNickname(false)
+        alert('닉네임이 성공적으로 변경되었습니다.')
+      } else {
+        alert('닉네임 변경에 실패했습니다. 다시 시도해주세요.')
+      }
+    } catch (error) {
+      console.error('닉네임 저장 오류:', error)
+      alert('오류가 발생했습니다. 다시 시도해주세요.')
+    }
   }
 
   // 지역 저장
-  const handleSaveLocation = () => {
-    // TODO: API 호출로 서버에 저장
-    console.log('지역 저장:', tempLocation)
-    setIsEditingLocation(false)
+  const handleSaveLocation = async () => {
+    if (!tempLocation.trim()) {
+      alert('지역을 선택해주세요.')
+      return
+    }
+    
+    try {
+      const success = await onUpdateProfile('region', tempLocation)
+      if (success) {
+        setIsEditingLocation(false)
+        alert('지역이 성공적으로 변경되었습니다.')
+      } else {
+        alert('지역 변경에 실패했습니다. 다시 시도해주세요.')
+      }
+    } catch (error) {
+      console.error('지역 저장 오류:', error)
+      alert('오류가 발생했습니다. 다시 시도해주세요.')
+    }
   }
 
   // 닉네임 편집 취소

@@ -18,6 +18,8 @@ interface DailyViewProps {
   setShowPlatformSettings: (show: boolean) => void
   selectedDate?: string
   onDateChange?: (date: string) => void
+  onEditRecord?: (record: any) => void
+  onDeleteRecord?: (recordId: string) => void
 }
 
 export default function DailyView({
@@ -31,7 +33,9 @@ export default function DailyView({
   setShowIncomeInputPanel,
   setShowPlatformSettings,
   selectedDate,
-  onDateChange
+  onDateChange,
+  onEditRecord,
+  onDeleteRecord
 }: DailyViewProps) {
   // 선택된 날짜 또는 오늘 날짜
   const today = new Date()
@@ -417,7 +421,7 @@ export default function DailyView({
                         </div>
 
                         {/* 상세 정보 그리드 */}
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-3 mb-3">
                           {/* 건수 */}
                           <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
                                style={{borderColor: `${config.color}30`}}>
@@ -446,6 +450,34 @@ export default function DailyView({
                               ₩{record.missionAmount.toLocaleString()}
                             </div>
                           </div>
+                        </div>
+
+                        {/* 수정/삭제 버튼 */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              if (onEditRecord) {
+                                onEditRecord(record)
+                              }
+                            }}
+                            className="flex-1 bg-gradient-to-r from-[#ffd93d]/20 to-[#ff6b6b]/20 border border-[#ffd93d]/50 hover:border-[#ffd93d] text-[#ffd93d] hover:text-white py-2 px-3 text-xs font-bold font-mono transition-all duration-200 hover:scale-105"
+                            style={{borderRadius: '4px'}}
+                          >
+                            ✏️ 수정
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm('이 수입 기록을 삭제하시겠습니까?')) {
+                                if (onDeleteRecord) {
+                                  onDeleteRecord(record.id)
+                                }
+                              }
+                            }}
+                            className="flex-1 bg-gradient-to-r from-[#ff6b6b]/20 to-[#ff4757]/20 border border-[#ff6b6b]/50 hover:border-[#ff6b6b] text-[#ff6b6b] hover:text-white py-2 px-3 text-xs font-bold font-mono transition-all duration-200 hover:scale-105"
+                            style={{borderRadius: '4px'}}
+                          >
+                            🗑️ 삭제
+                          </button>
                         </div>
                       </div>
                     </div>

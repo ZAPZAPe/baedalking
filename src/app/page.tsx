@@ -307,6 +307,40 @@ export default function Home() {
                 setSelectedDate={(date: string | null) => setSelectedDate(date)}
                 selectedDate={selectedDate}
                 showDetailModal={showDetailModal}
+                onEditRecord={async (record: any) => {
+                  // TODO: 수입 기록 수정 모달 열기
+                  console.log('수입 기록 수정:', record)
+                  alert('수입 기록 수정 기능은 곧 구현 예정입니다.')
+                }}
+                onDeleteRecord={async (recordId: string) => {
+                  try {
+                    if (!user?.id) {
+                      alert('로그인이 필요합니다.')
+                      return
+                    }
+
+                    const response = await fetch(`/api/earnings/${recordId}`, {
+                      method: 'DELETE',
+                    })
+
+                    const data = await response.json()
+
+                    if (response.ok) {
+                      alert('수입 기록이 성공적으로 삭제되었습니다.')
+                      
+                      // 로컬 상태에서 해당 기록 제거
+                      setIncomeRecords(prev => prev.filter(record => record.id !== recordId))
+                      
+                      // 포인트 차감 (별도 구현 필요)
+                    } else {
+                      console.error('수입 기록 삭제 실패:', data.error)
+                      alert('수입 기록 삭제에 실패했습니다.')
+                    }
+                  } catch (error) {
+                    console.error('수입 기록 삭제 오류:', error)
+                    alert('오류가 발생했습니다. 다시 시도해주세요.')
+                  }
+                }}
               />
             )}
 
@@ -362,6 +396,58 @@ export default function Home() {
                   await signOut()
                   router.push('/login')
                 }}
+                onUpdateProfile={async (field: string, value: string) => {
+                  try {
+                    if (!user?.id) {
+                      console.error('사용자 ID가 없습니다.')
+                      return false
+                    }
+
+                    const response = await fetch(`/api/users/${user.id}`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ [field]: value }),
+                    })
+
+                    const data = await response.json()
+
+                    if (response.ok) {
+                      // 로컬 상태 업데이트
+                      if (field === 'nickname') {
+                        setUserNickname(value)
+                        // 로컬스토리지의 사용자 정보도 업데이트
+                        const kakaoUser = localStorage.getItem('kakaoUser')
+                        if (kakaoUser) {
+                          const userData = JSON.parse(kakaoUser)
+                          userData.nickname = value
+                          localStorage.setItem('kakaoUser', JSON.stringify(userData))
+                        }
+                      } else if (field === 'region') {
+                        setUserLocation(value)
+                        // 로컬스토리지의 사용자 정보도 업데이트
+                        const kakaoUser = localStorage.getItem('kakaoUser')
+                        if (kakaoUser) {
+                          const userData = JSON.parse(kakaoUser)
+                          userData.region = value
+                          localStorage.setItem('kakaoUser', JSON.stringify(userData))
+                        }
+                      }
+                      return true
+                    } else {
+                      console.error('프로필 업데이트 실패:', data.error)
+                      if (data.error === '이미 사용 중인 닉네임입니다.') {
+                        alert('이미 사용 중인 닉네임입니다. 다른 닉네임을 선택해주세요.')
+                      }
+                      return false
+                    }
+                  } catch (error) {
+                    console.error('프로필 업데이트 오류:', error)
+                    return false
+                  }
+                }}
+                userId={user?.id || ''}
               />
             )}
             </div>

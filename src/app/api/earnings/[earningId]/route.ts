@@ -4,107 +4,80 @@ import { supabase } from '@/lib/supabase'
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
 
-// 수익 기록 수정
+// 수입 기록 수정
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ earningId: string }> }
 ) {
   try {
     const { earningId } = await params
-    const { 
-      amount, 
-      screenshotUrl, 
-      screenshotText, 
-      source 
-    } = await request.json()
+    const body = await request.json()
 
     if (!earningId) {
       return NextResponse.json(
-        { error: '수익 ID가 필요합니다.' },
+        { error: '수입 기록 ID가 필요합니다.' },
         { status: 400 }
       )
     }
 
-    // 수익 금액 검증
-    if (amount !== undefined && (amount < 0 || amount > 10000000)) {
+    // 업데이트할 필드 확인 및 필터링
+    const allowedFields = ['amount', 'mission_amount', 'delivery_count', 'platform', 'date', 'screenshot_url', 'screenshot_text']
+    const updateData: any = {}
+
+    allowedFields.forEach(field => {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field]
+      }
+    })
+
+    // 업데이트할 데이터가 없는 경우
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
-        { error: '수익 금액이 유효하지 않습니다.' },
+        { error: '업데이트할 데이터가 없습니다.' },
         { status: 400 }
       )
     }
 
-    // 기존 수익 기록 조회
-    const { data: existingEarning, error: fetchError } = await supabase
+    // 기존 수입 기록 확인 (사용자 권한 체크용)
+    const { data: existingRecord, error: checkError } = await supabase
       .from('earnings')
-      .select('*')
+      .select('user_id')
       .eq('id', earningId)
       .single()
 
-    if (fetchError || !existingEarning) {
+    if (checkError || !existingRecord) {
       return NextResponse.json(
-        { error: '수익 기록을 찾을 수 없습니다.' },
+        { error: '수입 기록을 찾을 수 없습니다.' },
         { status: 404 }
       )
     }
 
-    // 업데이트할 데이터 준비
-    const updateData: any = {
-      updated_at: new Date().toISOString()
-    }
+    // updated_at 필드 추가
+    updateData.updated_at = new Date().toISOString()
 
-    if (amount !== undefined) {
-      updateData.amount = amount
-      updateData.points_awarded = Math.floor(amount / 1000) // 포인트 재계산
-    }
-    if (screenshotUrl !== undefined) updateData.screenshot_url = screenshotUrl
-    if (screenshotText !== undefined) updateData.screenshot_text = screenshotText
-    if (source !== undefined) updateData.source = source
-
-    // 수익 기록 업데이트
-    const { data: updatedEarning, error: updateError } = await supabase
+    // 데이터베이스 업데이트
+    const { data: updatedRecord, error: updateError } = await supabase
       .from('earnings')
       .update(updateData)
       .eq('id', earningId)
-      .select()
+      .select('*')
       .single()
 
-    if (updateError) {
-      console.error('수익 수정 오류:', updateError)
+    if (updateError || !updatedRecord) {
+      console.error('수입 기록 업데이트 오류:', updateError)
       return NextResponse.json(
-        { error: '수익 수정에 실패했습니다.' },
+        { error: '수입 기록 업데이트에 실패했습니다.' },
         { status: 500 }
       )
     }
 
-    // 포인트 차이가 있으면 포인트 조정
-    if (amount !== undefined) {
-      const pointsDiff = updateData.points_awarded - existingEarning.points_awarded
-      
-      if (pointsDiff !== 0) {
-        const { error: pointsError } = await supabase
-          .from('points')
-          .insert([
-            {
-              user_id: existingEarning.user_id,
-              amount: pointsDiff,
-              type: pointsDiff > 0 ? 'earn' : 'spend'
-            }
-          ])
-
-        if (pointsError) {
-          console.error('포인트 조정 오류:', pointsError)
-          // 포인트 조정 실패해도 수익 수정은 성공으로 처리
-        }
-      }
-    }
-
-    return NextResponse.json({
-      message: '수익 기록이 수정되었습니다!',
-      earning: updatedEarning
+    return NextResponse.json({ 
+      message: '수입 기록이 성공적으로 업데이트되었습니다.',
+      earning: updatedRecord 
     })
 
   } catch (error) {
-    console.error('수익 수정 API 오류:', error)
+    console.error('수입 기록 업데이트 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -112,76 +85,71 @@ export async function PUT(
   }
 }
 
-// 수익 기록 삭제
+// 수입 기록 삭제
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ earningId: string }> }
 ) {
   try {
     const { earningId } = await params
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId') // 권한 확인용
 
-    if (!earningId || !userId) {
+    if (!earningId) {
       return NextResponse.json(
-        { error: '필수 정보가 누락되었습니다.' },
+        { error: '수입 기록 ID가 필요합니다.' },
         { status: 400 }
       )
     }
 
-    // 기존 수익 기록 조회 (권한 확인)
-    const { data: existingEarning, error: fetchError } = await supabase
+    // 기존 수입 기록 확인 (사용자 권한 체크용)
+    const { data: existingRecord, error: checkError } = await supabase
       .from('earnings')
-      .select('*')
+      .select('user_id, amount, mission_amount, delivery_count')
       .eq('id', earningId)
-      .eq('user_id', userId) // 본인 기록만 삭제 가능
       .single()
 
-    if (fetchError || !existingEarning) {
+    if (checkError || !existingRecord) {
       return NextResponse.json(
-        { error: '수익 기록을 찾을 수 없거나 삭제 권한이 없습니다.' },
+        { error: '수입 기록을 찾을 수 없습니다.' },
         { status: 404 }
       )
     }
 
-    // 수익 기록 삭제
+    // 수입 기록 삭제
     const { error: deleteError } = await supabase
       .from('earnings')
       .delete()
       .eq('id', earningId)
 
     if (deleteError) {
-      console.error('수익 삭제 오류:', deleteError)
+      console.error('수입 기록 삭제 오류:', deleteError)
       return NextResponse.json(
-        { error: '수익 삭제에 실패했습니다.' },
+        { error: '수입 기록 삭제에 실패했습니다.' },
         { status: 500 }
       )
     }
 
-    // 지급된 포인트 회수 (음수 포인트 추가)
-    if (existingEarning.points_awarded > 0) {
-      const { error: pointsError } = await supabase
-        .from('points')
-        .insert([
-          {
-            user_id: userId,
-            amount: -existingEarning.points_awarded,
-            type: 'spend'
-          }
-        ])
+    // 관련 포인트 기록도 삭제 (선택사항)
+    // 포인트는 수입과 연결되어 있으므로 삭제 시 고려 필요
+    const totalAmount = (existingRecord.amount || 0) + (existingRecord.mission_amount || 0)
+    const pointsToDeduct = (existingRecord.delivery_count * 5) + Math.floor(totalAmount * 0.01)
 
-      if (pointsError) {
-        console.error('포인트 회수 오류:', pointsError)
-        // 포인트 회수 실패해도 삭제는 성공으로 처리
-      }
-    }
+    // 포인트 차감 기록 추가
+    await supabase
+      .from('points')
+      .insert({
+        user_id: existingRecord.user_id,
+        amount: -pointsToDeduct,
+        type: 'deduct',
+        description: '수입 기록 삭제로 인한 포인트 차감'
+      })
 
-    return NextResponse.json({
-      message: '수익 기록이 삭제되었습니다.'
+    return NextResponse.json({ 
+      message: '수입 기록이 성공적으로 삭제되었습니다.',
+      deletedRecord: existingRecord 
     })
 
   } catch (error) {
-    console.error('수익 삭제 API 오류:', error)
+    console.error('수입 기록 삭제 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
