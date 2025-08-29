@@ -136,12 +136,12 @@ function AuthCallbackContent() {
       console.log('로컬 스토리지에 사용자 정보 저장됨')
       
       setStatus('success')
-      setMessage('회원가입 및 로그인 성공! 메인 페이지로 이동합니다.')
+      setMessage('회원가입 성공! 계정 설정 페이지로 이동합니다.')
       
-      // 단순하게 window.location 사용
-      console.log('메인 페이지로 리다이렉트...')
+      // 계정 설정 페이지로 이동
+      console.log('계정 설정 페이지로 리다이렉트...')
       setTimeout(() => {
-        window.location.href = '/'
+        window.location.href = '/auth/setup'
       }, 1500) // 1.5초 후 이동
 
     } catch (error) {

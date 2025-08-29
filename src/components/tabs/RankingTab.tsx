@@ -9,6 +9,7 @@ interface RankingTabProps {
   onShowTopRankerProfile: (ranker: TopRanker) => void
   onShowRankingDetail: () => void
   onTopRankersUpdate: (rankers: TopRanker[]) => void
+  onShowUserProfile: (userProfile: any) => void
 }
 
 interface GradeInfo {
@@ -31,7 +32,7 @@ interface TopRanker {
   platforms: string[] // 수입 등록된 플랫폼들
 }
 
-export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, onShowTopRankerProfile, onShowRankingDetail, onTopRankersUpdate }: RankingTabProps) {
+export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, onShowTopRankerProfile, onShowRankingDetail, onTopRankersUpdate, onShowUserProfile }: RankingTabProps) {
 
 
   // 오늘 일간 수입 계산
@@ -160,7 +161,18 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
 
   // TOP 랭커 프로필 모달 표시
   const handleShowTopRankerProfile = (ranker: TopRanker) => {
-    onShowTopRankerProfile(ranker)
+    // UserProfileModal을 위한 사용자 프로필 데이터 생성
+    const userProfile = {
+      id: ranker.id,
+      nickname: ranker.nickname,
+      region: ranker.region,
+      income: ranker.income,
+      count: ranker.count,
+      platforms: ranker.platforms,
+      minihomeId: ranker.id
+    }
+    
+    onShowUserProfile(userProfile)
   }
 
 
@@ -233,7 +245,9 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
         <div className="grid grid-cols-2 gap-3 mb-3">
           {/* 내 등급 */}
           <div 
-            className="bg-[#1a202c]/50 p-3 rounded-lg text-center border border-[#ffd93d]/30 relative cursor-pointer hover:bg-[#1a202c]/70 transition-all duration-200"
+            className={`bg-[#1a202c]/50 p-3 rounded-lg text-center border border-[#ffd93d]/30 relative transition-all duration-200 ${
+              myGrade ? 'cursor-pointer hover:bg-[#1a202c]/70' : 'cursor-not-allowed opacity-60'
+            }`}
             onClick={() => myGrade && handleShowGradeDetail(myGrade)}
           >
             {/* 픽셀 도트들 */}

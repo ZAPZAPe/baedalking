@@ -28,6 +28,7 @@ import RankingDetailModal from '@/components/modals/RankingDetailModal'
 import PrivacyPolicyModal from '@/components/modals/PrivacyPolicyModal'
 import TermsOfServiceModal from '@/components/modals/TermsOfServiceModal'
 import FriendsModal from '@/components/modals/FriendsModal'
+import UserProfileModal from '@/components/modals/UserProfileModal'
 
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
@@ -114,6 +115,8 @@ export default function Home() {
   const [showTermsOfService, setShowTermsOfService] = useState(false)
   const [showDeleteAccount, setShowDeleteAccount] = useState(false)
   const [showFriendsModal, setShowFriendsModal] = useState(false)
+  const [showUserProfile, setShowUserProfile] = useState(false)
+  const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null)
 
   // 디버깅: 로컬 스토리지 확인
   useEffect(() => {
@@ -347,7 +350,7 @@ export default function Home() {
             {/* RANKING 탭 */}
             {activeTab === 'ranking' && (
               <RankingTab 
-                allRecords={allRecords}
+                allRecords={incomeRecords}
                 dailyGoal={dailyGoal}
                 onShowGradeDetail={(grade: {
                   name: string
@@ -366,15 +369,23 @@ export default function Home() {
                 }}
                 onShowRankingDetail={() => setShowRankingDetail(true)}
                 onTopRankersUpdate={setTopRankers}
+                onShowUserProfile={(userProfile) => {
+                  setSelectedUserProfile(userProfile)
+                  setShowUserProfile(true)
+                }}
               />
             )}
 
             {/* FRIENDS 탭 */}
             {activeTab === 'friends' && (
               <FriendsTab
-                currentUserId="current-user-id"
+                currentUserId={user?.id || ''}
                 setShowFriendDetail={setShowFriendDetail}
                 setSelectedFriend={setSelectedFriend}
+                onShowUserProfile={(userProfile) => {
+                  setSelectedUserProfile(userProfile)
+                  setShowUserProfile(true)
+                }}
               />
             )}
 
@@ -626,6 +637,14 @@ export default function Home() {
         isOpen={showFriendsModal}
         onClose={() => setShowFriendsModal(false)}
         currentUserId={user?.id || ''}
+      />
+
+      {/* 사용자 프로필 모달 */}
+      <UserProfileModal
+        isOpen={showUserProfile}
+        onClose={() => setShowUserProfile(false)}
+        user={selectedUserProfile}
+        title="USER PROFILE"
       />
     </div>
   )

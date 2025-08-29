@@ -8,9 +8,10 @@ interface FriendsTabProps {
   currentUserId: string
   setShowFriendDetail: (show: boolean) => void
   setSelectedFriend: (friend: any) => void
+  onShowUserProfile: (userProfile: any) => void
 }
 
-export default function FriendsTab({ currentUserId, setShowFriendDetail, setSelectedFriend }: FriendsTabProps) {
+export default function FriendsTab({ currentUserId, setShowFriendDetail, setSelectedFriend, onShowUserProfile }: FriendsTabProps) {
   const router = useRouter()
   const [friends, setFriends] = useState<Friendship[]>([])
   const [friendRequests, setFriendRequests] = useState<Friendship[]>([])
@@ -153,8 +154,18 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
 
   // 친구 상세보기 열기
   const handleOpenFriendDetail = (friendship: Friendship) => {
-    setSelectedFriend(friendship)
-    setShowFriendDetail(true)
+    // UserProfileModal을 위한 사용자 프로필 데이터 생성
+    const userProfile = {
+      id: friendship.friend.id,
+      nickname: friendship.friend.nickname,
+      region: '서울특별시', // 기본값, 실제로는 API에서 가져와야 함
+      income: 0, // 기본값, 실제로는 API에서 가져와야 함
+      count: 0, // 기본값, 실제로는 API에서 가져와야 함
+      platforms: [], // 기본값, 실제로는 API에서 가져와야 함
+      minihomeId: friendship.friend.minihomeId
+    }
+    
+    onShowUserProfile(userProfile)
   }
 
 
@@ -184,20 +195,20 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
     setSearchResults(prev => prev.filter(user => user.id !== userId))
   }
 
-  // 미니홈피 방문
-  const handleVisitMinihome = (minihomeId: string) => {
-    console.log('미니홈피 방문 시도:', minihomeId)
-    try {
-      // 미니홈피 페이지로 이동
-      router.push(`/minihome/${minihomeId}`)
-      console.log('라우터 푸시 완료')
-    } catch (error) {
-      console.error('라우터 푸시 에러:', error)
-      // 폴백: window.location.href 사용
-      console.log('폴백 방법 사용: window.location.href')
-      window.location.href = `/minihome/${minihomeId}`
-    }
-  }
+        // 미니홈피 방문
+      const handleVisitMinihome = (minihomeId: string) => {
+        console.log('미니홈피 방문 시도:', minihomeId)
+        try {
+          // 미니홈피 페이지로 이동
+          router.push(`/minihompy/${minihomeId}`)
+          console.log('라우터 푸시 완료')
+        } catch (error) {
+          console.error('라우터 푸시 에러:', error)
+          // 폴백: window.location.href 사용
+          console.log('폴백 방법 사용: window.location.href')
+          window.location.href = `/minihompy/${minihomeId}`
+        }
+      }
 
   return (
     <div className="space-y-3 sm:space-y-4">
