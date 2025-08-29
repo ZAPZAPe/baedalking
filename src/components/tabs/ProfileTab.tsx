@@ -34,6 +34,39 @@ export default function ProfileTab({
   setShowFriendsModal,
   onLogout
 }: ProfileTabProps) {
+  
+  // 편집 상태 관리
+  const [isEditingNickname, setIsEditingNickname] = useState(false)
+  const [isEditingLocation, setIsEditingLocation] = useState(false)
+  const [tempNickname, setTempNickname] = useState(userNickname)
+  const [tempLocation, setTempLocation] = useState(userLocation)
+
+  // 닉네임 저장
+  const handleSaveNickname = () => {
+    // TODO: API 호출로 서버에 저장
+    console.log('닉네임 저장:', tempNickname)
+    setIsEditingNickname(false)
+  }
+
+  // 지역 저장
+  const handleSaveLocation = () => {
+    // TODO: API 호출로 서버에 저장
+    console.log('지역 저장:', tempLocation)
+    setIsEditingLocation(false)
+  }
+
+  // 닉네임 편집 취소
+  const handleCancelNickname = () => {
+    setTempNickname(userNickname)
+    setIsEditingNickname(false)
+  }
+
+  // 지역 편집 취소
+  const handleCancelLocation = () => {
+    setTempLocation(userLocation)
+    setIsEditingLocation(false)
+  }
+
   const handleLogout = () => {
     onLogout()
   }
@@ -138,24 +171,103 @@ export default function ProfileTab({
         </div>
         
         <div className="space-y-2">
-          <button 
-            onClick={() => console.log('닉네임 변경')}
-            className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
-            style={{borderRadius: '4px'}}
-          >
-            <div className="text-white text-sm font-bold font-mono">닉네임 변경</div>
-            <div className="text-gray-400 text-xs font-mono">현재: {userNickname}</div>
-          </button>
+          {/* 닉네임 변경 */}
+          {isEditingNickname ? (
+            <div className="bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded" style={{borderRadius: '4px'}}>
+              <div className="text-white text-sm font-bold font-mono mb-2">닉네임 변경</div>
+              <input
+                type="text"
+                value={tempNickname}
+                onChange={(e) => setTempNickname(e.target.value)}
+                className="w-full bg-[#1a202c] border border-[#00ff88]/50 text-white text-sm p-2 rounded mb-2"
+                style={{borderRadius: '4px'}}
+                placeholder="새 닉네임을 입력하세요"
+                maxLength={20}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveNickname}
+                  className="flex-1 bg-[#00ff88]/20 border border-[#00ff88]/50 text-[#00ff88] hover:bg-[#00ff88]/30 py-2 rounded text-sm font-bold transition-all"
+                  style={{borderRadius: '4px'}}
+                >
+                  저장
+                </button>
+                <button
+                  onClick={handleCancelNickname}
+                  className="flex-1 bg-[#ff6b6b]/20 border border-[#ff6b6b]/50 text-[#ff6b6b] hover:bg-[#ff6b6b]/30 py-2 rounded text-sm font-bold transition-all"
+                  style={{borderRadius: '4px'}}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setIsEditingNickname(true)}
+              className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
+              style={{borderRadius: '4px'}}
+            >
+              <div className="text-white text-sm font-bold font-mono">닉네임 변경</div>
+              <div className="text-gray-400 text-xs font-mono">현재: {userNickname || '닉네임 없음'}</div>
+            </button>
+          )}
           
-          <button 
-            onClick={() => console.log('지역 변경')}
-            className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
-            style={{borderRadius: '4px'}}
-          >
-            <div className="text-white text-sm font-bold font-mono">지역 변경</div>
-            <div className="text-gray-400 text-xs font-mono">활동 지역 설정</div>
-          </button>
-          
+          {/* 지역 변경 */}
+          {isEditingLocation ? (
+            <div className="bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded" style={{borderRadius: '4px'}}>
+              <div className="text-white text-sm font-bold font-mono mb-2">지역 변경</div>
+              <select
+                value={tempLocation}
+                onChange={(e) => setTempLocation(e.target.value)}
+                className="w-full bg-[#1a202c] border border-[#00ff88]/50 text-white text-sm p-2 rounded mb-2"
+                style={{borderRadius: '4px'}}
+              >
+                <option value="서울특별시">서울특별시</option>
+                <option value="부산광역시">부산광역시</option>
+                <option value="대구광역시">대구광역시</option>
+                <option value="인천광역시">인천광역시</option>
+                <option value="광주광역시">광주광역시</option>
+                <option value="대전광역시">대전광역시</option>
+                <option value="울산광역시">울산광역시</option>
+                <option value="세종특별자치시">세종특별자치시</option>
+                <option value="경기도">경기도</option>
+                <option value="강원도">강원도</option>
+                <option value="충청북도">충청북도</option>
+                <option value="충청남도">충청남도</option>
+                <option value="전라북도">전라북도</option>
+                <option value="전라남도">전라남도</option>
+                <option value="경상북도">경상북도</option>
+                <option value="경상남도">경상남도</option>
+                <option value="제주특별자치도">제주특별자치도</option>
+              </select>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveLocation}
+                  className="flex-1 bg-[#00ff88]/20 border border-[#00ff88]/50 text-[#00ff88] hover:bg-[#00ff88]/30 py-2 rounded text-sm font-bold transition-all"
+                  style={{borderRadius: '4px'}}
+                >
+                  저장
+                </button>
+                <button
+                  onClick={handleCancelLocation}
+                  className="flex-1 bg-[#ff6b6b]/20 border border-[#ff6b6b]/50 text-[#ff6b6b] hover:bg-[#ff6b6b]/30 py-2 rounded text-sm font-bold transition-all"
+                  style={{borderRadius: '4px'}}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setIsEditingLocation(true)}
+              className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
+              style={{borderRadius: '4px'}}
+            >
+              <div className="text-white text-sm font-bold font-mono">지역 변경</div>
+              <div className="text-gray-400 text-xs font-mono">현재: {userLocation || '지역 없음'}</div>
+            </button>
+          )}
+
           <button 
             onClick={() => setIsIncomePrivate(!isIncomePrivate)}
             className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 

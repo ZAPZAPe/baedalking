@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import RankingDetailModal from '@/components/modals/RankingDetailModal'
 
 interface RankingTabProps {
   allRecords: any[]
@@ -44,9 +45,8 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
       .reduce((total, record) => total + record.amount + record.missionAmount, 0)
   }
 
-  // 테스트용 수입 데이터 (개발/테스트 시에만 사용)
-  const testIncome = 180000 // 18만원으로 GOLD 등급 테스트
-  const myIncome = testIncome // 테스트용으로 고정 수입 사용
+  // 실제 사용자 수입 계산
+  const myIncome = getDailyIncome()
   // const myIncome = getDailyIncome() // 실제 데이터 사용 시 이 줄 사용
 
   // 등급별 정보 정의 - 수입 기반
@@ -95,7 +95,44 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
     })
   }
 
-  const topRankers = generateTopRankers()
+  // 실제 랭킹 데이터 상태
+  const [topRankers, setTopRankers] = useState<TopRanker[]>([])
+  const [isLoadingRanking, setIsLoadingRanking] = useState(true)
+
+  // 랭킹 데이터 가져오기
+  useEffect(() => {
+    const fetchRankings = async () => {
+      try {
+        const response = await fetch('/api/rankings?period=daily&limit=5')
+        const data = await response.json()
+        
+        if (response.ok && data.rankings) {
+          const formattedRankers = data.rankings.map((ranking: any) => ({
+            id: ranking.user_id,
+            rank: ranking.rank,
+            income: ranking.total_income,
+            count: 0, // API에서 제공되지 않으면 0으로 설정
+            platform: '배민', // 기본값
+            nickname: ranking.nickname,
+            region: ranking.region,
+            platforms: ['배민'] // 기본값
+          }))
+          setTopRankers(formattedRankers)
+        } else {
+          // API 응답이 없으면 시뮬레이션 데이터 사용
+          setTopRankers(generateTopRankers())
+        }
+      } catch (error) {
+        console.error('랭킹 데이터 로딩 오류:', error)
+        // 에러 시 시뮬레이션 데이터 사용
+        setTopRankers(generateTopRankers())
+      } finally {
+        setIsLoadingRanking(false)
+      }
+    }
+
+    fetchRankings()
+  }, [myIncome])
 
   // 등급별 분포 계산 (시뮬레이션)
   const getGradeDistribution = () => {
@@ -126,6 +163,9 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
   const handleShowGradeDetail = (grade: GradeInfo) => {
     onShowGradeDetail(grade)
   }
+
+  // Ranking Detail 모달 상태
+  const [showRankingDetail, setShowRankingDetail] = useState(false)
 
   // 인증되지 않은 경우 잠금 화면 표시
   if (false) {
@@ -204,7 +244,10 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
           </div>
 
           {/* 내 순위 */}
-          <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border border-[#ffd93d]/30 relative">
+          <div 
+            className="bg-[#1a202c]/50 p-3 rounded-lg text-center border border-[#ffd93d]/30 relative cursor-pointer hover:bg-[#1a202c]/70 transition-all duration-200"
+            onClick={() => setShowRankingDetail(true)}
+          >
             {/* 픽셀 도트들 */}
             <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
             <div className="absolute top-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
@@ -299,12 +342,15 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
         </div>
       </div>
 
-
-
-
-
-
-
+      {/* Ranking Detail 모달 */}
+      <RankingDetailModal
+        isOpen={showRankingDetail}
+        onClose={() => setShowRankingDetail(false)}
+        userRank={myGrade ? Math.floor(Math.random() * 100) + 1 : 0}
+        userIncome={myIncome}
+        totalUsers={1000} // 실제 데이터로 교체 필요
+        topRankers={topRankers}
+      />
     </div>
   )
 } 

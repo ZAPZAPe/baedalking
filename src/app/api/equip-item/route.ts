@@ -40,22 +40,28 @@ export async function PUT(request: NextRequest) {
 
     // 장착하는 경우, 같은 타입의 다른 아이템들 해제
     if (equipped) {
-      const itemType = Array.isArray(userItem.item) ? userItem.item[0]?.type : userItem.item?.type
+      const itemData = Array.isArray(userItem.item) ? userItem.item[0] : userItem.item
+      const itemType = itemData?.type
       
       if (itemType) {
-        const { error: unequipError } = await supabase
-          .from('user_items')
-          .update({ equipped: false })
-          .eq('user_id', userItem.user_id)
-          .in('item_id', 
-            supabase
-              .from('items')
-              .select('id')
-              .eq('type', itemType)
-          )
+        // 같은 타입의 아이템 ID들 조회
+        const { data: sameTypeItems, error: itemsError } = await supabase
+          .from('items')
+          .select('id')
+          .eq('type', itemType)
 
-        if (unequipError) {
-          console.error('기존 아이템 해제 오류:', unequipError)
+        if (!itemsError && sameTypeItems) {
+          const itemIds = sameTypeItems.map(item => item.id)
+          
+          const { error: unequipError } = await supabase
+            .from('user_items')
+            .update({ equipped: false })
+            .eq('user_id', userItem.user_id)
+            .in('item_id', itemIds)
+
+          if (unequipError) {
+            console.error('기존 아이템 해제 오류:', unequipError)
+          }
         }
       }
     }

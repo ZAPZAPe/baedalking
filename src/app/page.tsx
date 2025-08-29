@@ -24,6 +24,7 @@ import IncomeEditModal from '@/components/modals/IncomeEditModal'
 import FriendDetailModal from '@/components/modals/FriendDetailModal'
 import TopRankerProfileModal from '@/components/modals/TopRankerProfileModal'
 import GradeDetailModal from '@/components/modals/GradeDetailModal'
+import RankingDetailModal from '@/components/modals/RankingDetailModal'
 import PrivacyPolicyModal from '@/components/modals/PrivacyPolicyModal'
 import TermsOfServiceModal from '@/components/modals/TermsOfServiceModal'
 import FriendsModal from '@/components/modals/FriendsModal'
@@ -128,6 +129,73 @@ export default function Home() {
     }
   }, [user, loading, router])
 
+  // 실제 날씨 데이터 가져오기
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const response = await fetch('/api/weather')
+        const data = await response.json()
+        
+        if (response.ok) {
+          setCurrentWeather({
+            temp: data.temperature,
+            condition: data.condition
+          })
+        }
+      } catch (error) {
+        console.error('날씨 데이터 로딩 오류:', error)
+        // 에러 시 기본값 유지
+      }
+    }
+
+    fetchWeather()
+  }, [])
+
+  // 사용자 데이터 로딩
+  useEffect(() => {
+    if (user?.id) {
+      loadUserData()
+    }
+  }, [user])
+
+  const loadUserData = async () => {
+    if (!user?.id) return
+
+    try {
+      // 사용자 기본 정보 설정
+      setUserNickname(user.nickname || '배달킹')
+      setUserLocation(user.region || '서울특별시')
+
+      // 포인트 데이터 로딩
+      const pointsResponse = await fetch(`/api/points?userId=${user.id}`)
+      if (pointsResponse.ok) {
+        const pointsData = await pointsResponse.json()
+        setTotalPoints(pointsData.totalPoints || 0)
+      }
+
+      // 수익 데이터 로딩 (earnings API 호출)
+      const earningsResponse = await fetch(`/api/users/${user.id}`)
+      if (earningsResponse.ok) {
+        const earningsData = await earningsResponse.json()
+        // 수익 데이터를 incomeRecords 형식으로 변환
+        if (earningsData.user?.earnings) {
+          const formattedRecords = earningsData.user.earnings.map((earning: any, index: number) => ({
+            id: index,
+            platform: earning.source || 'other',
+            count: 1, // API에서 제공되지 않으면 기본값
+            deliveryAmount: earning.amount,
+            missionAmount: 0, // API에서 제공되지 않으면 기본값
+            amount: earning.amount,
+            date: earning.date
+          }))
+          setIncomeRecords(formattedRecords)
+        }
+      }
+    } catch (error) {
+      console.error('사용자 데이터 로딩 오류:', error)
+    }
+  }
+
   // 수입 제출 핸들러
   const onIncomeSubmit = () => {
     handleIncomeSubmit(
@@ -140,7 +208,8 @@ export default function Home() {
       addPoints,
       setIncomeCount,
       setIncomeAmount,
-      setMissionAmount
+      setMissionAmount,
+      user?.id // 실제 사용자 ID 전달
     )
   }
   

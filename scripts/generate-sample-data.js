@@ -161,3 +161,4 @@ console.log('   📝 방명록: 5건');
 console.log('   🛍️ 상점 아이템: 5개');
 console.log('   🎨 사용자 아이템: 4건');
 console.log('\n🚀 이제 애플리케이션에서 테스트해보세요!');
+

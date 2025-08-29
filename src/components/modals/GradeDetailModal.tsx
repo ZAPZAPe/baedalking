@@ -141,19 +141,19 @@ export default function GradeDetailModal({
             </div>
 
             {/* 등급 분포도 */}
-            <div className="bg-gradient-to-br from-[#1a202c] to-[#2d3748] border-2 border-[#ffd93d]/50 p-4 relative"
+            <div className="bg-gradient-to-br from-[#1a202c] to-[#2d3748] border-2 border-[#ffd93d]/50 p-3 relative"
                  style={{borderRadius: '8px'}}>
               
               {/* 헤더 */}
-              <div className="flex items-center justify-center mb-4">
+              <div className="flex items-center justify-center mb-3">
                 <h5 className="text-[#ffd93d] font-bold text-sm font-mono tracking-wide" 
                     style={{textShadow: '0 0 8px rgba(255, 217, 61, 0.5)'}}>
                   GRADE DISTRIBUTION
                 </h5>
               </div>
               
-              {/* 등급별 카드 그리드 */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* 등급별 카드 그리드 - 3열로 변경하여 더 컴팩트하게 */}
+              <div className="grid grid-cols-3 gap-2">
                 {[
                   { name: 'LEGEND', color: '#ff6b35', percentage: 2, minIncome: 300000, maxIncome: Infinity, icon: '👑' },
                   { name: 'DIAMOND', color: '#00d4ff', percentage: 5, minIncome: 200000, maxIncome: 299999, icon: '💎' },
@@ -168,17 +168,17 @@ export default function GradeDetailModal({
                   return (
                     <div 
                       key={gradeInfo.name} 
-                      className={`relative p-3 rounded-lg border-2 transition-all duration-300 ${
+                      className={`relative p-2 rounded-lg border-2 transition-all duration-300 ${
                         isCurrentGrade 
                           ? 'border-[#ffd93d] bg-[#ffd93d]/10 shadow-lg shadow-[#ffd93d]/20' 
                           : 'border-[#2d3748] bg-[#1a202c]/60 hover:border-[#ffd93d]/30'
                       }`}
-                      style={{borderRadius: '6px'}}
+                      style={{borderRadius: '4px'}}
                     >
-                      {/* 등급 헤더 */}
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{gradeInfo.icon}</span>
+                      {/* 등급 헤더 - 더 컴팩트하게 */}
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm">{gradeInfo.icon}</span>
                           <span className={`text-xs font-mono font-bold ${
                             isCurrentGrade ? 'text-[#ffd93d]' : 'text-white'
                           }`}>
@@ -192,8 +192,8 @@ export default function GradeDetailModal({
                         </div>
                       </div>
                       
-                      {/* 수익 범위 */}
-                      <div className="text-center mb-3">
+                      {/* 수익 범위 - 더 작은 폰트 */}
+                      <div className="text-center mb-2">
                         <div className={`text-xs font-mono ${
                           isCurrentGrade ? 'text-[#ffd93d]' : 'text-gray-400'
                         }`}>
@@ -202,8 +202,8 @@ export default function GradeDetailModal({
                         </div>
                       </div>
                       
-                      {/* 진행률 바 */}
-                      <div className="bg-[#2d3748] h-2 rounded-full overflow-hidden border border-[#ffd93d]/20 relative">
+                      {/* 진행률 바 - 더 얇게 */}
+                      <div className="bg-[#2d3748] h-1.5 rounded-full overflow-hidden border border-[#ffd93d]/20 relative">
                         <div 
                           className="h-full transition-all duration-500 ease-out rounded-full"
                           style={{ 
@@ -213,8 +213,8 @@ export default function GradeDetailModal({
                         ></div>
                       </div>
                       
-                      {/* 인원 수 */}
-                      <div className="text-center mt-2">
+                      {/* 인원 수 - 더 작은 폰트 */}
+                      <div className="text-center mt-1">
                         <span className={`text-xs font-mono ${
                           isCurrentGrade ? 'text-[#ffd93d] font-bold' : 'text-gray-400'
                         }`}>
@@ -222,17 +222,21 @@ export default function GradeDetailModal({
                         </span>
                       </div>
                       
-
+                      {/* 모서리 픽셀 도트 - 더 작게 */}
+                      <div className="absolute top-0.5 left-0.5 w-0.5 h-0.5 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+                      <div className="absolute top-0.5 right-0.5 w-0.5 h-0.5 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+                      <div className="absolute bottom-0.5 left-0.5 w-0.5 h-0.5 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+                      <div className="absolute bottom-0.5 right-0.5 w-0.5 h-0.5 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
                     </div>
                   )
                 })}
               </div>
               
               {/* 모서리 픽셀 도트 */}
-              <div className="absolute top-2 left-2 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-              <div className="absolute top-2 right-2 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-              <div className="absolute bottom-2 left-2 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-              <div className="absolute bottom-2 right-2 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+              <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+              <div className="absolute top-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+              <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+              <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
             </div>
 
 

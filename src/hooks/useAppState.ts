@@ -168,10 +168,10 @@ export function useAppState() {
   // 수입 기록 상태 - 로컬스토리지에서 로드
   const [incomeRecords, setIncomeRecords] = useState<{ id: number; platform: string; count: number; deliveryAmount: number; missionAmount: number; amount: number; date: string }[]>([])
   
-  const [totalPoints, setTotalPoints] = useState(1234)
-  const [userLevel, setUserLevel] = useState(10)
-  const [userNickname, setUserNickname] = useState('배달킹')
-  const [userLocation, setUserLocation] = useState('서울특별시 강남구')
+  const [totalPoints, setTotalPoints] = useState(0)
+  const [userLevel, setUserLevel] = useState(1)
+  const [userNickname, setUserNickname] = useState('')
+  const [userLocation, setUserLocation] = useState('')
   const [currentWeather, setCurrentWeather] = useState({ temp: 22, condition: 'sunny' })
   const [todayVisitors, setTodayVisitors] = useState(12)
   const [totalVisitors, setTotalVisitors] = useState(247)
