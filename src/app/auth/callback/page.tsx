@@ -101,26 +101,11 @@ function AuthCallbackContent() {
         setStatus('success')
         setMessage('로그인 성공! 메인 페이지로 이동합니다.')
         
-        // 즉시 이동 시도
-        console.log('기존 사용자 - 메인 페이지로 이동 시도...')
-        try {
-          router.push('/')
-        } catch (error) {
-          console.error('기존 사용자 router.push 오류:', error)
-          // window.location으로 강제 이동
-          window.location.href = '/'
-        }
-        
-        // 백업으로 setTimeout 사용
+        // 단순하게 window.location 사용
+        console.log('기존 사용자 - 메인 페이지로 리다이렉트...')
         setTimeout(() => {
-          console.log('기존 사용자 - setTimeout으로 메인 페이지 이동 시도...')
-          try {
-            router.push('/')
-          } catch (error) {
-            console.error('기존 사용자 setTimeout router.push 오류:', error)
-            window.location.href = '/'
-          }
-        }, 1000)
+          window.location.href = '/'
+        }, 1500) // 1.5초 후 이동
         
         return
       }
@@ -148,36 +133,16 @@ function AuthCallbackContent() {
       console.log('새 사용자 생성:', newUser)
       // 로컬 스토리지에 사용자 정보 저장
       localStorage.setItem('kakaoUser', JSON.stringify(newUser))
-      console.log('로컬 스토리지에 사용자 정보 저장됨:', localStorage.getItem('kakaoUser'))
+      console.log('로컬 스토리지에 사용자 정보 저장됨')
       
       setStatus('success')
       setMessage('회원가입 및 로그인 성공! 메인 페이지로 이동합니다.')
       
-      // 즉시 이동 시도
-      console.log('메인 페이지로 이동 시도...')
-      console.log('현재 URL:', window.location.href)
-      console.log('router 객체:', router)
-      
-      try {
-        router.push('/')
-        console.log('router.push 성공')
-      } catch (error) {
-        console.error('router.push 오류:', error)
-        // window.location으로 강제 이동
-        console.log('window.location.href로 강제 이동 시도...')
-        window.location.href = '/'
-      }
-      
-      // 백업으로 setTimeout 사용
+      // 단순하게 window.location 사용
+      console.log('메인 페이지로 리다이렉트...')
       setTimeout(() => {
-        console.log('setTimeout으로 메인 페이지 이동 시도...')
-        try {
-          router.push('/')
-        } catch (error) {
-          console.error('setTimeout router.push 오류:', error)
-          window.location.href = '/'
-        }
-      }, 1000)
+        window.location.href = '/'
+      }, 1500) // 1.5초 후 이동
 
     } catch (error) {
       console.error('인증 콜백 처리 오류:', error)
