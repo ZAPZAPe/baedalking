@@ -26,6 +26,7 @@ import TopRankerProfileModal from '@/components/modals/TopRankerProfileModal'
 import GradeDetailModal from '@/components/modals/GradeDetailModal'
 import PrivacyPolicyModal from '@/components/modals/PrivacyPolicyModal'
 import TermsOfServiceModal from '@/components/modals/TermsOfServiceModal'
+import FriendsModal from '@/components/modals/FriendsModal'
 
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
@@ -109,6 +110,7 @@ export default function Home() {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false)
   const [showTermsOfService, setShowTermsOfService] = useState(false)
   const [showDeleteAccount, setShowDeleteAccount] = useState(false)
+  const [showFriendsModal, setShowFriendsModal] = useState(false)
 
   // 디버깅: 로컬 스토리지 확인
   useEffect(() => {
@@ -282,6 +284,7 @@ export default function Home() {
                 setShowPrivacyPolicy={setShowPrivacyPolicy}
                 setShowTermsOfService={setShowTermsOfService}
                 setShowDeleteAccount={setShowDeleteAccount}
+                setShowFriendsModal={setShowFriendsModal}
                 onLogout={async () => {
                   // 로그아웃 처리
                   await signOut()
@@ -445,6 +448,13 @@ export default function Home() {
       <TermsOfServiceModal 
         isOpen={showTermsOfService}
         onClose={() => setShowTermsOfService(false)}
+      />
+
+      {/* 친구 관리 모달 */}
+      <FriendsModal
+        isOpen={showFriendsModal}
+        onClose={() => setShowFriendsModal(false)}
+        currentUserId={user?.id || ''}
       />
     </div>
   )

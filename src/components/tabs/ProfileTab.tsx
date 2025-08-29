@@ -17,6 +17,7 @@ interface ProfileTabProps {
   setShowPrivacyPolicy: (show: boolean) => void
   setShowTermsOfService: (show: boolean) => void
   setShowDeleteAccount: (show: boolean) => void
+  setShowFriendsModal: (show: boolean) => void
   onLogout: () => void
 }
 
@@ -30,6 +31,7 @@ export default function ProfileTab({
   setShowPrivacyPolicy,
   setShowTermsOfService,
   setShowDeleteAccount,
+  setShowFriendsModal,
   onLogout
 }: ProfileTabProps) {
   const handleLogout = () => {
@@ -239,6 +241,15 @@ export default function ProfileTab({
           >
             <div className="text-[#9c88ff] text-sm font-bold font-mono">내 미니홈피</div>
             <div className="text-gray-400 text-xs font-mono">프로필 보기 및 방명록 관리</div>
+          </button>
+
+          <button 
+            onClick={() => setShowFriendsModal(true)}
+            className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
+            style={{borderRadius: '4px'}}
+          >
+            <div className="text-[#00ff88] text-sm font-bold font-mono">친구 관리</div>
+            <div className="text-gray-400 text-xs font-mono">친구 추가, 요청 관리, 친구 찾기</div>
           </button>
 
           <button 
