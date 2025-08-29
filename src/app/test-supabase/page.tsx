@@ -35,28 +35,6 @@ export default function TestSupabasePage() {
     }
   }
 
-  const testUserCreation = async () => {
-    try {
-      setTestResult('사용자 생성 테스트 중...')
-      
-      // 테스트용 사용자 생성
-      const { data, error } = await supabase.auth.signUp({
-        email: `test${Date.now()}@example.com`,
-        password: 'testpassword123'
-      })
-
-      if (error) {
-        throw error
-      }
-
-      setTestResult('✅ 테스트 사용자 생성 성공!')
-      
-    } catch (error: any) {
-      setTestResult(`❌ 사용자 생성 실패: ${error.message}`)
-      console.error('사용자 생성 오류:', error)
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a2e] to-[#16213e] p-8">
       <div className="max-w-2xl mx-auto">
@@ -81,13 +59,6 @@ export default function TestSupabasePage() {
               className="w-full bg-[#00ff88] hover:bg-[#00cc6a] text-black font-bold py-3 px-4 rounded-lg transition-all duration-200"
             >
               🔄 연결 재테스트
-            </button>
-            
-            <button
-              onClick={testUserCreation}
-              className="w-full bg-[#6366f1] hover:bg-[#4f46e5] text-white font-bold py-3 px-4 rounded-lg transition-all duration-200"
-            >
-              👤 사용자 생성 테스트
             </button>
           </div>
         </div>

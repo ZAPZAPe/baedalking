@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { testSupabaseConnection } from '@/lib/supabase'
 
+// prerender 방지를 위한 설정
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const isConnected = await testSupabaseConnection()

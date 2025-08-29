@@ -4,6 +4,9 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
+// prerender 방지를 위한 설정
+export const dynamic = 'force-dynamic'
+
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()

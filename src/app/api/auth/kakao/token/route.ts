@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// prerender 방지를 위한 설정
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const { code } = await request.json()
