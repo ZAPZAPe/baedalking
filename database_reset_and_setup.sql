@@ -297,7 +297,7 @@ BEGIN
         -- 일별 수입 기록 생성 (최근 30일)
         FOR day_offset IN 0..29 LOOP
             IF random() > 0.3 THEN -- 70% 확률로 수입 있음
-                INSERT INTO earnings (user_id, amount, mission_amount, delivery_count, platform, date) VALUES
+                INSERT INTO earnings (user_id, amount, mission_amount, delivery_count, platform, date, screenshot_url) VALUES
                 (
                     user_ids[i],
                     (random() * 100000 + 20000)::INTEGER, -- 20,000 ~ 120,000원
@@ -308,7 +308,8 @@ BEGIN
                         WHEN random() < 0.9 THEN 'coupang'
                         ELSE 'other'
                     END,
-                    (CURRENT_DATE - day_offset)::DATE
+                    (CURRENT_DATE - day_offset)::DATE,
+                    'sample-screenshot-' || i || '-' || day_offset || '.jpg' -- 샘플 스크린샷 URL
                 );
             END IF;
         END LOOP;
