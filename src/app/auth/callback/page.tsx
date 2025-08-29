@@ -19,6 +19,16 @@ function AuthCallbackContent() {
 
   const handleAuthCallback = async () => {
     try {
+      // 이미 로그인된 사용자가 있는지 확인
+      const existingKakaoUser = localStorage.getItem('kakaoUser')
+      if (existingKakaoUser) {
+        console.log('이미 로그인된 사용자가 있습니다. 메인 페이지로 이동합니다.')
+        setStatus('success')
+        setMessage('이미 로그인되어 있습니다. 메인 페이지로 이동합니다.')
+        router.push('/')
+        return
+      }
+
       const code = searchParams.get('code')
       const authError = searchParams.get('error')
 
