@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       .select(`
         user_id,
         amount,
+        platform,
         users!inner (
           id,
           nickname,
@@ -54,9 +55,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 사용자별 총 수익 계산
+    // 사용자별 총 수익 및 건수 계산
     const userIncomes = new Map()
+    const userCounts = new Map()
     const userInfo = new Map()
+    const userPlatforms = new Map()
 
     earnings?.forEach(earning => {
       const userId = earning.user_id
@@ -64,29 +67,42 @@ export async function GET(request: NextRequest) {
       
       if (!userIncomes.has(userId)) {
         userIncomes.set(userId, 0)
+        userCounts.set(userId, 0)
         userInfo.set(userId, userProfile)
+        userPlatforms.set(userId, new Set())
       }
       
       userIncomes.set(userId, userIncomes.get(userId) + earning.amount)
+      userCounts.set(userId, userCounts.get(userId) + 1)
+      if (earning.platform) {
+        userPlatforms.get(userId).add(earning.platform)
+      }
     })
 
     // 랭킹 생성
     const rankings = Array.from(userIncomes.entries())
       .map(([userId, totalIncome]) => ({
+        id: userId,
         user_id: userId,
-        total_income: totalIncome,
+        income: totalIncome,
+        count: userCounts.get(userId) || 0,
+        platforms: Array.from(userPlatforms.get(userId) || []),
         user: userInfo.get(userId)
       }))
-      .sort((a, b) => b.total_income - a.total_income)
+      .sort((a, b) => b.income - a.income)
       .slice(0, limit)
       .map((item, index) => ({
+        id: item.id,
         rank: index + 1,
         user_id: item.user_id,
         nickname: item.user?.nickname || '알 수 없음',
         region: item.user?.region || '',
         avatar_config: item.user?.avatar_config || {},
-        total_income: item.total_income,
-        grade: getGradeByIncome(item.total_income)
+        income: item.income,
+        count: item.count,
+        platforms: item.platforms,
+        platform: item.platforms[0] || 'baemin', // 첫 번째 플랫폼을 기본값으로
+        grade: getGradeByIncome(item.income)
       }))
 
     // 총 참여자 수

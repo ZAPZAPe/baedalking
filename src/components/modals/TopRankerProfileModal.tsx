@@ -1,4 +1,5 @@
 import React from 'react'
+import { useRouter } from 'next/navigation'
 
 interface UserProfile {
   id: string
@@ -24,7 +25,15 @@ export default function UserProfileModal({
   user,
   title = "USER PROFILE"
 }: UserProfileModalProps) {
+  const router = useRouter()
+  
   if (!isOpen || !user) return null
+
+  const handleVisitMinihome = () => {
+    // 미니홈피 방문
+    router.push(`/minihompy/${user.id}`)
+    onClose() // 모달 닫기
+  }
 
   return (
     <>
@@ -213,10 +222,7 @@ export default function UserProfileModal({
             {/* VISIT 버튼 - CHARACTER EDIT 스타일로 통일 */}
             <div className="pt-2">
               <button
-                onClick={() => {
-                  // 미니홈피 방문 로직
-                  console.log('Visit minihome:', user.id)
-                }}
+                onClick={handleVisitMinihome}
                 className="w-full bg-gradient-to-r from-[#ffd93d]/20 to-[#ff6b6b]/20 border-2 border-[#ffd93d]/50 hover:border-[#ffd93d] text-[#ffd93d] hover:text-white font-bold py-3 sm:py-4 transition-all duration-300 hover:scale-105 hover:shadow-lg relative font-mono tracking-wide"
                 style={{
                   borderRadius: '6px',

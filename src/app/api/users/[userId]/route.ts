@@ -68,15 +68,15 @@ export async function GET(
     else if (totalIncome >= 1500000) grade = 'GOLD'
     else if (totalIncome >= 1000000) grade = 'SILVER'
 
-    // 플랫폼 정보 (earnings 테이블의 source 컬럼 활용)
+    // 플랫폼 정보 (earnings 테이블의 platform 컬럼 활용)
     const { data: platformData, error: platformError } = await supabase
       .from('earnings')
-      .select('source')
+      .select('platform')
       .eq('user_id', userId)
       .gte('date', `${currentMonth}-01`)
 
     const platforms = platformData 
-      ? [...new Set(platformData.map(item => item.source).filter(Boolean))]
+      ? [...new Set(platformData.map(item => item.platform).filter(Boolean))]
       : []
 
     // 전체 사용자 중 순위 계산

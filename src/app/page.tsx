@@ -93,6 +93,8 @@ export default function Home() {
   const [showPlatformSettings, setShowPlatformSettings] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showRankingDetail, setShowRankingDetail] = useState(false)
+  const [topRankers, setTopRankers] = useState<any[]>([])
   const [selectedDate, setSelectedDate] = useState<string | null>('')
   const [editData, setEditData] = useState<{date: string, records: any[]} | null>(null)
   const [selectedGrade, setSelectedGrade] = useState<{
@@ -311,7 +313,6 @@ export default function Home() {
             {/* RANKING 탭 */}
             {activeTab === 'ranking' && (
               <RankingTab 
-
                 allRecords={allRecords}
                 dailyGoal={dailyGoal}
                 onShowGradeDetail={(grade: {
@@ -329,6 +330,8 @@ export default function Home() {
                   setSelectedTopRanker(ranker)
                   setShowTopRankerProfile(true)
                 }}
+                onShowRankingDetail={() => setShowRankingDetail(true)}
+                onTopRankersUpdate={setTopRankers}
               />
             )}
 
@@ -507,6 +510,19 @@ export default function Home() {
         userIncome={0}
         userRank={0}
         totalUsers={0}
+      />
+
+      <RankingDetailModal 
+        isOpen={showRankingDetail}
+        onClose={() => setShowRankingDetail(false)}
+        userRank={dailyIncomeData.length > 0 ? Math.floor(Math.random() * 100) + 1 : 0}
+        userIncome={totalIncome}
+        totalUsers={1000}
+        topRankers={topRankers}
+        onShowUserDetail={(ranker) => {
+          setSelectedTopRanker(ranker)
+          setShowTopRankerProfile(true)
+        }}
       />
 
       <PrivacyPolicyModal 
