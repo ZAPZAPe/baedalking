@@ -94,8 +94,8 @@ function PlatformStep({
   isIncomePrivate,
   setIsIncomePrivate
 }: {
-  platforms: { [key: string]: boolean }
-  setPlatforms: (value: { [key: string]: boolean }) => void
+  platforms: { baemin: boolean; coupang: boolean }
+  setPlatforms: (value: { baemin: boolean; coupang: boolean }) => void
   customPlatforms: string[]
   setCustomPlatforms: (value: string[]) => void
   isIncomePrivate: boolean
