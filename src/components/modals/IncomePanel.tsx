@@ -10,8 +10,6 @@ interface IncomeRecord {
   missionAmount: number
   amount: number
   date: string
-  hasImage?: boolean
-  imageName?: string | null
 }
 
 interface IncomePanelProps {

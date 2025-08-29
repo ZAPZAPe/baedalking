@@ -17,6 +17,7 @@ interface ProfileTabProps {
   setShowPrivacyPolicy: (show: boolean) => void
   setShowTermsOfService: (show: boolean) => void
   setShowDeleteAccount: (show: boolean) => void
+  onLogout: () => void
 }
 
 export default function ProfileTab({
@@ -28,11 +29,11 @@ export default function ProfileTab({
   setIsIncomePrivate,
   setShowPrivacyPolicy,
   setShowTermsOfService,
-  setShowDeleteAccount
+  setShowDeleteAccount,
+  onLogout
 }: ProfileTabProps) {
   const handleLogout = () => {
-    // TODO: 로그아웃 로직 구현
-    console.log('로그아웃')
+    onLogout()
   }
 
   const handleDeleteAccount = () => {

@@ -99,6 +99,44 @@ npm run lint
 3. **환경 변수 설정**: Vercel 대시보드에서 환경 변수 추가
 4. **자동 배포**: Git push 시 자동 배포
 
+## 🗄️ 백엔드 설정
+
+### **Supabase 프로젝트 생성**
+
+1. **프로젝트 생성**: [supabase.com](https://supabase.com)에서 새 프로젝트 생성
+2. **환경 변수 설정**: `.env.local` 파일에 프로젝트 정보 입력
+3. **데이터베이스 설정**: 자동 스크립트 실행
+
+### **데이터베이스 설정 명령어**
+
+```bash
+# 전체 데이터베이스 설정 (권장)
+npm run db:setup
+
+# 개별 명령어
+npm run db:start      # 로컬 Supabase 시작
+npm run db:stop       # 로컬 Supabase 중지
+npm run db:push       # 마이그레이션 적용
+npm run db:seed       # 샘플 데이터 삽입
+npm run db:reset      # 데이터베이스 초기화
+```
+
+### **연결 테스트**
+
+환경 변수 설정 후 다음 URL로 연결 상태를 확인할 수 있습니다:
+
+```
+http://localhost:3000/api/test-connection
+```
+
+### **Supabase Studio 접속**
+
+로컬 개발 환경에서 Supabase Studio에 접속:
+
+```
+http://localhost:54323
+```
+
 ### **4. 수동 배포**
 
 ```bash

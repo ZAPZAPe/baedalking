@@ -1,0 +1,116 @@
+'use client'
+
+import { useState, useEffect, createContext, useContext } from 'react'
+import { supabase } from '@/lib/supabase'
+
+interface User {
+  id: string
+  email: string
+  nickname: string
+  avatar_url?: string
+  kakao_id?: string
+}
+
+interface AuthContextType {
+  user: User | null
+  isLoading: boolean
+  signInWithKakao: () => Promise<void>
+  signOut: () => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // 초기 로그인 상태 확인
+    checkUser()
+  }, [])
+
+  const checkUser = async () => {
+    try {
+      // 로컬 스토리지에서 카카오 사용자 정보 확인
+      const kakaoUser = localStorage.getItem('kakaoUser')
+      console.log('useAuth - 로컬 스토리지에서 읽은 사용자 정보:', kakaoUser)
+      
+      if (kakaoUser) {
+        const userData = JSON.parse(kakaoUser)
+        console.log('useAuth - 파싱된 사용자 데이터:', userData)
+        setUser(userData)
+      } else {
+        console.log('useAuth - 로컬 스토리지에 사용자 정보 없음')
+      }
+    } catch (error) {
+      console.error('사용자 세션 확인 오류:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleUserSignIn = async (authUser: any) => {
+    try {
+      // 사용자 정보를 로컬 스토리지에 저장
+      localStorage.setItem('kakaoUser', JSON.stringify(authUser))
+      setUser(authUser)
+    } catch (error) {
+      console.error('사용자 로그인 처리 오류:', error)
+    }
+  }
+
+  const signInWithKakao = async () => {
+    try {
+      // 카카오 로그인 URL로 리다이렉트
+      // 환경 변수가 제대로 로드되지 않을 경우를 대비해 하드코딩
+      const clientId = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || '2a6e20ac0ba97afb3b35ecefb5e1f8ed'
+      const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI || 'http://localhost:3000/auth/callback'
+      
+      const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`
+      
+      console.log('카카오 로그인 URL:', kakaoAuthUrl)
+      window.location.href = kakaoAuthUrl
+    } catch (error) {
+      console.error('카카오 로그인 오류:', error)
+      throw error
+    }
+  }
+
+  const signOut = async () => {
+    try {
+      // 로컬 스토리지에서 카카오 사용자 정보 제거
+      localStorage.removeItem('kakaoUser')
+      
+      // 추가로 다른 관련 데이터도 정리
+      localStorage.removeItem('userIncomePrivate')
+      
+      // 사용자 상태 초기화
+      setUser(null)
+      
+      console.log('로그아웃 완료 - 사용자 상태 초기화됨')
+    } catch (error) {
+      console.error('로그아웃 오류:', error)
+    }
+  }
+
+  const value = {
+    user,
+    isLoading,
+    signInWithKakao,
+    signOut
+  }
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  )
+}

@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import { useAppState } from '@/hooks/useAppState'
 import { handleIncomeSubmit } from '@/lib/incomeUtils'
 import { emotions, platforms } from '@/data/constants'
+import { useAuth } from '@/hooks/useAuth'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import Header from '@/components/layout/Header'
 import BottomNavigation from '@/components/layout/BottomNavigation'
 import HomeTab from '@/components/tabs/HomeTab'
@@ -11,7 +13,6 @@ import IncomeTab from '@/components/tabs/IncomeTab'
 import RankingTab from '@/components/tabs/RankingTab'
 import FriendsTab from '@/components/tabs/FriendsTab'
 import ProfileTab from '@/components/tabs/ProfileTab'
-import CustomizePanel from '@/components/modals/CustomizePanel'
 import IncomeInputPanel from '@/components/modals/IncomeInputPanel'
 import IncomePanel from '@/components/modals/IncomePanel'
 import CharacterEditPanel from '@/components/modals/CharacterEditPanel'
@@ -20,30 +21,20 @@ import GoalSettingsPanel from '@/components/modals/GoalSettingsPanel'
 import PlatformSettingsPanel from '@/components/modals/PlatformSettingsPanel'
 import IncomeDetailModal from '@/components/modals/IncomeDetailModal'
 import IncomeEditModal from '@/components/modals/IncomeEditModal'
+import FriendDetailModal from '@/components/modals/FriendDetailModal'
+import TopRankerProfileModal from '@/components/modals/TopRankerProfileModal'
 import GradeDetailModal from '@/components/modals/GradeDetailModal'
-
-import UserProfileModal from '@/components/modals/UserProfileModal'
 import PrivacyPolicyModal from '@/components/modals/PrivacyPolicyModal'
 import TermsOfServiceModal from '@/components/modals/TermsOfServiceModal'
+import { useState } from 'react'
 
-export default function HomePage() {
-  const [showGoalSettings, setShowGoalSettings] = useState(false)
-  const [showPlatformSettings, setShowPlatformSettings] = useState(false)
-  const [showDetailModal, setShowDetailModal] = useState(false)
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [editData, setEditData] = useState<{date: string, records: any[]} | null>(null)
-  const [showGradeDetail, setShowGradeDetail] = useState(false)
-  const [selectedGrade, setSelectedGrade] = useState<any>(null)
-  const [showFriendDetail, setShowFriendDetail] = useState(false)
-  const [selectedFriend, setSelectedFriend] = useState<any>(null)
-  const [showTopRankerProfile, setShowTopRankerProfile] = useState(false)
-  const [selectedTopRanker, setSelectedTopRanker] = useState<any>(null)
-  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false)
-  const [showTermsOfService, setShowTermsOfService] = useState(false)
-  const [showDeleteAccount, setShowDeleteAccount] = useState(false)
-  
+export default function Home() {
+  const { user, isLoading, signOut } = useAuth()
+  const router = useRouter()
+
+  // 모든 Hooks를 항상 동일한 순서로 호출
   const {
+    // 기본 상태들
     currentEmotion, setCurrentEmotion,
     speechText, setSpeechText,
     showCustomizePanel, setShowCustomizePanel,
@@ -60,7 +51,6 @@ export default function HomePage() {
     incomeCount, setIncomeCount,
     incomeAmount, setIncomeAmount,
     missionAmount, setMissionAmount,
-    incomeImage, setIncomeImage,
     selectedPlatform, setSelectedPlatform,
     incomeDate, setIncomeDate,
     dailyIncomeData, setDailyIncomeData,
@@ -84,7 +74,7 @@ export default function HomePage() {
     addPoints,
     usePoints,
     canAfford,
-    platforms,
+    platforms: appPlatforms,
     togglePlatform,
     addCustomPlatform,
     removeCustomPlatform,
@@ -94,6 +84,46 @@ export default function HomePage() {
     updateGoals
   } = useAppState()
 
+  // 모달 상태들 - 항상 동일한 순서로 호출
+  const [showGoalSettings, setShowGoalSettings] = useState(false)
+  const [showPlatformSettings, setShowPlatformSettings] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<string | null>('')
+  const [editData, setEditData] = useState<{date: string, records: any[]} | null>(null)
+  const [selectedGrade, setSelectedGrade] = useState<{
+    name: string
+    icon: string
+    color: string
+    minIncome: number
+    maxIncome: number
+    description: string
+  } | null>(null)
+  const [showGradeDetail, setShowGradeDetail] = useState(false)
+  const [selectedTopRanker, setSelectedTopRanker] = useState<any>(null)
+  const [showTopRankerProfile, setShowTopRankerProfile] = useState(false)
+  const [showFriendDetail, setShowFriendDetail] = useState(false)
+  const [selectedFriend, setSelectedFriend] = useState<any>(null)
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false)
+  const [showTermsOfService, setShowTermsOfService] = useState(false)
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false)
+
+  // 디버깅: 로컬 스토리지 확인
+  useEffect(() => {
+    const kakaoUser = localStorage.getItem('kakaoUser')
+    console.log('메인 페이지 - 로컬 스토리지 사용자 정보:', kakaoUser)
+    console.log('useAuth user:', user)
+    console.log('useAuth isLoading:', isLoading)
+  }, [user, isLoading])
+
+  // 인증 체크
+  useEffect(() => {
+    if (!isLoading && !user) {
+      console.log('인증 실패 - 로그인 페이지로 이동')
+      router.push('/login')
+    }
+  }, [user, isLoading, router])
+
   // 수입 제출 핸들러
   const onIncomeSubmit = () => {
     handleIncomeSubmit(
@@ -101,15 +131,12 @@ export default function HomePage() {
       incomeAmount,
       missionAmount,
       selectedPlatform,
-      incomeImage,
       setDailyIncomeData,
       setIncomeRecords,
       addPoints,
-      setIsVerified,
       setIncomeCount,
       setIncomeAmount,
-      setMissionAmount,
-      setIncomeImage
+      setMissionAmount
     )
   }
   
@@ -119,6 +146,15 @@ export default function HomePage() {
   
   // 실제 수입 기록만 사용 (테스트 데이터 제거)
   const allRecords = incomeRecords
+
+  // 로딩 중이거나 사용자가 없으면 로딩 화면 표시
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a2e] to-[#16213e] flex items-center justify-center">
+        <div className="text-white text-xl">로딩 중...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full min-h-[100dvh] bg-[#1a1a2e] flex flex-col relative"
@@ -182,7 +218,7 @@ export default function HomePage() {
                 setShowIncomePanel={setShowIncomePanel}
                 isVerified={isVerified}
                 onAddIncome={onIncomeSubmit}
-                platforms={platforms}
+                platforms={appPlatforms}
                 togglePlatform={togglePlatform}
                 addCustomPlatform={addCustomPlatform}
                 removeCustomPlatform={removeCustomPlatform}
@@ -193,7 +229,7 @@ export default function HomePage() {
                 setShowGoalSettings={setShowGoalSettings}
                 setShowPlatformSettings={setShowPlatformSettings}
                 setShowDetailModal={setShowDetailModal}
-                setSelectedDate={setSelectedDate}
+                setSelectedDate={(date: string | null) => setSelectedDate(date)}
                 selectedDate={selectedDate}
                 showDetailModal={showDetailModal}
               />
@@ -201,19 +237,26 @@ export default function HomePage() {
 
             {/* RANKING 탭 */}
             {activeTab === 'ranking' && (
-                      <RankingTab 
-          isVerified={isVerified}
-          allRecords={allRecords}
-          dailyGoal={dailyGoal}
-          onShowGradeDetail={(grade) => {
-            setSelectedGrade(grade)
-            setShowGradeDetail(true)
-          }}
-          onShowTopRankerProfile={(ranker) => {
-            setSelectedTopRanker(ranker)
-            setShowTopRankerProfile(true)
-          }}
-        />
+              <RankingTab 
+                isVerified={isVerified}
+                allRecords={allRecords}
+                dailyGoal={dailyGoal}
+                onShowGradeDetail={(grade: {
+                  name: string
+                  icon: string
+                  color: string
+                  minIncome: number
+                  maxIncome: number
+                  description: string
+                }) => {
+                  setSelectedGrade(grade)
+                  setShowGradeDetail(true)
+                }}
+                onShowTopRankerProfile={(ranker) => {
+                  setSelectedTopRanker(ranker)
+                  setShowTopRankerProfile(true)
+                }}
+              />
             )}
 
             {/* FRIENDS 탭 */}
@@ -227,40 +270,37 @@ export default function HomePage() {
 
             {/* PROFILE 탭 */}
             {activeTab === 'profile' && (
-                      <ProfileTab 
-          userNickname={userNickname}
-          currentEmotion={currentEmotion}
-          userLocation={userLocation}
-          emotions={emotions}
-          isIncomePrivate={isIncomePrivate}
-          setIsIncomePrivate={setIsIncomePrivate}
-          setShowPrivacyPolicy={setShowPrivacyPolicy}
-          setShowTermsOfService={setShowTermsOfService}
-          setShowDeleteAccount={setShowDeleteAccount}
-        />
+              <ProfileTab 
+                userNickname={userNickname}
+                currentEmotion={currentEmotion}
+                userLocation={userLocation}
+                emotions={emotions}
+                isIncomePrivate={isIncomePrivate}
+                setIsIncomePrivate={setIsIncomePrivate}
+                setShowPrivacyPolicy={setShowPrivacyPolicy}
+                setShowTermsOfService={setShowTermsOfService}
+                setShowDeleteAccount={setShowDeleteAccount}
+                onLogout={async () => {
+                  // 로그아웃 처리
+                  await signOut()
+                  router.push('/login')
+                }}
+              />
             )}
-
             </div>
           </div>
         </div>
       </div>
 
       {/* 하단 네비게이션 */}
-      <BottomNavigation 
+      <BottomNavigation
         activeTab={activeTab}
         onTabChange={setActiveTab}
         isVerified={isVerified}
       />
 
-      {/* 모달들 */}
-      <CustomizePanel 
-        showCustomizePanel={showCustomizePanel}
-        setShowCustomizePanel={setShowCustomizePanel}
-        totalPoints={totalPoints}
-        usePoints={usePoints}
-      />
-
-      <IncomeInputPanel 
+      {/* 수입 입력 패널 */}
+      <IncomeInputPanel
         showIncomeInputPanel={showIncomeInputPanel}
         setShowIncomeInputPanel={setShowIncomeInputPanel}
         incomeCount={incomeCount}
@@ -271,12 +311,10 @@ export default function HomePage() {
         setMissionAmount={setMissionAmount}
         selectedPlatform={selectedPlatform}
         setSelectedPlatform={setSelectedPlatform}
-        incomeImage={incomeImage}
-        setIncomeImage={setIncomeImage}
         incomeDate={incomeDate}
         setIncomeDate={setIncomeDate}
         onSubmit={onIncomeSubmit}
-        platforms={platforms}
+        platforms={appPlatforms}
       />
 
       <IncomePanel 
@@ -285,7 +323,7 @@ export default function HomePage() {
         incomeRecords={incomeRecords}
         totalIncome={totalIncome}
         getTotalIncomeByPlatform={getTotalIncomeByPlatform}
-        platforms={platforms}
+        platforms={appPlatforms}
       />
 
       <CharacterEditPanel 
@@ -327,7 +365,7 @@ export default function HomePage() {
       <PlatformSettingsPanel 
         isOpen={showPlatformSettings}
         onClose={() => setShowPlatformSettings(false)}
-        platforms={platforms}
+        platforms={appPlatforms}
         onTogglePlatform={togglePlatform}
         onAddCustomPlatform={addCustomPlatform}
         onRemoveCustomPlatform={removeCustomPlatform}
@@ -338,7 +376,7 @@ export default function HomePage() {
         onClose={() => setShowDetailModal(false)}
         selectedDate={selectedDate}
         allRecords={incomeRecords}
-        platforms={platforms}
+        platforms={appPlatforms}
         onEdit={(date, records) => {
           setEditData({date, records})
           setShowEditModal(true)
@@ -350,7 +388,7 @@ export default function HomePage() {
         onClose={() => setShowEditModal(false)}
         selectedDate={editData?.date || ''}
         records={editData?.records || []}
-        platforms={platforms}
+        platforms={appPlatforms}
         onSave={(date, updatedRecords) => {
           // 수정된 데이터로 incomeRecords 업데이트
           const updatedIncomeRecords = incomeRecords.map(record => {
@@ -367,50 +405,34 @@ export default function HomePage() {
           
           // 수정 모달 닫기
           setShowEditModal(false)
-          setEditData(null)
         }}
+      />
+
+      <FriendDetailModal 
+        isOpen={showFriendDetail}
+        onClose={() => setShowFriendDetail(false)}
+        friend={selectedFriend}
+      />
+
+      <TopRankerProfileModal 
+        isOpen={showTopRankerProfile}
+        onClose={() => setShowTopRankerProfile(false)}
+        user={selectedTopRanker}
       />
 
       <GradeDetailModal 
         isOpen={showGradeDetail}
         onClose={() => setShowGradeDetail(false)}
-        grade={selectedGrade}
-        userIncome={selectedGrade ? 180000 : 0} // 테스트용 수입
-        userRank={selectedGrade ? Math.floor(Math.random() * 100) + 1 : 0} // 시뮬레이션
-        totalUsers={300} // 시뮬레이션
-      />
-
-      <UserProfileModal 
-        isOpen={showTopRankerProfile}
-        onClose={() => setShowTopRankerProfile(false)}
-        user={{
-          id: selectedTopRanker?.id || '',
-          nickname: selectedTopRanker?.nickname || '',
-          region: selectedTopRanker?.region || '',
-          income: selectedTopRanker?.income || 0,
-          count: selectedTopRanker?.count || 0,
-          platforms: selectedTopRanker?.platforms || [],
-          rank: selectedTopRanker?.rank || 0,
-          grade: selectedTopRanker?.grade || '',
-          minihomeId: selectedTopRanker?.id || ''
+        grade={selectedGrade || {
+          name: '',
+          minIncome: 0,
+          maxIncome: 0,
+          color: '#ffffff',
+          description: ''
         }}
-        title="TOP 랭커 프로필"
-      />
-
-      <UserProfileModal 
-        isOpen={showFriendDetail}
-        onClose={() => setShowFriendDetail(false)}
-        user={{
-          id: selectedFriend?.friendId || '',
-          nickname: selectedFriend?.friend?.nickname || '알 수 없음',
-          region: selectedFriend?.friend?.region || '지역 없음',
-          income: selectedFriend?.friend?.totalIncome || 0,
-          count: selectedFriend?.friend?.totalCount || 0,
-          platforms: selectedFriend?.friend?.mainPlatform ? [selectedFriend.friend.mainPlatform] : [],
-          isIncomePrivate: selectedFriend?.friend?.isIncomePrivate || false,
-          minihomeId: selectedFriend?.friendId || ''
-        }}
-        title="친구 프로필"
+        userIncome={0}
+        userRank={0}
+        totalUsers={0}
       />
 
       <PrivacyPolicyModal 
@@ -418,122 +440,10 @@ export default function HomePage() {
         onClose={() => setShowPrivacyPolicy(false)}
       />
 
-            <TermsOfServiceModal
+      <TermsOfServiceModal 
         isOpen={showTermsOfService}
         onClose={() => setShowTermsOfService(false)}
       />
-
-      {/* ACCOUNT DELETE 모달 */}
-      {showDeleteAccount && (
-        <div 
-          className="fixed inset-0 z-[999999] bg-black flex items-center justify-center p-2 sm:p-4"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            // 패널 외부 클릭 시 바로 닫히지 않음
-          }}
-          onTouchStart={(e) => e.stopPropagation()}
-          onTouchEnd={(e) => e.stopPropagation()}
-        >
-          <div 
-            className="w-full max-w-sm sm:max-w-md bg-gradient-to-b from-[#0a0a23] via-[#16213e] to-[#1a1a2e] border-2 sm:border-4 border-[#ff6b6b]/50 shadow-2xl relative"
-            style={{
-              borderRadius: '6px',
-              fontFamily: 'monospace',
-              imageRendering: 'pixelated',
-              boxShadow: '0 0 20px rgba(255, 107, 107, 0.2), inset 0 0 15px rgba(255, 107, 107, 0.05)'
-            }}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-            }}
-            onTouchStart={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => e.stopPropagation()}
-          >
-            {/* 네온 글로우 테두리 */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#ff6b6b]/20 via-[#ff4757]/20 to-[#ff6b6b]/20 blur-sm -z-10" 
-                 style={{borderRadius: '12px'}}></div>
-            
-            {/* 헤더 - 게임 스타일 */}
-            <div className="bg-gradient-to-r from-[#0a0a23] to-[#16213e] p-3 sm:p-4 border-b-2 border-[#ff6b6b]/30 relative">
-              {/* 상단 장식 라인 */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#ff6b6b]/60 to-transparent"></div>
-              
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  {/* 픽셀 아이콘 */}
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-[#ff6b6b] to-[#ff4757] border border-[#ff6b6b]" 
-                       style={{borderRadius: '3px'}}>
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white" style={{borderRadius: '1px'}}></div>
-                    </div>
-                  </div>
-                  <h3 className="text-[#ff6b6b] font-bold text-sm sm:text-lg font-mono tracking-wider" 
-                      style={{textShadow: '0 0 8px rgba(255, 107, 107, 0.5)'}}>
-                    ACCOUNT DELETE
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowDeleteAccount(false)}
-                  className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-[#ff6b6b]/20 to-[#ff4757]/20 border border-[#ff6b6b]/50 hover:border-[#ff6b6b] text-[#ff6b6b] hover:text-[#ff4757] font-bold transition-all duration-200 hover:scale-110 text-sm sm:text-base"
-                  style={{borderRadius: '4px'}}
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            {/* 내용 */}
-            <div className="p-4 sm:p-6">
-              <div className="text-center mb-6">
-                <h3 className="text-[#ff6b6b] font-bold text-xl font-mono mb-2">계정 삭제</h3>
-                <p className="text-gray-300 text-sm font-mono">정말로 계정을 삭제하시겠습니까?</p>
-              </div>
-
-              {/* 경고 메시지 */}
-              <div className="bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 rounded-lg p-4 mb-6">
-                <p className="text-[#ff6b6b] text-sm font-mono">
-                  ⚠️ 이 작업은 되돌릴 수 없습니다. 모든 데이터가 영구적으로 삭제됩니다.
-                </p>
-              </div>
-
-              {/* 버튼들 */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteAccount(false)}
-                  className="flex-1 bg-[#4a5568] hover:bg-[#2d3748] text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 font-mono"
-                  style={{borderRadius: '4px'}}
-                >
-                  취소
-                </button>
-                <button
-                  onClick={() => {
-                    // TODO: 계정 삭제 로직 구현
-                    console.log('계정 삭제')
-                    setShowDeleteAccount(false)
-                  }}
-                  className="flex-1 bg-[#ff6b6b] hover:bg-[#ff5252] text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 font-mono"
-                  style={{borderRadius: '4px'}}
-                >
-                  삭제
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 광고 클릭 방지 투명 레이어 */}
-      {(showCustomizePanel || showIncomePanel || showIncomeInputPanel || showHeaderCharacterPanel || 
-        showCharacterItemPanel || showVehicleItemPanel || showBackgroundItemPanel || showGoalSettings || showPlatformSettings || showDetailModal || showEditModal || showGradeDetail || showTopRankerProfile || showFriendDetail || showPrivacyPolicy || showTermsOfService || showDeleteAccount) && (
-        <div 
-          className="fixed inset-0 z-[9998] pointer-events-none"
-          style={{
-            backgroundColor: 'transparent',
-            backdropFilter: 'none'
-          }}
-        />
-      )}
     </div>
   )
-}
+} 

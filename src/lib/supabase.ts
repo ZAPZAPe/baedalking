@@ -3,7 +3,30 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+// 환경 변수 확인
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Supabase 환경 변수가 설정되지 않았습니다!')
+  console.error('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl)
+  console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '설정됨' : '설정되지 않음')
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// 연결 테스트 함수
+export async function testSupabaseConnection() {
+  try {
+    const { data, error } = await supabase.from('users').select('count').limit(1)
+    if (error) {
+      console.error('❌ Supabase 연결 실패:', error.message)
+      return false
+    }
+    console.log('✅ Supabase 연결 성공!')
+    return true
+  } catch (err) {
+    console.error('❌ Supabase 연결 오류:', err)
+    return false
+  }
+}
 
 // 데이터베이스 테이블 타입 정의
 export interface Database {

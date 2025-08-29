@@ -13,8 +13,6 @@ interface IncomeInputPanelProps {
   setMissionAmount: (amount: string) => void
   selectedPlatform: string
   setSelectedPlatform: (platform: string) => void
-  incomeImage: File | null
-  setIncomeImage: (image: File | null) => void
   incomeDate: string
   setIncomeDate: (date: string) => void
   onSubmit: () => void
@@ -32,8 +30,6 @@ export default function IncomeInputPanel({
   setMissionAmount,
   selectedPlatform,
   setSelectedPlatform,
-  incomeImage,
-  setIncomeImage,
   incomeDate,
   setIncomeDate,
   onSubmit,
@@ -248,71 +244,6 @@ export default function IncomeInputPanel({
               <div className="absolute top-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
               <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
               <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-            </div>
-          </div>
-
-          {/* 사진 업로드 인증 - 게임 스타일 */}
-          <div className="space-y-2 sm:space-y-3 relative">
-            <div className="bg-gradient-to-r from-[#9c88ff]/20 to-[#6c5ce7]/20 border border-[#9c88ff]/50 p-2 sm:p-3 relative"
-                 style={{borderRadius: '4px'}}>
-              <h4 className="text-[#9c88ff] text-center font-bold text-xs sm:text-sm font-mono tracking-wider mb-2 sm:mb-3" 
-                  style={{textShadow: '0 0 6px rgba(156, 136, 255, 0.5)'}}>
-                VERIFICATION
-              </h4>
-              
-              {/* 사진 업로드 영역 */}
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setIncomeImage(e.target.files?.[0] || null)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  id="income-image-upload"
-                />
-                <label
-                  htmlFor="income-image-upload"
-                  className="block w-full bg-[#0a0a23]/80 border-2 border-dashed border-[#9c88ff]/40 hover:border-[#9c88ff]/80 p-4 text-center cursor-pointer transition-all duration-200 relative"
-                  style={{borderRadius: '4px'}}
-                >
-                  {incomeImage ? (
-                    <div className="text-[#9c88ff]">
-                      <div className="text-2xl mb-1">📸</div>
-                      <div className="text-xs font-mono font-bold">
-                        {incomeImage.name}
-                      </div>
-                      <div className="text-xs font-mono text-gray-400 mt-1">
-                        클릭해서 다른 사진 선택
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-[#9c88ff]">
-                      <div className="text-2xl mb-1">📱</div>
-                      <div className="text-xs font-mono font-bold mb-1">
-                        수입 인증 사진
-                      </div>
-                      <div className="text-xs font-mono text-gray-400">
-                        클릭해서 사진 업로드
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 업로드 상태 표시 픽셀 도트 */}
-                  {incomeImage && (
-                    <>
-                      <div className="absolute top-1 left-1 w-1.5 h-1.5 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
-                      <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
-                      <div className="absolute bottom-1 left-1 w-1.5 h-1.5 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
-                      <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
-                    </>
-                  )}
-                </label>
-              </div>
-              
-              {/* 모서리 픽셀 도트 */}
-              <div className="absolute top-1 left-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
-              <div className="absolute top-1 right-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
-              <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
-              <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
             </div>
           </div>
 

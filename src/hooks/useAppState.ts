@@ -47,12 +47,10 @@ export interface AppState {
   setIncomeAmount: (amount: string) => void
   missionAmount: string
   setMissionAmount: (amount: string) => void
-  incomeImage: File | null
-  setIncomeImage: (image: File | null) => void
   selectedPlatform: string
   setSelectedPlatform: (platform: string) => void
-  dailyIncomeData: { [key: string]: { date: string; platforms: { [key: string]: { count: number; deliveryAmount: number; missionAmount: number } }; hasImage: boolean; totalCount: number; totalAmount: number } }
-  setDailyIncomeData: (data: { [key: string]: { date: string; platforms: { [key: string]: { count: number; deliveryAmount: number; missionAmount: number } }; hasImage: boolean; totalCount: number; totalAmount: number } }) => void
+  dailyIncomeData: { [key: string]: { date: string; platforms: { [key: string]: { count: number; deliveryAmount: number; missionAmount: number } }; totalCount: number; totalAmount: number } }
+  setDailyIncomeData: (data: { [key: string]: { date: string; platforms: { [key: string]: { count: number; deliveryAmount: number; missionAmount: number } }; totalCount: number; totalAmount: number } }) => void
   incomeRecords: { id: number; platform: string; count: number; deliveryAmount: number; missionAmount: number; amount: number; date: string }[]
   setIncomeRecords: (records: { id: number; platform: string; count: number; deliveryAmount: number; missionAmount: number; amount: number; date: string }[]) => void
   totalPoints: number
@@ -131,7 +129,6 @@ export function useAppState() {
   const [incomeCount, setIncomeCount] = useState('')
   const [incomeAmount, setIncomeAmount] = useState('')
   const [missionAmount, setMissionAmount] = useState('')
-  const [incomeImage, setIncomeImage] = useState<File | null>(null)
   const [selectedPlatform, setSelectedPlatform] = useState('baemin')
   const [incomeDate, setIncomeDate] = useState(new Date().toISOString().split('T')[0]) // 오늘 날짜를 기본값으로
   
@@ -164,7 +161,6 @@ export function useAppState() {
         coupang: { count: 2, deliveryAmount: 8000, missionAmount: 4000 },
         other: { count: 0, deliveryAmount: 0, missionAmount: 0 }
       },
-      hasImage: true,
       totalCount: 5,
       totalAmount: 27000
     }
@@ -403,7 +399,6 @@ export function useAppState() {
     incomeCount, setIncomeCount,
     incomeAmount, setIncomeAmount,
     missionAmount, setMissionAmount,
-    incomeImage, setIncomeImage,
     selectedPlatform, setSelectedPlatform,
     incomeDate, setIncomeDate,
     dailyIncomeData, setDailyIncomeData,
