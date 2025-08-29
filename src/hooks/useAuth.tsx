@@ -14,6 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   isLoading: boolean
+  loading: boolean  // Vercel 호환성을 위해 추가
   signInWithKakao: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -104,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     isLoading,
+    loading: isLoading,  // Vercel 호환성을 위해 추가
     signInWithKakao,
     signOut
   }
