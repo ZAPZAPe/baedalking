@@ -7,6 +7,7 @@ interface User {
   id: string
   email: string
   nickname: string
+  region?: string
   avatar_url?: string
   kakao_id?: string
 }
