@@ -245,8 +245,10 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
 
           {/* 내 순위 */}
           <div 
-            className="bg-[#1a202c]/50 p-3 rounded-lg text-center border border-[#ffd93d]/30 relative cursor-pointer hover:bg-[#1a202c]/70 transition-all duration-200"
-            onClick={() => setShowRankingDetail(true)}
+            className={`bg-[#1a202c]/50 p-3 rounded-lg text-center border border-[#ffd93d]/30 relative transition-all duration-200 ${
+              myGrade ? 'cursor-pointer hover:bg-[#1a202c]/70' : 'cursor-not-allowed opacity-60'
+            }`}
+            onClick={() => myGrade && setShowRankingDetail(true)}
           >
             {/* 픽셀 도트들 */}
             <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
@@ -277,7 +279,7 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
 
 
 
-      {/* 상위 5명 랭킹 */}
+      {/* 내 주변 랭킹 */}
       <div className="bg-gradient-to-br from-[#2d3748] to-[#1a202c] rounded-xl p-4 border border-[#ff6b6b]/30 shadow-inner mb-2 sm:mb-3 lg:mb-4 flex-shrink-0 relative">
         
         {/* 픽셀 헤더 - INCOME 탭과 동일한 스타일 */}
@@ -293,7 +295,7 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
             <h3 className="text-white font-bold text-base font-mono" style={{
               imageRendering: 'pixelated'
             }}>
-              TOP 5 랭킹
+              {myGrade ? '내 주변 랭킹' : 'TOP 5 랭킹'}
             </h3>
           </div>
 
@@ -305,8 +307,62 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
         </div>
         
         <div className="space-y-2 sm:space-y-3">
-          {topRankers.map((ranker, index) => (
-            <div key={index} className="bg-[#1a202c]/60 border-2 border-[#ff6b6b]/30 p-3 sm:p-4 relative">
+          {(() => {
+            // 내 순위가 있으면 내 주변 랭킹, 없으면 TOP 5
+            if (myGrade) {
+              const myRank = Math.floor(Math.random() * 100) + 1; // 실제로는 API에서 가져와야 함
+              
+              // 내 주변 랭커들 생성 (위 2명, 나, 아래 2명)
+              const myRankingList = [];
+              
+              // 위 2명
+              for (let i = Math.max(1, myRank - 2); i < myRank; i++) {
+                myRankingList.push({
+                  id: `rank-${i}`,
+                  rank: i,
+                  income: Math.floor(Math.random() * 50000) + myIncome + (myRank - i) * 10000,
+                  count: Math.floor(Math.random() * 20) + 15,
+                  nickname: `배달러${i}호`,
+                  region: '서울',
+                  platforms: ['배민']
+                });
+              }
+              
+              // 나
+              myRankingList.push({
+                id: 'me',
+                rank: myRank,
+                income: myIncome,
+                count: Math.floor(Math.random() * 20) + 10,
+                nickname: '나',
+                region: '내 지역',
+                platforms: ['배민']
+              });
+              
+              // 아래 2명
+              for (let i = myRank + 1; i <= Math.min(100, myRank + 2); i++) {
+                myRankingList.push({
+                  id: `rank-${i}`,
+                  rank: i,
+                  income: Math.floor(Math.random() * 30000) + myIncome - (i - myRank) * 8000,
+                  count: Math.floor(Math.random() * 15) + 10,
+                  nickname: `배달러${i}호`,
+                  region: '서울',
+                  platforms: ['배민']
+                });
+              }
+              
+              return myRankingList;
+            } else {
+              // 내 순위가 없으면 기존 TOP 5 표시
+              return topRankers.slice(0, 5);
+            }
+          })().map((ranker, index) => (
+            <div key={index} className={`border-2 p-3 sm:p-4 relative ${
+              ranker.id === 'me' 
+                ? 'bg-[#ffd93d]/10 border-[#ffd93d] shadow-lg shadow-[#ffd93d]/20' 
+                : 'bg-[#1a202c]/60 border-[#ff6b6b]/30'
+            }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 sm:w-10 sm:h-10 border-2 flex items-center justify-center font-bold text-sm sm:text-base font-mono rounded-full ${
@@ -318,12 +374,18 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
                     {ranker.rank}
                   </div>
                   <div>
-                    <button
-                      onClick={() => handleShowTopRankerProfile(ranker)}
-                      className="text-white font-bold text-sm sm:text-base font-mono hover:text-[#00d4ff] transition-colors duration-200 cursor-pointer"
-                    >
-                      배달왕 {ranker.rank}호
-                    </button>
+                    {ranker.id === 'me' ? (
+                      <div className="text-[#ffd93d] font-bold text-sm sm:text-base font-mono">
+                        {ranker.nickname} ({ranker.rank}위)
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleShowTopRankerProfile(ranker)}
+                        className="text-white font-bold text-sm sm:text-base font-mono hover:text-[#00d4ff] transition-colors duration-200 cursor-pointer"
+                      >
+                        {ranker.nickname} ({ranker.rank}위)
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">

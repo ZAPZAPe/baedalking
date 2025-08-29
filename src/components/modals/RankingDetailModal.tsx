@@ -134,7 +134,7 @@ export default function RankingDetailModal({
               <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
             </div>
 
-            {/* 상위 랭커들과의 비교 */}
+            {/* 내 주변 랭킹 */}
             <div className="bg-gradient-to-br from-[#1a202c] to-[#2d3748] border-2 border-[#00d4ff]/50 p-3 relative"
                  style={{borderRadius: '8px'}}>
               
@@ -142,20 +142,67 @@ export default function RankingDetailModal({
               <div className="flex items-center justify-center mb-3">
                 <h5 className="text-[#00d4ff] font-bold text-sm font-mono tracking-wide" 
                     style={{textShadow: '0 0 8px rgba(0, 212, 255, 0.5)'}}>
-                  TOP RANKERS COMPARISON
+                  내 주변 랭킹
                 </h5>
               </div>
               
-              {/* 상위 랭커들 목록 */}
+              {/* 내 주변 랭커들 목록 (위 2명, 나, 아래 2명) */}
               <div className="space-y-2">
-                {topRankers.slice(0, 3).map((ranker, index) => {
+                {(() => {
+                  // 내 주변 랭커들 생성 (위 2명, 나, 아래 2명)
+                  const myRankingList = [];
+                  
+                  // 위 2명
+                  for (let i = Math.max(1, userRank - 2); i < userRank; i++) {
+                    myRankingList.push({
+                      id: `rank-${i}`,
+                      rank: i,
+                      income: Math.floor(Math.random() * 50000) + userIncome + (userRank - i) * 10000,
+                      count: Math.floor(Math.random() * 20) + 15,
+                      nickname: `배달러${i}호`,
+                      region: '서울',
+                      platforms: ['배민']
+                    });
+                  }
+                  
+                  // 나
+                  myRankingList.push({
+                    id: 'me',
+                    rank: userRank,
+                    income: userIncome,
+                    count: Math.floor(Math.random() * 20) + 10,
+                    nickname: '나',
+                    region: '내 지역',
+                    platforms: ['배민']
+                  });
+                  
+                  // 아래 2명
+                  for (let i = userRank + 1; i <= Math.min(1000, userRank + 2); i++) {
+                    myRankingList.push({
+                      id: `rank-${i}`,
+                      rank: i,
+                      income: Math.floor(Math.random() * 30000) + userIncome - (i - userRank) * 8000,
+                      count: Math.floor(Math.random() * 15) + 10,
+                      nickname: `배달러${i}호`,
+                      region: '서울',
+                      platforms: ['배민']
+                    });
+                  }
+                  
+                  return myRankingList;
+                })().map((ranker, index) => {
                   const incomeDifference = ranker.income - userIncome
                   const isHigher = incomeDifference > 0
+                  const isMe = ranker.id === 'me'
                   
                   return (
                     <div 
                       key={ranker.id} 
-                      className="bg-[#1a202c]/60 border border-[#00d4ff]/30 p-2 rounded-lg relative"
+                      className={`border p-2 rounded-lg relative ${
+                        isMe 
+                          ? 'bg-[#ffd93d]/10 border-[#ffd93d] shadow-lg shadow-[#ffd93d]/20' 
+                          : 'bg-[#1a202c]/60 border-[#00d4ff]/30'
+                      }`}
                       style={{borderRadius: '4px'}}
                     >
                       <div className="flex items-center justify-between">
@@ -165,6 +212,7 @@ export default function RankingDetailModal({
                             ranker.rank === 1 ? 'bg-[#ffd93d] text-black border-[#ffd93d]' :
                             ranker.rank === 2 ? 'bg-[#c0c0c0] text-black border-[#c0c0c0]' :
                             ranker.rank === 3 ? 'bg-[#cd7f32] text-white border-[#cd7f32]' :
+                            isMe ? 'bg-[#ffd93d] text-black border-[#ffd93d]' :
                             'bg-[#4a5568] text-white border-[#4a5568]'
                           }`}>
                             {ranker.rank}
@@ -172,7 +220,9 @@ export default function RankingDetailModal({
                           
                           {/* 랭커 정보 */}
                           <div>
-                            <div className="text-white text-xs font-mono font-bold">
+                            <div className={`text-xs font-mono font-bold ${
+                              isMe ? 'text-[#ffd93d]' : 'text-white'
+                            }`}>
                               {ranker.nickname}
                             </div>
                             <div className="text-[#00d4ff] text-xs font-mono">
@@ -181,19 +231,21 @@ export default function RankingDetailModal({
                           </div>
                         </div>
                         
-                        {/* 수익 차이 */}
-                        <div className={`text-xs font-mono font-bold ${
-                          isHigher ? 'text-[#ff6b6b]' : 'text-[#00ff88]'
-                        }`}>
-                          {isHigher ? '+' : ''}₩{Math.abs(incomeDifference).toLocaleString()}
-                        </div>
+                        {/* 수익 차이 (나는 표시하지 않음) */}
+                        {!isMe && (
+                          <div className={`text-xs font-mono font-bold ${
+                            isHigher ? 'text-[#ff6b6b]' : 'text-[#00ff88]'
+                          }`}>
+                            {isHigher ? '+' : ''}₩{Math.abs(incomeDifference).toLocaleString()}
+                          </div>
+                        )}
                       </div>
                       
                       {/* 모서리 픽셀 도트 */}
-                      <div className="absolute top-0.5 left-0.5 w-0.5 h-0.5 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
-                      <div className="absolute top-0.5 right-0.5 w-0.5 h-0.5 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
-                      <div className="absolute bottom-0.5 left-0.5 w-0.5 h-0.5 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
-                      <div className="absolute bottom-0.5 right-0.5 w-0.5 h-0.5 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
+                      <div className={`absolute top-0.5 left-0.5 w-0.5 h-0.5 ${isMe ? 'bg-[#ffd93d]' : 'bg-[#00d4ff]'}`} style={{borderRadius: '1px'}}></div>
+                      <div className={`absolute top-0.5 right-0.5 w-0.5 h-0.5 ${isMe ? 'bg-[#ffd93d]' : 'bg-[#00d4ff]'}`} style={{borderRadius: '1px'}}></div>
+                      <div className={`absolute bottom-0.5 left-0.5 w-0.5 h-0.5 ${isMe ? 'bg-[#ffd93d]' : 'bg-[#00d4ff]'}`} style={{borderRadius: '1px'}}></div>
+                      <div className={`absolute bottom-0.5 right-0.5 w-0.5 h-0.5 ${isMe ? 'bg-[#ffd93d]' : 'bg-[#00d4ff]'}`} style={{borderRadius: '1px'}}></div>
                     </div>
                   )
                 })}
