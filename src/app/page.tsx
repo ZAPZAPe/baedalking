@@ -5,7 +5,7 @@ import { handleIncomeSubmit } from '@/lib/incomeUtils'
 import { emotions, platforms } from '@/data/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Header from '@/components/layout/Header'
 import BottomNavigation from '@/components/layout/BottomNavigation'
 import HomeTab from '@/components/tabs/HomeTab'
@@ -26,7 +26,10 @@ import TopRankerProfileModal from '@/components/modals/TopRankerProfileModal'
 import GradeDetailModal from '@/components/modals/GradeDetailModal'
 import PrivacyPolicyModal from '@/components/modals/PrivacyPolicyModal'
 import TermsOfServiceModal from '@/components/modals/TermsOfServiceModal'
-import { useState } from 'react'
+
+// prerender 방지를 위한 설정
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default function Home() {
   const { user, loading, signOut } = useAuth()
