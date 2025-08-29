@@ -1,39 +1,37 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
 
 export default function LoginPage() {
-  const { user, signIn, loading } = useAuth()
   const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    // 이미 로그인된 사용자는 메인 페이지로 리다이렉트
-    if (user && !loading) {
+    // 로컬 스토리지에서 사용자 정보 확인
+    const kakaoUser = localStorage.getItem('kakaoUser')
+    if (kakaoUser) {
+      // 이미 로그인된 사용자는 메인 페이지로 리다이렉트
       router.push('/')
     }
-  }, [user, loading, router])
+  }, [router])
 
   const handleKakaoLogin = async () => {
     try {
-      // Vercel 호환성을 위해 signIn 사용
-      await signIn('kakao', 'password')
+      setIsLoading(true)
+      
+      // 카카오 로그인 URL로 직접 리다이렉트
+      const clientId = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || '2a6e20ac0ba97afb3b35ecefb5e1f8ed'
+      const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI || 'http://localhost:3000/auth/callback'
+      
+      const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`
+      
+      console.log('카카오 로그인 URL:', kakaoAuthUrl)
+      window.location.href = kakaoAuthUrl
     } catch (error) {
       console.error('카카오 로그인 오류:', error)
+      setIsLoading(false)
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a2e] to-[#16213e] flex items-center justify-center">
-        <div className="text-white text-xl">로그인 중...</div>
-      </div>
-    )
-  }
-
-  if (user) {
-    return null // 이미 로그인된 경우 리다이렉트 중
   }
 
   return (
@@ -50,20 +48,33 @@ export default function LoginPage() {
 
         {/* 로그인 카드 */}
         <div className="bg-gradient-to-br from-[#1a1a2e]/90 to-[#16213e]/90 backdrop-blur-lg rounded-2xl p-8 border border-[#00ff88]/20 shadow-2xl">
-          {/* 카카오 로그인 버튼 */}
-          <button
-            onClick={handleKakaoLogin}
-            className="w-full bg-[#FEE500] hover:bg-[#FDD800] text-[#3C1E1E] font-bold py-4 px-6 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-3"
-            style={{
-              boxShadow: '0 4px 15px rgba(254, 229, 0, 0.3)'
-            }}
-          >
-            {/* 카카오 아이콘 */}
-            <div className="w-6 h-6 bg-[#3C1E1E] rounded-full flex items-center justify-center">
-              <span className="text-[#FEE500] text-sm font-bold">K</span>
-            </div>
-            <span className="text-lg">카카오로 시작하기</span>
-          </button>
+                  {/* 카카오 로그인 버튼 */}
+        <button
+          onClick={handleKakaoLogin}
+          disabled={isLoading}
+          className={`w-full font-bold py-4 px-6 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-3 ${
+            isLoading 
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+              : 'bg-[#FEE500] hover:bg-[#FDD800] text-[#3C1E1E]'
+          }`}
+          style={{
+            boxShadow: isLoading ? 'none' : '0 4px 15px rgba(254, 229, 0, 0.3)'
+          }}
+        >
+          {/* 카카오 아이콘 */}
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+            isLoading ? 'bg-gray-600' : 'bg-[#3C1E1E]'
+          }`}>
+            <span className={`text-sm font-bold ${
+              isLoading ? 'text-gray-400' : 'text-[#FEE500]'
+            }`}>
+              {isLoading ? '...' : 'K'}
+            </span>
+          </div>
+          <span className="text-lg">
+            {isLoading ? '로그인 중...' : '카카오로 시작하기'}
+          </span>
+        </button>
 
           {/* 설명 텍스트 */}
           <div className="mt-6 text-center">
