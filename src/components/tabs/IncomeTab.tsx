@@ -14,7 +14,7 @@ interface IncomeTabProps {
   getTotalIncomeByPlatform: (platform: string) => number
   setShowIncomeInputPanel: (show: boolean) => void
   setShowIncomePanel: (show: boolean) => void
-  isVerified: boolean
+
   onAddIncome?: (record: any) => void
   platforms: Platform[]
   togglePlatform: (platformId: string) => void
@@ -38,7 +38,7 @@ export default function IncomeTab({
   getTotalIncomeByPlatform,
   setShowIncomeInputPanel,
   setShowIncomePanel,
-  isVerified,
+
   onAddIncome,
   platforms,
   togglePlatform,
@@ -102,7 +102,7 @@ export default function IncomeTab({
       allRecords={allRecords}
       incomeRecords={incomeRecords}
       dailyGoal={dailyGoal}
-      isVerified={isVerified}
+      
       platforms={platforms}
       setShowGoalSettings={setShowGoalSettings}
       setShowIncomeInputPanel={setShowIncomeInputPanel}

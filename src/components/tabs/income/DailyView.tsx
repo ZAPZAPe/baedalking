@@ -11,7 +11,7 @@ interface DailyViewProps {
   allRecords: any[]
   incomeRecords: any[]
   dailyGoal: number
-  isVerified: boolean
+
   platforms: Platform[]
   setShowGoalSettings: (show: boolean) => void
   setShowIncomeInputPanel: (show: boolean) => void
@@ -25,7 +25,7 @@ export default function DailyView({
   allRecords,
   incomeRecords,
   dailyGoal,
-  isVerified,
+
   platforms,
   setShowGoalSettings,
   setShowIncomeInputPanel,
