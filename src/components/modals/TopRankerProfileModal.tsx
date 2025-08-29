@@ -35,6 +35,9 @@ export default function UserProfileModal({
     onClose() // 모달 닫기
   }
 
+  // 가상 사용자인지 확인 (ID가 'top-ranker-'로 시작하는 경우)
+  const isVirtualUser = user?.id?.startsWith('top-ranker-')
+
   return (
     <>
       {/* 전체 화면을 덮는 블랙 배경 */}
@@ -221,27 +224,48 @@ export default function UserProfileModal({
             
             {/* VISIT 버튼 - CHARACTER EDIT 스타일로 통일 */}
             <div className="pt-2">
-              <button
-                onClick={handleVisitMinihome}
-                className="w-full bg-gradient-to-r from-[#ffd93d]/20 to-[#ff6b6b]/20 border-2 border-[#ffd93d]/50 hover:border-[#ffd93d] text-[#ffd93d] hover:text-white font-bold py-3 sm:py-4 transition-all duration-300 hover:scale-105 hover:shadow-lg relative font-mono tracking-wide"
-                style={{
-                  borderRadius: '6px',
-                  textShadow: '0 0 6px rgba(255, 217, 61, 0.5)',
-                  boxShadow: '0 0 15px rgba(255, 217, 61, 0.2)'
-                }}
-              >
-                <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#ffd93d] border border-white" style={{borderRadius: '1px'}}></div>
-                  <span className="text-sm sm:text-base">VISIT</span>
-                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#ffd93d] border border-white" style={{borderRadius: '1px'}}></div>
+              {isVirtualUser ? (
+                /* 가상 사용자의 경우 비활성화된 버튼 */
+                <div className="w-full bg-gradient-to-r from-gray-400/20 to-gray-500/20 border-2 border-gray-400/50 text-gray-400 font-bold py-3 sm:py-4 font-mono tracking-wide text-center relative"
+                     style={{
+                       borderRadius: '6px',
+                       cursor: 'not-allowed'
+                     }}>
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gray-400 border border-gray-300" style={{borderRadius: '1px'}}></div>
+                    <span className="text-sm sm:text-base">미니홈피 준비중</span>
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gray-400 border border-gray-300" style={{borderRadius: '1px'}}></div>
+                  </div>
+                  
+                  {/* 버튼 모서리 픽셀 도트 */}
+                  <div className="absolute top-1 left-1 w-1 h-1 bg-gray-400" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute top-1 right-1 w-1 h-1 bg-gray-400" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-1 left-1 w-1 h-1 bg-gray-400" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-1 right-1 w-1 h-1 bg-gray-400" style={{borderRadius: '1px'}}></div>
                 </div>
-                
-                {/* 버튼 모서리 픽셀 도트 */}
-                <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-                <div className="absolute top-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-                <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-                <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
-              </button>
+              ) : (
+                <button
+                  onClick={handleVisitMinihome}
+                  className="w-full bg-gradient-to-r from-[#ffd93d]/20 to-[#ff6b6b]/20 border-2 border-[#ffd93d]/50 hover:border-[#ffd93d] text-[#ffd93d] hover:text-white font-bold py-3 sm:py-4 transition-all duration-300 hover:scale-105 hover:shadow-lg relative font-mono tracking-wide"
+                  style={{
+                    borderRadius: '6px',
+                    textShadow: '0 0 6px rgba(255, 217, 61, 0.5)',
+                    boxShadow: '0 0 15px rgba(255, 217, 61, 0.2)'
+                  }}
+                >
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#ffd93d] border border-white" style={{borderRadius: '1px'}}></div>
+                    <span className="text-sm sm:text-base">VISIT</span>
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#ffd93d] border border-white" style={{borderRadius: '1px'}}></div>
+                  </div>
+                  
+                  {/* 버튼 모서리 픽셀 도트 */}
+                  <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute top-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+                </button>
+              )}
             </div>
           </div>
         </div>

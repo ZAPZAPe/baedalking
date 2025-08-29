@@ -84,6 +84,14 @@ export default function MinihompyPage() {
 
   useEffect(() => {
     if (userId) {
+      // 가상 사용자인지 확인 (ID가 'top-ranker-'로 시작하는 경우)
+      if (userId.startsWith('top-ranker-')) {
+        console.error('사용자 프로필 로딩 실패: 가상 사용자입니다.')
+        setTargetUser(null)
+        setIsLoading(false)
+        return
+      }
+      
       fetchUserProfile()
     }
   }, [userId, user])
@@ -97,13 +105,24 @@ export default function MinihompyPage() {
   }
 
   if (!targetUser) {
+    // 가상 사용자인지 확인하여 적절한 메시지 표시
+    const isVirtualUser = userId?.startsWith('top-ranker-')
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a2e] to-[#16213e] flex items-center justify-center">
         <div className="text-center">
-          <div className="text-white text-xl font-mono mb-4">사용자를 찾을 수 없습니다</div>
+          <div className="text-white text-xl font-mono mb-4">
+            {isVirtualUser ? '미니홈피가 준비중입니다' : '사용자를 찾을 수 없습니다'}
+          </div>
+          <div className="text-gray-400 text-sm font-mono mb-6">
+            {isVirtualUser 
+              ? '랭킹 시스템 사용자는 아직 미니홈피를 제공하지 않습니다.' 
+              : '요청하신 사용자의 정보를 찾을 수 없습니다.'
+            }
+          </div>
           <button
             onClick={() => router.push('/')}
-            className="bg-[#ffd93d] text-black px-4 py-2 rounded font-mono"
+            className="bg-[#ffd93d] text-black px-6 py-3 rounded font-mono hover:bg-[#ffed4e] transition-colors"
           >
             홈으로 돌아가기
           </button>
