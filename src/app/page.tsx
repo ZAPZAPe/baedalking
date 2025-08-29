@@ -29,7 +29,6 @@ import TermsOfServiceModal from '@/components/modals/TermsOfServiceModal'
 
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 export default function Home() {
   const { user, loading, signOut } = useAuth()
