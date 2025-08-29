@@ -329,7 +329,7 @@ export default function Home() {
                       alert('수입 기록이 성공적으로 삭제되었습니다.')
                       
                       // 로컬 상태에서 해당 기록 제거
-                      setIncomeRecords(prev => prev.filter(record => record.id !== recordId))
+                      setIncomeRecords(prev => prev.filter(record => record.id.toString() !== recordId))
                       
                       // 포인트 차감 (별도 구현 필요)
                     } else {
