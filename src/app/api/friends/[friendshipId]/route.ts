@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic'
 // 친구 요청 수락/거절
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { friendshipId: string } }
+  { params }: { params: Promise<{ friendshipId: string }> }
 ) {
   try {
-    const friendshipId = params.friendshipId
+    const { friendshipId } = await params
     const { action } = await request.json()
 
     if (!friendshipId || !action) {
@@ -80,10 +80,10 @@ export async function PUT(
 // 친구 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { friendshipId: string } }
+  { params }: { params: Promise<{ friendshipId: string }> }
 ) {
   try {
-    const friendshipId = params.friendshipId
+    const { friendshipId } = await params
 
     if (!friendshipId) {
       return NextResponse.json(

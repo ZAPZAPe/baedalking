@@ -14,6 +14,7 @@ interface IncomeTabProps {
   getTotalIncomeByPlatform: (platform: string) => number
   setShowIncomeInputPanel: (show: boolean) => void
   setShowIncomePanel: (show: boolean) => void
+  isVerified?: boolean
 
   onAddIncome?: (record: any) => void
   platforms: Platform[]

@@ -17,6 +17,7 @@ export interface User {
   garage_config?: Record<string, any>
   created_at?: string
   updated_at?: string
+  is_income_private?: boolean
 }
 
 export interface UserProfile {
@@ -28,6 +29,8 @@ export interface UserProfile {
   platforms: string[]
   rank?: number
   grade?: string
+  avatar_config?: Record<string, any>
+  status_message?: string
 }
 
 // ============================================================================
@@ -65,7 +68,7 @@ export interface IncomeTabProps {
   getTotalIncomeByPlatform: (platform: string) => number
   setShowIncomeInputPanel: (show: boolean) => void
   setShowIncomePanel: (show: boolean) => void
-  isVerified: boolean
+  isVerified?: boolean
   onAddIncome?: (record: IncomeRecord) => void
   platforms: Platform[]
   togglePlatform: (platformId: string) => void
@@ -81,6 +84,8 @@ export interface IncomeTabProps {
   setSelectedDate: (date: string | null) => void
   selectedDate: string | null
   showDetailModal: boolean
+  onEditRecord?: (record: any) => void
+  onDeleteRecord?: (recordId: string) => void
 }
 
 // ============================================================================
@@ -122,11 +127,14 @@ export interface TopRanker {
 }
 
 export interface RankingTabProps {
-  isVerified: boolean
+  isVerified?: boolean
   allRecords: IncomeRecord[]
   dailyGoal: number
   onShowGradeDetail: (grade: GradeInfo) => void
   onShowTopRankerProfile: (ranker: TopRanker) => void
+  onShowRankingDetail?: () => void
+  onTopRankersUpdate?: (rankers: any[]) => void
+  onShowUserProfile?: (userProfile: any) => void
 }
 
 // ============================================================================
@@ -192,9 +200,7 @@ export interface HomeTabProps {
   garageIntro: string
   todayVisitors: number
   currentWeather: { temp: number; condition: string }
-  getWeatherIcon: (condition: string) => string
   incomeRecords: IncomeRecord[]
-  totalIncome: number
   isClient: boolean
   setShowBackgroundItemPanel: (show: boolean) => void
   setShowVehicleItemPanel: (show: boolean) => void

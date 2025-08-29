@@ -72,15 +72,9 @@ export default function Home() {
     isClient, setIsClient,
     garageIntro, setGarageIntro,
 
-    level, setLevel,
-    isIncomePrivate, setIsIncomePrivate,
 
-    getTotalIncomeByPlatform,
-    totalIncome,
-    getWeatherIcon,
-    addPoints,
-    usePoints,
-    canAfford,
+
+
     platforms: appPlatforms,
     togglePlatform,
     addCustomPlatform,
@@ -88,7 +82,9 @@ export default function Home() {
     dailyGoal,
     weeklyGoal,
     monthlyGoal,
-    updateGoals
+    updateGoals,
+    friendRequests,
+    setFriendRequests
   } = useAppState()
 
   // 모달 상태들 - 항상 동일한 순서로 호출
@@ -244,6 +240,34 @@ export default function Home() {
   // 실제 수입 기록만 사용 (테스트 데이터 제거)
   const allRecords = incomeRecords
 
+  // 총 수입 계산
+  const totalIncome = incomeRecords.reduce((total, record) => total + record.total_amount, 0)
+
+  // 날씨 아이콘 함수
+  const getWeatherIcon = (condition: string): string => {
+    switch (condition.toLowerCase()) {
+      case 'sunny':
+      case 'clear':
+        return '☀️'
+      case 'cloudy':
+      case 'partly_cloudy':
+        return '⛅'
+      case 'overcast':
+        return '☁️'
+      case 'rainy':
+      case 'rain':
+        return '🌧️'
+      case 'snowy':
+      case 'snow':
+        return '❄️'
+      case 'stormy':
+      case 'thunderstorm':
+        return '⛈️'
+      default:
+        return '☀️'
+    }
+  }
+
   // 로딩 중이거나 사용자가 없으면 로딩 화면 표시
   if (loading || !user) {
     return (
@@ -295,7 +319,6 @@ export default function Home() {
                 getWeatherIcon={getWeatherIcon}
                 incomeRecords={incomeRecords}
                 totalIncome={totalIncome}
-
                 isClient={isClient}
                 setShowBackgroundItemPanel={setShowBackgroundItemPanel}
                 setShowVehicleItemPanel={setShowVehicleItemPanel}
@@ -310,10 +333,15 @@ export default function Home() {
               <IncomeTab
                 incomeRecords={incomeRecords}
                 totalIncome={totalIncome}
-                getTotalIncomeByPlatform={getTotalIncomeByPlatform}
+                getTotalIncomeByPlatform={(platform: string) => {
+                  return incomeRecords
+                    .filter(record => record.platform === platform)
+                    .reduce((total, record) => total + record.total_amount, 0)
+                }}
                 setShowIncomeInputPanel={setShowIncomeInputPanel}
                 setShowIncomePanel={setShowIncomePanel}
 
+                isVerified={true}
                 onAddIncome={onIncomeSubmit}
                 platforms={appPlatforms}
                 togglePlatform={togglePlatform}
@@ -351,7 +379,7 @@ export default function Home() {
                       alert('수입 기록이 성공적으로 삭제되었습니다.')
                       
                       // 로컬 상태에서 해당 기록 제거
-                      setIncomeRecords(prev => prev.filter(record => record.id.toString() !== recordId))
+                      setIncomeRecords(incomeRecords.filter(record => record.id.toString() !== recordId))
                       
                       // 포인트 차감 (별도 구현 필요)
                     } else {
@@ -369,6 +397,7 @@ export default function Home() {
             {/* RANKING 탭 */}
             {activeTab === 'ranking' && (
               <RankingTab 
+                isVerified={true}
                 allRecords={incomeRecords}
                 dailyGoal={dailyGoal}
                 onShowGradeDetail={(grade: {
@@ -405,6 +434,8 @@ export default function Home() {
                   setSelectedUserProfile(userProfile)
                   setShowUserProfile(true)
                 }}
+                friendRequests={friendRequests}
+                setFriendRequests={setFriendRequests}
               />
             )}
 
@@ -415,8 +446,11 @@ export default function Home() {
                 currentEmotion={currentEmotion}
                 userLocation={user?.region || '서울'}
                 emotions={emotions}
-                isIncomePrivate={isIncomePrivate}
-                setIsIncomePrivate={setIsIncomePrivate}
+                isIncomePrivate={user?.is_income_private || false}
+                setIsIncomePrivate={(isPrivate: boolean) => {
+                  // 사용자 프로필 업데이트 로직 필요
+                  console.log('isIncomePrivate 업데이트:', isPrivate)
+                }}
                 setShowPrivacyPolicy={setShowPrivacyPolicy}
                 setShowTermsOfService={setShowTermsOfService}
                 setShowDeleteAccount={setShowDeleteAccount}
@@ -512,7 +546,11 @@ export default function Home() {
         setShowIncomePanel={setShowIncomePanel}
         incomeRecords={incomeRecords}
         totalIncome={totalIncome}
-        getTotalIncomeByPlatform={getTotalIncomeByPlatform}
+        getTotalIncomeByPlatform={(platform: string) => {
+          return incomeRecords
+            .filter(record => record.platform === platform)
+            .reduce((total, record) => total + record.total_amount, 0)
+        }}
         platforms={appPlatforms}
       />
 
@@ -540,7 +578,15 @@ export default function Home() {
         setShowBackgroundItemPanel={setShowBackgroundItemPanel}
         currentBackground={currentBackground}
         setCurrentBackground={setCurrentBackground}
-        usePoints={usePoints}
+        usePoints={(amount: number, item?: string) => {
+          if (totalPoints >= amount) {
+            setTotalPoints(totalPoints - amount)
+            console.log(`포인트 사용: ${amount}점 (아이템: ${item || '알 수 없음'})`)
+            return true
+          }
+          console.log(`포인트 부족: 필요 ${amount}점, 보유 ${totalPoints}점`)
+          return false
+        }}
       />
 
       <GoalSettingsPanel 
@@ -629,7 +675,7 @@ export default function Home() {
         isOpen={showRankingDetail}
         onClose={() => setShowRankingDetail(false)}
         userRank={incomeRecords.length > 0 ? Math.floor(Math.random() * 100) + 1 : 0}
-        userIncome={totalIncome}
+        userIncome={0}
         totalUsers={1000}
         topRankers={topRankers}
         onShowUserDetail={(ranker) => {

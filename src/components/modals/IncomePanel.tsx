@@ -1,16 +1,7 @@
 'use client'
 
 import { Platform } from '@/hooks/useAppState'
-
-interface IncomeRecord {
-  id: number
-  platform: string
-  count: number
-  deliveryAmount: number
-  missionAmount: number
-  amount: number
-  date: string
-}
+import { IncomeRecord } from '@/types'
 
 interface IncomePanelProps {
   showIncomePanel: boolean
@@ -119,11 +110,11 @@ export default function IncomePanel({
                 </div>
                 <div className="bg-[#0a0a23]/80 border border-[#00d4ff]/30 p-2 text-center relative" style={{borderRadius: '4px'}}>
                   <p className="text-white text-xs font-mono font-bold mb-1">총 건수</p>
-                  <p className="text-[#00d4ff] text-sm sm:text-base font-bold font-mono">{incomeRecords.reduce((sum, record) => sum + record.count, 0)}건</p>
+                  <p className="text-[#00d4ff] text-sm sm:text-base font-bold font-mono">{incomeRecords.reduce((sum, record) => sum + record.delivery_count, 0)}건</p>
                 </div>
                 <div className="bg-[#0a0a23]/80 border border-[#9c88ff]/30 p-2 text-center relative" style={{borderRadius: '4px'}}>
                   <p className="text-white text-xs font-mono font-bold mb-1">평균</p>
-                  <p className="text-[#9c88ff] text-sm sm:text-base font-bold font-mono">₩{incomeRecords.length > 0 ? Math.round(totalIncome / incomeRecords.reduce((sum, record) => sum + record.count, 0)) : 0}</p>
+                  <p className="text-[#9c88ff] text-sm sm:text-base font-bold font-mono">₩{incomeRecords.length > 0 ? Math.round(totalIncome / incomeRecords.reduce((sum, record) => sum + record.delivery_count, 0)) : 0}</p>
                 </div>
               </div>
               {/* 모서리 픽셀 도트 */}
@@ -145,9 +136,9 @@ export default function IncomePanel({
               {platforms.filter(p => p.isActive).map((platform) => {
                 const platformIncome = getTotalIncomeByPlatform(platform.id)
                 const platformRecords = incomeRecords.filter(record => record.platform === platform.id)
-                const platformCount = platformRecords.reduce((sum, record) => sum + record.count, 0)
-                const platformAmount = platformRecords.reduce((sum, record) => sum + (record.amount || 0), 0)
-                const platformMissionAmount = platformRecords.reduce((sum, record) => sum + (record.missionAmount || 0), 0)
+                const platformCount = platformRecords.reduce((sum, record) => sum + record.delivery_count, 0)
+                const platformAmount = platformRecords.reduce((sum, record) => sum + (record.total_amount || 0), 0)
+                const platformMissionAmount = platformRecords.reduce((sum, record) => sum + (record.mission_amount || 0), 0)
                 
                 const platformConfig = {
                   'baemin': { icon: '/baemin-logo.svg', borderColor: '#00d4ff', bgColor: '#00d4ff' },
@@ -282,13 +273,13 @@ export default function IncomePanel({
                             className="w-3 h-3 object-contain"
                             style={{ imageRendering: 'pixelated' }}
                           />
-                          <span className="text-white text-xs font-mono">{record.count}건</span>
+                          <span className="text-white text-xs font-mono">{record.delivery_count}건</span>
                         </div>
-                        <span className="text-[#ffd93d] font-bold text-xs font-mono">₩{record.amount.toLocaleString()}</span>
+                        <span className="text-[#ffd93d] font-bold text-xs font-mono">₩{record.total_amount.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-400 font-mono">배달: ₩{record.deliveryAmount?.toLocaleString() || '0'}</span>
-                        <span className="text-gray-400 font-mono">미션: ₩{record.missionAmount?.toLocaleString() || '0'}</span>
+                                                  <span className="text-gray-400 font-mono">배달: ₩{record.delivery_amount?.toLocaleString() || '0'}</span>
+                        <span className="text-gray-400 font-mono">미션: ₩{record.mission_amount?.toLocaleString() || '0'}</span>
                       </div>
                     </div>
                   ))

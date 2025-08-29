@@ -262,7 +262,7 @@ export default function ShopPage() {
             return (
               <PixelCard 
                 key={item.id} 
-                variant="default" 
+                variant="primary" 
                 className="cursor-pointer hover:scale-105 transition-all"
                 onClick={() => {
                   setSelectedItem(item)
@@ -377,7 +377,7 @@ export default function ShopPage() {
                         toggleEquipItem(userItem.id, userItem.equipped)
                       }
                     }}
-                    variant={isEquipped(selectedItem.id) ? 'warning' : 'success'}
+                    variant={isEquipped(selectedItem.id) ? 'danger' : 'success'}
                   >
                     {isEquipped(selectedItem.id) ? '해제하기' : '장착하기'}
                   </PixelButton>

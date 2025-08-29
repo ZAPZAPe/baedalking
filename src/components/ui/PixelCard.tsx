@@ -7,13 +7,15 @@ interface PixelCardProps {
   title?: string
   variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'info'
   className?: string
+  onClick?: () => void
 }
 
 export default function PixelCard({
   children,
   title,
   variant = 'primary',
-  className = ''
+  className = '',
+  onClick
 }: PixelCardProps) {
   
   // 변형별 색상 정의 (USER PROFILE 모달 기반)
@@ -58,12 +60,16 @@ export default function PixelCard({
   const style = variantStyles[variant]
 
   return (
-    <div className={`
-      bg-gradient-to-r ${style.gradient}
-      border ${style.border}
-      p-2 sm:p-3 relative
-      ${className}
-    `} style={{borderRadius: '4px'}}>
+    <div 
+      className={`
+        bg-gradient-to-r ${style.gradient}
+        border ${style.border}
+        p-2 sm:p-3 relative
+        ${className}
+      `} 
+      style={{borderRadius: '4px'}}
+      onClick={onClick}
+    >
       
       {title && (
         <h4 className={`${style.titleColor} text-center font-bold text-xs sm:text-sm font-mono tracking-wide mb-2 sm:mb-3`} 

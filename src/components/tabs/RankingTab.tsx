@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 
 interface RankingTabProps {
+  isVerified?: boolean
   allRecords: any[]
   dailyGoal: number
   onShowGradeDetail: (grade: GradeInfo) => void

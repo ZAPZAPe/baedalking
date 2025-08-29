@@ -9,12 +9,13 @@ interface FriendsTabProps {
   setShowFriendDetail: (show: boolean) => void
   setSelectedFriend: (friend: any) => void
   onShowUserProfile: (userProfile: any) => void
+  friendRequests: { id: number; name: string; level: number; message: string }[]
+  setFriendRequests: (requests: { id: number; name: string; level: number; message: string }[]) => void
 }
 
-export default function FriendsTab({ currentUserId, setShowFriendDetail, setSelectedFriend, onShowUserProfile }: FriendsTabProps) {
+export default function FriendsTab({ currentUserId, setShowFriendDetail, setSelectedFriend, onShowUserProfile, friendRequests, setFriendRequests }: FriendsTabProps) {
   const router = useRouter()
   const [friends, setFriends] = useState<Friendship[]>([])
-  const [friendRequests, setFriendRequests] = useState<Friendship[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [activeView, setActiveView] = useState<'friends' | 'requests' | 'search'>('friends')
@@ -45,30 +46,7 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
     }
   }
 
-  // 친구 요청 가져오기
-  useEffect(() => {
-    loadFriendRequests()
-  }, [])
 
-  const loadFriendRequests = async () => {
-    try {
-      const response = await fetch(`/api/friends?userId=${currentUserId}&status=pending`)
-      const data = await response.json()
-      
-      if (response.ok && data.friends) {
-        // pending 상태의 친구 요청만 필터링 (내가 받은 요청만)
-        const receivedRequests = data.friends.filter((friendship: any) => 
-          !friendship.isRequester && friendship.status === 'pending'
-        )
-        setFriendRequests(receivedRequests)
-      } else {
-        setFriendRequests([])
-      }
-    } catch (error) {
-      console.error('친구 요청 로딩 오류:', error)
-      setFriendRequests([])
-    }
-  }
 
   // 친구 검색
   const handleSearchFriend = async () => {
@@ -111,7 +89,7 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
 
 
   // 친구 요청 수락
-  const handleAcceptFriend = async (requestId: string) => {
+  const handleAcceptFriend = async (requestId: number) => {
     try {
       const response = await fetch(`/api/friends/${requestId}`, {
         method: 'PUT',
@@ -123,7 +101,7 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
 
       if (response.ok) {
         // 친구 요청 목록에서 제거
-        setFriendRequests(prev => prev.filter(req => req.id !== requestId))
+        setFriendRequests(friendRequests.filter(req => req.id !== requestId))
         // 친구 목록 새로고침
         loadFriends()
       } else {
@@ -135,7 +113,7 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
   }
 
   // 친구 요청 거절
-  const handleRejectFriend = async (requestId: string) => {
+  const handleRejectFriend = async (requestId: number) => {
     try {
       const response = await fetch(`/api/friends/${requestId}`, {
         method: 'PUT',
@@ -147,7 +125,7 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
 
       if (response.ok) {
         // 친구 요청 목록에서 제거
-        setFriendRequests(prev => prev.filter(req => req.id !== requestId))
+        setFriendRequests(friendRequests.filter(req => req.id !== requestId))
       } else {
         console.error('친구 요청 거절 실패')
       }
@@ -363,7 +341,7 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
                 <div className="space-y-2">
                   {friends
                     .filter(friendship => 
-                      friendship.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
+                      friendship.friend?.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
                     )
                     .slice((currentPage - 1) * friendsPerPage, currentPage * friendsPerPage)
                     .map((friendship) => (
@@ -371,7 +349,7 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
                            style={{borderRadius: '4px'}}
                            onClick={() => handleOpenFriendDetail(friendship)}>
                         <div className="flex items-center justify-between">
-                          <p className="text-white font-bold font-mono text-sm">{friendship.nickname}</p>
+                          <p className="text-white font-bold font-mono text-sm">{friendship.friend?.nickname}</p>
                           <div className="text-[#00ff88] text-sm">▶</div>
                         </div>
                         
@@ -469,10 +447,10 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1">
                         <h4 className="text-white font-bold text-sm font-mono mb-1">
-                          {request.nickname || '배달킹'}
+                          {request.name || '배달킹'}
                         </h4>
                         <p className="text-gray-300 text-xs font-mono">
-                          {request.status_message || '친구가 되고 싶어요!'}
+                          {request.message || '친구가 되고 싶어요!'}
                         </p>
                       </div>
                       <div className="text-[#ff6b6b] text-sm">▶</div>
