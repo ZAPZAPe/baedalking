@@ -3,7 +3,6 @@
 import React, { useState } from 'react'
 
 interface RankingTabProps {
-  isVerified: boolean
   allRecords: any[]
   dailyGoal: number
   onShowGradeDetail: (grade: GradeInfo) => void
@@ -30,7 +29,7 @@ interface TopRanker {
   platforms: string[] // 수입 등록된 플랫폼들
 }
 
-export default function RankingTab({ isVerified, allRecords, dailyGoal, onShowGradeDetail, onShowTopRankerProfile }: RankingTabProps) {
+export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, onShowTopRankerProfile }: RankingTabProps) {
 
 
   // 오늘 일간 수입 계산

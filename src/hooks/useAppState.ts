@@ -71,8 +71,7 @@ export interface AppState {
   setIsClient: (isClient: boolean) => void
   garageIntro: string
   setGarageIntro: (intro: string) => void
-  isVerified: boolean
-  setIsVerified: (isVerified: boolean) => void
+
   level: number
   setLevel: (level: number) => void
   isIncomePrivate: boolean
@@ -178,7 +177,7 @@ export function useAppState() {
   const [totalVisitors, setTotalVisitors] = useState(247)
   const [isClient, setIsClient] = useState(false)
   const [garageIntro, setGarageIntro] = useState('열심히 달리는 배달킹입니다! 🛵💨')
-  const [isVerified, setIsVerified] = useState(true) // 인증 상태 (임시로 true 설정)
+
   const [level, setLevel] = useState(1)
   const [isIncomePrivate, setIsIncomePrivate] = useState(() => {
     // 로컬스토리지에서 수익 비공개 설정 불러오기
@@ -412,7 +411,7 @@ export function useAppState() {
     totalVisitors, setTotalVisitors,
     isClient, setIsClient,
     garageIntro, setGarageIntro,
-    isVerified, setIsVerified,
+
     level, setLevel,
     isIncomePrivate, setIsIncomePrivate,
     

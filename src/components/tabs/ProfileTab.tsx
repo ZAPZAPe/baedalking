@@ -233,6 +233,15 @@ export default function ProfileTab({
         
         <div className="space-y-2">
           <button 
+            onClick={() => window.location.href = `/minihompy/${userNickname || 'temp'}`}
+            className="w-full bg-[#1a202c]/60 border border-[#9c88ff]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
+            style={{borderRadius: '4px'}}
+          >
+            <div className="text-[#9c88ff] text-sm font-bold font-mono">내 미니홈피</div>
+            <div className="text-gray-400 text-xs font-mono">프로필 보기 및 방명록 관리</div>
+          </button>
+
+          <button 
             onClick={() => setShowPrivacyPolicy(true)}
             className="w-full bg-[#1a202c]/60 border border-[#ffd93d]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
             style={{borderRadius: '4px'}}

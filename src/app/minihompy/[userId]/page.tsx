@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import GuestbookModal from '@/components/modals/GuestbookModal'
+import GuestbookPreview from '@/components/minihompy/GuestbookPreview'
 import { UserProfile } from '@/types'
 
 // prerender 방지를 위한 설정
@@ -26,20 +27,16 @@ export default function MinihompyPage() {
 
     setIsLoading(true)
     try {
-      // 실제로는 Supabase에서 사용자 정보를 가져와야 합니다
-      // 현재는 더미 데이터 사용
-      const dummyUser: UserProfile = {
-        id: userId,
-        nickname: '배달왕',
-        region: '서울시 강남구',
-        income: 2500000,
-        count: 150,
-        platforms: ['baemin', 'coupang'],
-        rank: 1,
-        grade: 'LEGEND'
+      const response = await fetch(`/api/users/${userId}`)
+      const data = await response.json()
+
+      if (response.ok && data.user) {
+        setTargetUser(data.user)
+      } else {
+        console.error('사용자 프로필 로딩 실패:', data.error)
+        setTargetUser(null)
+        return
       }
-      
-      setTargetUser(dummyUser)
       
       // 방문자 수 기록 (자신의 페이지가 아닌 경우에만)
       if (user && user.id !== userId) {
@@ -231,38 +228,11 @@ export default function MinihompyPage() {
               </div>
 
               {/* 방명록 미리보기 내용 */}
-              <div className="space-y-3">
-                <div className="bg-[#1a202c]/60 border border-[#ffd93d]/30 rounded p-3">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-[#ffd93d] font-bold text-sm font-mono">친구A</span>
-                    <span className="text-gray-400 text-xs font-mono">2024.08.29</span>
-                  </div>
-                  <p className="text-white text-sm font-mono">
-                    오늘도 수고하셨습니다! 항상 안전 운전하세요~
-                  </p>
-                </div>
-
-                <div className="bg-[#1a202c]/60 border border-[#ffd93d]/30 rounded p-3">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-[#ffd93d] font-bold text-sm font-mono">배달동료</span>
-                    <span className="text-gray-400 text-xs font-mono">2024.08.28</span>
-                  </div>
-                  <p className="text-white text-sm font-mono">
-                    이번달 수익 대박이네요! 노하우 좀 알려주세요 ㅎㅎ
-                  </p>
-                </div>
-
-                {!isOwnPage && (
-                  <div className="text-center pt-3">
-                    <button
-                      onClick={() => setShowGuestbook(true)}
-                      className="bg-gradient-to-r from-[#ffd93d]/20 to-[#ff6b6b]/20 border border-[#ffd93d]/50 text-[#ffd93d] px-6 py-2 rounded font-mono text-sm hover:scale-105 transition-all"
-                    >
-                      방명록 남기기
-                    </button>
-                  </div>
-                )}
-              </div>
+              <GuestbookPreview 
+                userId={userId} 
+                isOwnPage={isOwnPage}
+                onOpenGuestbook={() => setShowGuestbook(true)}
+              />
             </div>
           </div>
         </div>

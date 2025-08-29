@@ -20,10 +20,8 @@ CREATE TABLE IF NOT EXISTS earnings (
     amount INTEGER NOT NULL,
     date DATE NOT NULL,
     screenshot_url TEXT NOT NULL,
-    verified BOOLEAN DEFAULT FALSE,
     points_awarded INTEGER DEFAULT 0,
     screenshot_text TEXT DEFAULT '',
-    verified_score NUMERIC(5,2) DEFAULT 0,
     source TEXT CHECK (source IN ('baemin', 'coupang', 'other')) DEFAULT 'other',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -97,7 +95,7 @@ CREATE TABLE IF NOT EXISTS guestbook (
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_earnings_user_id ON earnings(user_id);
 CREATE INDEX IF NOT EXISTS idx_earnings_date ON earnings(date);
-CREATE INDEX IF NOT EXISTS idx_earnings_verified ON earnings(verified);
+
 CREATE INDEX IF NOT EXISTS idx_points_user_id ON points(user_id);
 CREATE INDEX IF NOT EXISTS idx_points_type ON points(type);
 CREATE INDEX IF NOT EXISTS idx_user_items_user_id ON user_items(user_id);

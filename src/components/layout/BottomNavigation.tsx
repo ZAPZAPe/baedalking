@@ -3,13 +3,11 @@
 interface BottomNavigationProps {
   activeTab: string
   onTabChange: (tab: string) => void
-  isVerified: boolean
 }
 
 export default function BottomNavigation({ 
   activeTab, 
-  onTabChange, 
-  isVerified 
+  onTabChange
 }: BottomNavigationProps) {
   return (
     <div 

@@ -66,7 +66,7 @@ export default function Home() {
     totalVisitors, setTotalVisitors,
     isClient, setIsClient,
     garageIntro, setGarageIntro,
-    isVerified, setIsVerified,
+
     level, setLevel,
     isIncomePrivate, setIsIncomePrivate,
 
@@ -200,7 +200,7 @@ export default function Home() {
                 getWeatherIcon={getWeatherIcon}
                 incomeRecords={incomeRecords}
                 totalIncome={totalIncome}
-                isVerified={isVerified}
+
                 isClient={isClient}
                 setShowBackgroundItemPanel={setShowBackgroundItemPanel}
                 setShowVehicleItemPanel={setShowVehicleItemPanel}
@@ -218,7 +218,7 @@ export default function Home() {
                 getTotalIncomeByPlatform={getTotalIncomeByPlatform}
                 setShowIncomeInputPanel={setShowIncomeInputPanel}
                 setShowIncomePanel={setShowIncomePanel}
-                isVerified={isVerified}
+
                 onAddIncome={onIncomeSubmit}
                 platforms={appPlatforms}
                 togglePlatform={togglePlatform}
@@ -240,7 +240,7 @@ export default function Home() {
             {/* RANKING 탭 */}
             {activeTab === 'ranking' && (
               <RankingTab 
-                isVerified={isVerified}
+
                 allRecords={allRecords}
                 dailyGoal={dailyGoal}
                 onShowGradeDetail={(grade: {
@@ -298,7 +298,7 @@ export default function Home() {
       <BottomNavigation
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        isVerified={isVerified}
+
       />
 
       {/* 수입 입력 패널 */}

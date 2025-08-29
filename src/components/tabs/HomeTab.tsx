@@ -11,7 +11,6 @@ interface HomeTabProps {
   getWeatherIcon: (condition: string) => string
   incomeRecords: any[]
   totalIncome: number
-  isVerified: boolean
   isClient: boolean
   setShowBackgroundItemPanel: (show: boolean) => void
   setShowVehicleItemPanel: (show: boolean) => void
@@ -31,7 +30,6 @@ export default function HomeTab({
   getWeatherIcon,
   incomeRecords,
   totalIncome,
-  isVerified,
   isClient,
   setShowBackgroundItemPanel,
   setShowVehicleItemPanel,

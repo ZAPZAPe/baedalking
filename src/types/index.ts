@@ -180,7 +180,6 @@ export interface ProfileTabProps {
 export interface BottomNavigationProps {
   activeTab: string
   onTabChange: (tab: string) => void
-  isVerified: boolean
 }
 
 export interface HomeTabProps {
@@ -194,7 +193,6 @@ export interface HomeTabProps {
   getWeatherIcon: (condition: string) => string
   incomeRecords: IncomeRecord[]
   totalIncome: number
-  isVerified: boolean
   isClient: boolean
   setShowBackgroundItemPanel: (show: boolean) => void
   setShowVehicleItemPanel: (show: boolean) => void
