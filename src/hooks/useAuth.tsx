@@ -17,6 +17,10 @@ interface AuthContextType {
   loading: boolean  // Vercel 호환성을 위해 추가
   signInWithKakao: () => Promise<void>
   signOut: () => Promise<void>
+  // Vercel 호환성을 위해 추가
+  signUp: (email: string, password: string, nickname: string) => Promise<any>
+  signIn: (email: string, password: string) => Promise<any>
+  resetPassword: (email: string) => Promise<any>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -107,7 +111,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     loading: isLoading,  // Vercel 호환성을 위해 추가
     signInWithKakao,
-    signOut
+    signOut,
+    // Vercel 호환성을 위해 추가
+    signUp: async (email: string, password: string, nickname: string) => {
+      console.log('signUp called but not implemented')
+      return { data: { user: null, session: null }, error: null }
+    },
+    signIn: async (email: string, password: string) => {
+      console.log('signIn called but not implemented')
+      return { data: { user: null, session: null }, error: null }
+    },
+    resetPassword: async (email: string) => {
+      console.log('resetPassword called but not implemented')
+      return { data: null, error: null }
+    }
   }
 
   return (

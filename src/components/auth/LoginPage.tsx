@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function LoginPage() {
-  const { user, signInWithKakao, isLoading } = useAuth()
+  const { user, signInWithKakao, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     // 이미 로그인된 사용자는 메인 페이지로 리다이렉트
-    if (user && !isLoading) {
+    if (user && !loading) {
       router.push('/')
     }
-  }, [user, isLoading, router])
+  }, [user, loading, router])
 
   const handleKakaoLogin = async () => {
     try {
@@ -23,7 +23,7 @@ export default function LoginPage() {
     }
   }
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a2e] to-[#16213e] flex items-center justify-center">
         <div className="text-white text-xl">로그인 중...</div>
