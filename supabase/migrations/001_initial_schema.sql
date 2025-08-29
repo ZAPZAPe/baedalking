@@ -84,6 +84,16 @@ CREATE TABLE IF NOT EXISTS rewards (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create guestbook table
+CREATE TABLE IF NOT EXISTS guestbook (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    visitor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    is_private BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_earnings_user_id ON earnings(user_id);
 CREATE INDEX IF NOT EXISTS idx_earnings_date ON earnings(date);
@@ -94,6 +104,8 @@ CREATE INDEX IF NOT EXISTS idx_user_items_user_id ON user_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);
 CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status);
 CREATE INDEX IF NOT EXISTS idx_visits_visited_user_id ON visits(visited_user_id);
+CREATE INDEX IF NOT EXISTS idx_guestbook_user_id ON guestbook(user_id);
+CREATE INDEX IF NOT EXISTS idx_guestbook_visitor_id ON guestbook(visitor_id);
 
 -- Insert sample items
 INSERT INTO items (name, type, asset_url, price) VALUES
@@ -132,6 +144,7 @@ ALTER TABLE user_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE visits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rewards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE guestbook ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- Users can only see their own data
@@ -192,3 +205,16 @@ CREATE POLICY "Users can insert own rewards" ON rewards
 -- Items are public
 CREATE POLICY "Items are viewable by everyone" ON items
     FOR SELECT USING (true);
+
+-- Guestbook policies
+CREATE POLICY "Users can view guestbook messages on their page" ON guestbook
+    FOR SELECT USING (auth.uid() = user_id OR auth.uid() = visitor_id);
+
+CREATE POLICY "Users can write guestbook messages" ON guestbook
+    FOR INSERT WITH CHECK (auth.uid() = visitor_id);
+
+CREATE POLICY "Users can delete messages on their own guestbook" ON guestbook
+    FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Message writers can delete their own messages" ON guestbook
+    FOR DELETE USING (auth.uid() = visitor_id);

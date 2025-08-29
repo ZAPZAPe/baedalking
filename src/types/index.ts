@@ -261,6 +261,36 @@ export interface AuthContextType {
 }
 
 // ============================================================================
+// 🏠 방명록 및 미니홈피 관련 타입
+// ============================================================================
+
+export interface GuestbookMessage {
+  id: string
+  message: string
+  is_private: boolean
+  created_at: string
+  visitor: {
+    id: string
+    nickname: string
+    avatar_config: any
+  }
+}
+
+export interface GuestbookModalProps {
+  isOpen: boolean
+  onClose: () => void
+  targetUser: UserProfile | null
+  currentUserId: string
+}
+
+export interface Visit {
+  id: string
+  user_id: string
+  visited_user_id: string
+  created_at: string
+}
+
+// ============================================================================
 // 📊 모달 관련 타입
 // ============================================================================
 
