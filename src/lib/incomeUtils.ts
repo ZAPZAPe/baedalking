@@ -35,14 +35,14 @@ export const handleIncomeSubmit = async (
         .from('earnings')
         .insert({
           user_id: userId,
-          amount: totalIncome,
+          amount: deliveryAmount,
+          mission_amount: mission,
+          delivery_count: count,
+          platform: selectedPlatform,
           date: today,
           screenshot_url: 'no-image',
-          verified: false,
-          points_awarded: 0,
           screenshot_text: '',
-          verified_score: 0,
-          source: selectedPlatform
+          points_awarded: 0
         })
         .select()
         .single()
