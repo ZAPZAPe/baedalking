@@ -29,7 +29,7 @@ import TermsOfServiceModal from '@/components/modals/TermsOfServiceModal'
 import { useState } from 'react'
 
 export default function Home() {
-  const { user, isLoading, signOut } = useAuth()
+  const { user, loading, signOut } = useAuth()
   const router = useRouter()
 
   // 모든 Hooks를 항상 동일한 순서로 호출
@@ -113,16 +113,16 @@ export default function Home() {
     const kakaoUser = localStorage.getItem('kakaoUser')
     console.log('메인 페이지 - 로컬 스토리지 사용자 정보:', kakaoUser)
     console.log('useAuth user:', user)
-    console.log('useAuth isLoading:', isLoading)
-  }, [user, isLoading])
+    console.log('useAuth loading:', loading)
+  }, [user, loading])
 
   // 인증 체크
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!loading && !user) {
       console.log('인증 실패 - 로그인 페이지로 이동')
       router.push('/login')
     }
-  }, [user, isLoading, router])
+  }, [user, loading, router])
 
   // 수입 제출 핸들러
   const onIncomeSubmit = () => {
@@ -148,7 +148,7 @@ export default function Home() {
   const allRecords = incomeRecords
 
   // 로딩 중이거나 사용자가 없으면 로딩 화면 표시
-  if (isLoading || !user) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a2e] to-[#16213e] flex items-center justify-center">
         <div className="text-white text-xl">로딩 중...</div>
