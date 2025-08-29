@@ -154,6 +154,8 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
 
   // 친구 상세보기 열기
   const handleOpenFriendDetail = (friendship: Friendship) => {
+    if (!friendship.friend) return;
+    
     // UserProfileModal을 위한 사용자 프로필 데이터 생성
     const userProfile = {
       id: friendship.friend.id,

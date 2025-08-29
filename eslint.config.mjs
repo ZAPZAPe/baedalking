@@ -7,15 +7,17 @@ const __dirname = dirname(__filename);
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
+  recommendedConfig: true
 });
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals"),
+  ...compat.config({
+    extends: ["next/core-web-vitals"],
+    parserOptions: {
+      project: "./tsconfig.json"
+    }
+  }),
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
-    rules: {
-      "@next/next/no-html-link-for-pages": "off",
-    },
     ignores: [
       "node_modules/**",
       ".next/**",
