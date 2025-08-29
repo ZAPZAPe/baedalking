@@ -52,15 +52,17 @@ export async function GET(request: NextRequest) {
 
     // 친구 정보 정리 (본인이 아닌 상대방 정보만 반환)
     const friendsList = friends?.map(friendship => {
-      const isRequester = friendship.user.id === userId
-      const friendInfo = isRequester ? friendship.friend : friendship.user
+      const userInfo = Array.isArray(friendship.user) ? friendship.user[0] : friendship.user
+      const friendInfo = Array.isArray(friendship.friend) ? friendship.friend[0] : friendship.friend
+      const isRequester = userInfo?.id === userId
+      const targetInfo = isRequester ? friendInfo : userInfo
       
       return {
         id: friendship.id,
-        friendId: friendInfo.id,
-        nickname: friendInfo.nickname,
-        region: friendInfo.region,
-        avatar_config: friendInfo.avatar_config,
+        friendId: targetInfo?.id || '',
+        nickname: targetInfo?.nickname || '',
+        region: targetInfo?.region || '',
+        avatar_config: targetInfo?.avatar_config || {},
         status: friendship.status,
         created_at: friendship.created_at,
         isRequester

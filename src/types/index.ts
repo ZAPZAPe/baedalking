@@ -35,13 +35,15 @@ export interface UserProfile {
 // ============================================================================
 
 export interface IncomeRecord {
-  id: number
-  platform: string
+  id: string
+  platform: Platform | string
   count: number
   deliveryAmount: number
   missionAmount: number
   amount: number
   date: string
+  verified?: boolean
+  screenshot_url?: string
 }
 
 export interface DailyIncomeData {
@@ -259,6 +261,51 @@ export interface AuthContextType {
 }
 
 // ============================================================================
+// 🎨 UI 컴포넌트 타입
+// ============================================================================
+
+export interface PixelModalProps {
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  children: React.ReactNode
+  className?: string
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+}
+
+export interface PixelButtonProps {
+  onClick?: () => void
+  children: React.ReactNode
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
+  disabled?: boolean
+  className?: string
+  type?: 'button' | 'submit' | 'reset'
+}
+
+export interface PixelInputProps {
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+  placeholder?: string
+  type?: 'text' | 'email' | 'password' | 'number'
+  multiline?: boolean
+  rows?: number
+  maxLength?: number
+  disabled?: boolean
+  className?: string
+  variant?: 'default' | 'success' | 'warning' | 'danger'
+}
+
+export interface PixelCardProps {
+  children: React.ReactNode
+  className?: string
+  variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
+  withDots?: boolean
+  onClick?: () => void
+  hoverable?: boolean
+}
+
+// ============================================================================
 // 🏠 방명록 및 미니홈피 관련 타입
 // ============================================================================
 
@@ -286,6 +333,85 @@ export interface Visit {
   user_id: string
   visited_user_id: string
   created_at: string
+}
+
+// ============================================================================
+// 🔌 API 응답 타입
+// ============================================================================
+
+export interface ApiResponse<T = any> {
+  message?: string
+  error?: string
+  data?: T
+}
+
+export interface GuestbookApiResponse extends ApiResponse {
+  messages?: GuestbookMessage[]
+}
+
+export interface FriendsApiResponse extends ApiResponse {
+  friends?: Friend[]
+}
+
+export interface UsersSearchApiResponse extends ApiResponse {
+  users?: SearchUser[]
+  total?: number
+}
+
+export interface EarningsApiResponse extends ApiResponse {
+  earnings?: EarningRecord[]
+  earning?: EarningRecord
+  pointsAwarded?: number
+}
+
+export interface VisitsApiResponse extends ApiResponse {
+  totalVisits?: number
+  todayVisits?: number
+}
+
+export interface UserProfileApiResponse extends ApiResponse {
+  user?: UserProfile
+}
+
+// ============================================================================
+// 💰 수익 관련 확장 타입
+// ============================================================================
+
+export interface EarningRecord {
+  id: string
+  user_id: string
+  amount: number
+  date: string
+  screenshot_url: string
+  screenshot_text?: string
+  source: 'baemin' | 'coupang' | 'other'
+  points_awarded: number
+  created_at: string
+  updated_at?: string
+}
+
+// ============================================================================
+// 👥 친구 관련 확장 타입
+// ============================================================================
+
+export interface Friend {
+  id: string
+  friendId: string
+  nickname: string
+  region: string
+  avatar_config: any
+  status: 'pending' | 'accepted' | 'rejected'
+  created_at: string
+  isRequester: boolean
+}
+
+export interface SearchUser {
+  id: string
+  nickname: string
+  region: string
+  avatar_config: any
+  friendStatus: 'none' | 'pending_sent' | 'pending_received' | 'accepted'
+  memberSince: string
 }
 
 // ============================================================================
@@ -413,6 +539,32 @@ export interface Weather {
 
 // ============================================================================
 // 📱 앱 상태 관련 타입
+// ============================================================================
+
+// ============================================================================
+// 🛠️ 유틸리티 타입
+// ============================================================================
+
+export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
+
+export type FriendRequestAction = 'accept' | 'reject'
+
+export type EarningSource = 'baemin' | 'coupang' | 'other'
+
+export type FriendshipStatus = 'pending' | 'accepted' | 'rejected'
+
+export type FriendSearchStatus = 'none' | 'pending_sent' | 'pending_received' | 'accepted'
+
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+
+export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
+
+export type InputVariant = 'default' | 'success' | 'warning' | 'danger'
+
+export type CardVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
+
+// ============================================================================
+// 🎯 앱 전역 상태 타입
 // ============================================================================
 
 export interface AppState {

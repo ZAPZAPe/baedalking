@@ -1,13 +1,5 @@
 import React from 'react'
-
-interface PixelCardProps {
-  children: React.ReactNode
-  className?: string
-  variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
-  withDots?: boolean
-  onClick?: () => void
-  hoverable?: boolean
-}
+import { PixelCardProps } from '@/types'
 
 export default function PixelCard({
   children,

@@ -1,24 +1,11 @@
 import React, { useState, useEffect } from 'react'
-
-interface Friend {
-  id: string
-  friendId: string
-  nickname: string
-  region: string
-  avatar_config: any
-  status: string
-  created_at: string
-  isRequester: boolean
-}
-
-interface SearchUser {
-  id: string
-  nickname: string
-  region: string
-  avatar_config: any
-  friendStatus: string
-  memberSince: string
-}
+import { 
+  Friend, 
+  SearchUser, 
+  FriendRequestAction,
+  FriendsApiResponse,
+  UsersSearchApiResponse
+} from '@/types'
 
 interface FriendsModalProps {
   isOpen: boolean

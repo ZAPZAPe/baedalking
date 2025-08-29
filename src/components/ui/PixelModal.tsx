@@ -1,13 +1,5 @@
 import React from 'react'
-
-interface PixelModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title: string
-  children: React.ReactNode
-  className?: string
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
-}
+import { PixelModalProps } from '@/types'
 
 export default function PixelModal({ 
   isOpen, 

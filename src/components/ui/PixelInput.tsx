@@ -1,17 +1,5 @@
 import React from 'react'
-
-interface PixelInputProps {
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
-  placeholder?: string
-  type?: 'text' | 'email' | 'password' | 'number'
-  multiline?: boolean
-  rows?: number
-  maxLength?: number
-  disabled?: boolean
-  className?: string
-  variant?: 'default' | 'success' | 'warning' | 'danger'
-}
+import { PixelInputProps } from '@/types'
 
 export default function PixelInput({
   value,

@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic'
 // 수익 기록 수정
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { earningId: string } }
+  { params }: { params: Promise<{ earningId: string }> }
 ) {
   try {
-    const { earningId } = params
+    const { earningId } = await params
     const { 
       amount, 
       screenshotUrl, 
@@ -115,10 +115,10 @@ export async function PUT(
 // 수익 기록 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { earningId: string } }
+  { params }: { params: Promise<{ earningId: string }> }
 ) {
   try {
-    const { earningId } = params
+    const { earningId } = await params
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId') // 권한 확인용
 

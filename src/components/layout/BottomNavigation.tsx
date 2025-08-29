@@ -85,22 +85,13 @@ export default function BottomNavigation({
 
           {/* 랭킹 */}
           <button
-            onClick={() => {
-              if (isVerified) {
-                onTabChange('ranking')
-              } else {
-                alert('랭킹을 보려면 먼저 오늘의 수입을 사진으로 인증해주세요!')
-              }
-            }}
+            onClick={() => onTabChange('ranking')}
             className={`py-2 px-2 border-2 transition-all duration-200 relative ${
               activeTab === 'ranking'
                 ? 'bg-gradient-to-r from-[#2d3748] to-[#1a202c] border-[#ffd93d]/60 text-[#ffd93d]'
-                : isVerified
-                  ? 'bg-gradient-to-r from-[#1a202c] to-[#2d3748] border-gray-600/30 text-gray-300 hover:border-gray-500'
-                  : 'bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] border-gray-600/20 text-gray-500 cursor-not-allowed opacity-60'
+                : 'bg-gradient-to-r from-[#1a202c] to-[#2d3748] border-gray-600/30 text-gray-300 hover:border-gray-500'
             }`}
             style={{borderRadius: '4px'}}
-            disabled={!isVerified}
           >
             <div className="text-center">
               {/* 픽셀 트로피 아이콘 */}
@@ -109,21 +100,21 @@ export default function BottomNavigation({
                   {/* 트로피 */}
                   <div className="flex flex-col items-center">
                     {/* 컵 상단 */}
-                    <div className={`w-3 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]' : isVerified ? 'bg-gray-300' : 'bg-gray-500'}`} style={{borderRadius: '1px'}}></div>
+                    <div className={`w-3 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]' : 'bg-gray-300'}`} style={{borderRadius: '1px'}}></div>
                     {/* 컵 몸체 */}
-                    <div className={`w-2 h-2 border ${activeTab === 'ranking' ? 'border-[#ffd93d] bg-[#ffd93d]/20' : isVerified ? 'border-gray-300 bg-gray-300/20' : 'border-gray-500 bg-gray-500/20'}`} style={{borderRadius: '1px'}}></div>
+                    <div className={`w-2 h-2 border ${activeTab === 'ranking' ? 'border-[#ffd93d] bg-[#ffd93d]/20' : 'border-gray-300 bg-gray-300/20'}`} style={{borderRadius: '1px'}}></div>
                     {/* 받침 */}
-                    <div className={`w-3 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]' : isVerified ? 'bg-gray-300' : 'bg-gray-500'}`} style={{borderRadius: '1px'}}></div>
+                    <div className={`w-3 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]' : 'bg-gray-300'}`} style={{borderRadius: '1px'}}></div>
                   </div>
                 </div>
               </div>
               <div className="text-xs font-mono font-bold">RANKING</div>
             </div>
             {/* 픽셀 도트들 */}
-            <div className={`absolute top-0.5 left-0.5 w-1 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]/60' : isVerified ? 'bg-gray-600/50' : 'bg-gray-700/30'}`} style={{borderRadius: '1px'}}></div>
-            <div className={`absolute top-0.5 right-0.5 w-1 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]/60' : isVerified ? 'bg-gray-600/50' : 'bg-gray-700/30'}`} style={{borderRadius: '1px'}}></div>
-            <div className={`absolute bottom-0.5 left-0.5 w-1 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]/60' : isVerified ? 'bg-gray-600/50' : 'bg-gray-700/30'}`} style={{borderRadius: '1px'}}></div>
-            <div className={`absolute bottom-0.5 right-0.5 w-1 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]/60' : isVerified ? 'bg-gray-600/50' : 'bg-gray-700/30'}`} style={{borderRadius: '1px'}}></div>
+            <div className={`absolute top-0.5 left-0.5 w-1 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]/60' : 'bg-gray-600/50'}`} style={{borderRadius: '1px'}}></div>
+            <div className={`absolute top-0.5 right-0.5 w-1 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]/60' : 'bg-gray-600/50'}`} style={{borderRadius: '1px'}}></div>
+            <div className={`absolute bottom-0.5 left-0.5 w-1 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]/60' : 'bg-gray-600/50'}`} style={{borderRadius: '1px'}}></div>
+            <div className={`absolute bottom-0.5 right-0.5 w-1 h-1 ${activeTab === 'ranking' ? 'bg-[#ffd93d]/60' : 'bg-gray-600/50'}`} style={{borderRadius: '1px'}}></div>
           </button>
 
           {/* 친구 */}

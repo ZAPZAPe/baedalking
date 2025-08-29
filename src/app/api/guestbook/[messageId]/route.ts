@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic'
 // 방명록 메시지 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { messageId: string } }
+  { params }: { params: Promise<{ messageId: string }> }
 ) {
   try {
-    const { messageId } = params
+    const { messageId } = await params
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId') // 삭제 요청자 ID
 

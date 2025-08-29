@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic'
 // 친구 요청 수락/거절
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { friendshipId: string } }
+  { params }: { params: Promise<{ friendshipId: string }> }
 ) {
   try {
-    const { friendshipId } = params
+    const { friendshipId } = await params
     const { action, userId } = await request.json() // action: 'accept' | 'reject'
 
     if (!friendshipId || !action || !userId) {
@@ -107,9 +107,10 @@ export async function PUT(
       )
     }
 
+    const userInfo = Array.isArray(friendship.user) ? friendship.user[0] : friendship.user
     const actionMessage = action === 'accept' 
-      ? `${friendship.user.nickname}님과 친구가 되었습니다!`
-      : `${friendship.user.nickname}님의 친구 요청을 거절했습니다.`
+      ? `${userInfo?.nickname || '사용자'}님과 친구가 되었습니다!`
+      : `${userInfo?.nickname || '사용자'}님의 친구 요청을 거절했습니다.`
 
     return NextResponse.json({
       message: actionMessage,
@@ -128,10 +129,10 @@ export async function PUT(
 // 친구 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { friendshipId: string } }
+  { params }: { params: Promise<{ friendshipId: string }> }
 ) {
   try {
-    const { friendshipId } = params
+    const { friendshipId } = await params
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
 
@@ -189,9 +190,11 @@ export async function DELETE(
       )
     }
 
+    const userInfo = Array.isArray(friendship.user) ? friendship.user[0] : friendship.user
+    const friendInfo = Array.isArray(friendship.friend) ? friendship.friend[0] : friendship.friend
     const friendName = friendship.user_id === userId 
-      ? friendship.friend.nickname 
-      : friendship.user.nickname
+      ? friendInfo?.nickname || '친구'
+      : userInfo?.nickname || '친구'
 
     return NextResponse.json({
       message: `${friendName}님과의 친구 관계가 해제되었습니다.`

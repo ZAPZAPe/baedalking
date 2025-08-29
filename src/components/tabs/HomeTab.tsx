@@ -215,13 +215,13 @@ export default function HomeTab({
         {/* 픽셀 헤더 - 인증 상태에 따른 테두리 */}
         <div 
           className={`bg-gradient-to-r from-[#1a202c] to-[#2d3748] p-3 mb-4 border-2 relative transition-all duration-300 ${
-            isVerified 
+true 
               ? 'border-[#00ff88]' 
               : 'border-gray-600/50'
           }`} 
           style={{
             borderRadius: '4px',
-            boxShadow: isVerified ? '0 0 10px #00ff8840, inset 0 0 10px #00ff8820' : 'none'
+            boxShadow: '0 0 10px #00ff8840, inset 0 0 10px #00ff8820'
           }}
         >
           <div className="flex items-center justify-between">
@@ -238,7 +238,7 @@ export default function HomeTab({
             </div>
             <div 
               className={`bg-[#1a202c] border-2 px-2 py-1 font-mono text-xs transition-all duration-300 ${
-                isVerified 
+    true 
                   ? 'border-[#00ff88]/60 text-[#00ff88]' 
                   : 'border-gray-600/50 text-gray-300'
               }`} 
@@ -261,23 +261,23 @@ export default function HomeTab({
           {/* 픽셀 장식 요소들 - 인증 상태에 따른 색상 */}
           <div 
             className={`absolute top-1 left-1 w-2 h-2 transition-all duration-300 ${
-              isVerified ? 'bg-[#00ff88]' : 'bg-gray-600/50'
+  true ? 'bg-[#00ff88]' : 'bg-gray-600/50'
             }`} 
             style={{borderRadius: '1px'}}
           ></div>
           <div 
             className={`absolute top-1 right-1 w-2 h-2 transition-all duration-300 ${
-              isVerified ? 'bg-[#00ff88]' : 'bg-gray-600/50'
+  true ? 'bg-[#00ff88]' : 'bg-gray-600/50'
             }`} 
             style={{borderRadius: '1px'}}></div>
           <div 
             className={`absolute bottom-1 left-1 w-2 h-2 transition-all duration-300 ${
-              isVerified ? 'bg-[#00ff88]' : 'bg-gray-600/50'
+  true ? 'bg-[#00ff88]' : 'bg-gray-600/50'
             }`} 
             style={{borderRadius: '1px'}}></div>
           <div 
             className={`absolute bottom-1 right-1 w-2 h-2 transition-all duration-300 ${
-              isVerified ? 'bg-[#00ff88]' : 'bg-gray-600/50'
+  true ? 'bg-[#00ff88]' : 'bg-gray-600/50'
             }`} 
             style={{borderRadius: '1px'}}></div>
         </div>

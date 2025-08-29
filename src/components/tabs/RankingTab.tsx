@@ -128,7 +128,7 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
   }
 
   // 인증되지 않은 경우 잠금 화면 표시
-  if (!isVerified) {
+  if (false) {
     return (
       <div className="space-y-3 sm:space-y-4">
         <div className="bg-gradient-to-br from-[#2d3748] to-[#1a202c] rounded-xl p-4 border border-[#ff6b6b]/30 shadow-inner mb-2 sm:mb-3 lg:mb-4 flex-shrink-0 relative">

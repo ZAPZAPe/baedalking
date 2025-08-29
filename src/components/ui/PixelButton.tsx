@@ -1,14 +1,5 @@
 import React from 'react'
-
-interface PixelButtonProps {
-  onClick?: () => void
-  children: React.ReactNode
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
-  size?: 'xs' | 'sm' | 'md' | 'lg'
-  disabled?: boolean
-  className?: string
-  type?: 'button' | 'submit' | 'reset'
-}
+import { PixelButtonProps } from '@/types'
 
 export default function PixelButton({
   onClick,
