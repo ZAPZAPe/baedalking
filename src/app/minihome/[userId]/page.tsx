@@ -623,7 +623,8 @@ export default function MinihomePage() {
           income: selectedUser?.totalVisitors || 0,
           count: selectedUser?.dailyVisitors || 0,
           platforms: ['미니홈피'],
-          minihomeId: selectedUser?.minihomeId
+          minihomeId: selectedUser?.minihomeId,
+          isIncomePrivate: false
         }}
         title="방문자 프로필"
       />
