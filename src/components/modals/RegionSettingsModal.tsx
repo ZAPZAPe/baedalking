@@ -134,7 +134,6 @@ export default function RegionSettingsModal({
       isOpen={isOpen}
       onClose={onClose}
       title="지역 설정"
-      size="lg"
     >
       <div className="space-y-4">
         {/* 검색 */}
