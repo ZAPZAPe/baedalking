@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import GuestbookModal from '@/components/modals/GuestbookModal'
+
 import GuestbookPreview from '@/components/garage/GuestbookPreview'
 import UserProfileModal from '@/components/modals/UserProfileModal'
 import { UserProfile } from '@/types'
@@ -24,7 +24,6 @@ export default function MinihompyPage() {
   const [targetUser, setTargetUser] = useState<UserProfile | null>(null)
   const [visitCount, setVisitCount] = useState({ total: 0, today: 0 })
   const [isLoading, setIsLoading] = useState(true)
-  const [showGuestbook, setShowGuestbook] = useState(false)
   const [currentWeather, setCurrentWeather] = useState({ temp: 22, condition: 'sunny' })
   const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null)
   const [showUserProfile, setShowUserProfile] = useState(false)
@@ -64,10 +63,22 @@ export default function MinihompyPage() {
     }
   }
 
-  // 방문 기록
+  // 방문 기록 (세션 기반 중복 방지)
   const recordVisit = async () => {
     try {
-      await fetch('/api/visits', {
+      // 세션 스토리지에서 오늘 방문 기록 확인
+      const today = new Date().toISOString().split('T')[0]
+      const visitKey = `visit_${userId}_${today}`
+      const hasVisitedToday = sessionStorage.getItem(visitKey)
+      
+      if (hasVisitedToday) {
+        console.log('🔄 오늘 이미 방문 기록됨 (세션 기반):', userId)
+        return
+      }
+      
+      console.log('📝 새로운 방문 기록 시도:', { visitedUserId: userId, visitorId: user?.id })
+      
+      const response = await fetch('/api/visits', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,24 +88,40 @@ export default function MinihompyPage() {
           visitorId: user?.id
         })
       })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        // 세션 스토리지에 오늘 방문 기록 저장
+        sessionStorage.setItem(visitKey, 'true')
+        console.log('✅ 방문 기록 완료:', data.message)
+      } else {
+        console.log('ℹ️ 방문 기록 응답:', data.message)
+      }
     } catch (error) {
-      console.error('방문 기록 오류:', error)
+      console.error('❌ 방문 기록 오류:', error)
     }
   }
 
   // 방문자 수 조회
   const fetchVisitCount = async () => {
     try {
+      console.log('🔍 방문자 수 조회 시작:', userId)
+      
       const response = await fetch(`/api/visits?userId=${userId}`)
       const data = await response.json()
+      
       if (response.ok) {
+        console.log('✅ 방문자 수 조회 완료:', { total: data.totalVisits, today: data.todayVisits })
         setVisitCount({
           total: data.totalVisits || 0,
           today: data.todayVisits || 0
         })
+      } else {
+        console.error('❌ 방문자 수 조회 실패:', data.error)
       }
     } catch (error) {
-      console.error('방문자 수 조회 오류:', error)
+      console.error('❌ 방문자 수 조회 API 오류:', error)
     }
   }
 
@@ -280,24 +307,24 @@ export default function MinihompyPage() {
               </div>
             </div>
             
-            {/* 나무 푯말 - 우측 상단 */}
-            <div className="absolute top-3 right-3 z-50">
+            {/* 나무 푯말 - 우측 상단 (컴팩트 버전) */}
+            <div className="absolute top-2 right-2 z-50">
               <div className="relative">
                 {/* 로프 */}
-                <div className="absolute -top-3 left-1.5 w-0.5 h-3 bg-gradient-to-b from-[#8B4513] to-[#A0522D] rounded-full opacity-80"></div>
-                <div className="absolute -top-3 right-1.5 w-0.5 h-3 bg-gradient-to-b from-[#8B4513] to-[#A0522D] rounded-full opacity-80"></div>
+                <div className="absolute -top-2 left-1 w-0.5 h-2 bg-gradient-to-b from-[#8B4513] to-[#A0522D] rounded-full opacity-80"></div>
+                <div className="absolute -top-2 right-1 w-0.5 h-2 bg-gradient-to-b from-[#8B4513] to-[#A0522D] rounded-full opacity-80"></div>
                 
                 {/* 나무 푯말 */}
-                <div className="bg-gradient-to-b from-[#DEB887]/85 via-[#D2B48C]/85 to-[#CD853F]/85 backdrop-blur-sm rounded-lg p-2 border-2 border-[#8B4513]/70 shadow-xl relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-15">
+                <div className="bg-gradient-to-b from-[#DEB887]/85 via-[#D2B48C]/85 to-[#CD853F]/85 backdrop-blur-sm rounded p-1.5 border border-[#8B4513]/70 shadow-lg relative overflow-hidden">
+                  <div className="absolute inset-0 opacity-10">
                     <div className="h-full w-full bg-gradient-to-r from-transparent via-[#8B4513]/30 to-transparent transform rotate-12"></div>
                   </div>
                   
                   <div className="flex flex-col items-center justify-center relative z-10">
-                    <div className="text-[#8B4513] text-[9px] font-bold leading-none mb-1">Weather</div>
-                    <div className="flex items-center justify-center space-x-1">
-                      <span className="text-lg">{getWeatherIcon(currentWeather.condition)}</span>
-                      <span className="text-[#654321] text-[10px] font-bold">{currentWeather.temp}°</span>
+                    <div className="text-[#8B4513] text-[7px] font-bold leading-none mb-0.5">Weather</div>
+                    <div className="flex items-center justify-center space-x-0.5">
+                      <span className="text-sm">{getWeatherIcon(currentWeather.condition)}</span>
+                      <span className="text-[#654321] text-[8px] font-bold">{currentWeather.temp}°</span>
                     </div>
                   </div>
                 </div>
@@ -334,30 +361,12 @@ export default function MinihompyPage() {
           <GuestbookPreview 
             userId={userId} 
             isOwnPage={user?.id === userId}
-            onOpenGuestbook={() => setShowGuestbook(true)}
             onShowUserProfile={handleShowUserProfile}
           />
         </div>
 
-        {/* 방명록 쓰기 버튼 */}
-        {user && user.id !== userId && (
-          <button 
-            onClick={() => setShowGuestbook(true)}
-            className="w-full bg-gradient-to-r from-[#00ff88] to-[#00cc6a] hover:from-[#00cc6a] hover:to-[#00ff88] text-black py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-[#00ff88]/20"
-          >
-            📝 방명록 쓰기
-          </button>
-        )}
-      </main>
 
-      {/* 방명록 모달 */}
-      {showGuestbook && (
-        <GuestbookModal 
-          targetUserId={userId}
-          targetUserNickname={targetUser.nickname}
-          onClose={() => setShowGuestbook(false)}
-        />
-      )}
+      </main>
 
       {/* 사용자 프로필 모달 */}
       {showUserProfile && selectedUserProfile && (

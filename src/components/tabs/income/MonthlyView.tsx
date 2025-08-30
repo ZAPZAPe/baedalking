@@ -1,5 +1,6 @@
 'use client'
 
+import { useServerTime } from '@/hooks/useServerTime'
 import html2canvas from 'html2canvas'
 
 interface MonthlyViewProps {
@@ -14,8 +15,11 @@ interface MonthlyViewProps {
 }
 
 export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setShowDetailModal, setShowGoalSettings, setSelectedDate, selectedMonth, onMonthChange }: MonthlyViewProps) {
-  // 선택된 월 또는 이번 달
-  const today = new Date()
+  // 서버 시간 사용
+  const { serverTime } = useServerTime()
+  
+  // 서버 시간 기준으로 오늘 날짜 계산
+  const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
   let year: number
   let month: number
   
@@ -69,7 +73,7 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
       date: dateStr,
       day: date.getDate(),
       total: dayTotal,
-      isToday: dateStr === `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
+      isToday: dateStr === (serverTime ? serverTime.koreaDate : `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`),
       isCurrentMonth: date.getMonth() === month,
       dayOfWeek: date.getDay() // 0=일요일, 6=토요일
     })

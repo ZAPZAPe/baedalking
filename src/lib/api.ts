@@ -2,6 +2,8 @@
  * API 호출을 위한 헬퍼 함수들
  */
 
+import { supabase } from '@/lib/supabase'
+
 interface ApiOptions extends RequestInit {
   userId?: string
 }
@@ -13,19 +15,9 @@ interface ApiOptions extends RequestInit {
 export async function apiRequest(url: string, options: ApiOptions = {}) {
   const { userId, headers = {}, ...restOptions } = options
   
-  // 로컬 스토리지에서 사용자 정보 가져오기
+  // 사용자 ID는 요청시 직접 제공되어야 함 (Auth 없이)
   let currentUserId = userId
-  if (!currentUserId && typeof window !== 'undefined') {
-    const kakaoUser = localStorage.getItem('kakaoUser')
-    if (kakaoUser) {
-      try {
-        const userData = JSON.parse(kakaoUser)
-        currentUserId = userData.id
-      } catch (error) {
-        console.error('사용자 정보 파싱 오류:', error)
-      }
-    }
-  }
+  // 필요시 다른 방법으로 사용자 ID 확인 가능
   
   const finalHeaders = {
     'Content-Type': 'application/json',

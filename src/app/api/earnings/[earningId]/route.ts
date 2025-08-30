@@ -21,7 +21,7 @@ export async function PUT(
     }
 
     // 업데이트할 필드 확인 및 필터링
-    const allowedFields = ['amount', 'mission_amount', 'delivery_count', 'platform', 'date', 'screenshot_url', 'screenshot_text']
+    const allowedFields = ['delivery_amount', 'mission_amount', 'delivery_count', 'platform', 'date', 'screenshot_url', 'screenshot_text']
     const updateData: any = {}
 
     allowedFields.forEach(field => {
@@ -103,7 +103,7 @@ export async function DELETE(
     // 기존 수입 기록 확인 (사용자 권한 체크용)
     const { data: existingRecord, error: checkError } = await supabase
       .from('earnings')
-      .select('user_id, amount, mission_amount, delivery_count')
+      .select('user_id, delivery_amount, mission_amount, delivery_count')
       .eq('id', earningId)
       .single()
 
@@ -130,7 +130,7 @@ export async function DELETE(
 
     // 관련 포인트 기록도 삭제 (선택사항)
     // 포인트는 수입과 연결되어 있으므로 삭제 시 고려 필요
-    const totalAmount = (existingRecord.amount || 0) + (existingRecord.mission_amount || 0)
+    const totalAmount = (existingRecord.delivery_amount || 0) + (existingRecord.mission_amount || 0)
     const pointsToDeduct = (existingRecord.delivery_count * 5) + Math.floor(totalAmount * 0.01)
 
     // 포인트 차감 기록 추가

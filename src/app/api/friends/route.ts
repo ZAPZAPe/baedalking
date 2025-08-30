@@ -65,9 +65,16 @@ export async function GET(request: NextRequest) {
         avatar_config: targetInfo?.avatar_config || {},
         status: friendship.status,
         created_at: friendship.created_at,
-        isRequester
+        isRequester,
+        // pending 상태일 때 추가 정보
+        requesterId: userInfo?.id,
+        requesterNickname: userInfo?.nickname,
+        receiverId: friendInfo?.id,
+        receiverNickname: friendInfo?.nickname
       }
     }) || []
+
+    console.log(`친구 목록 조회 완료 - userId: ${userId}, status: ${status}, 결과: ${friendsList.length}개`)
 
     return NextResponse.json({ friends: friendsList })
 

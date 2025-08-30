@@ -34,7 +34,7 @@ export async function GET(
       console.log('🆔 UUID로 사용자 검색:', decodedUserId)
       const result = await supabase
         .from('users')
-        .select('id, email, nickname, region, avatar_config, garage_config, created_at')
+        .select('id, email, nickname, region, avatar_config, garage_config, is_income_private, platforms, created_at')
         .eq('id', decodedUserId)
         .single()
       
@@ -45,7 +45,7 @@ export async function GET(
       console.log('👤 닉네임으로 사용자 검색:', decodedUserId)
       const result = await supabase
         .from('users')
-        .select('id, email, nickname, region, avatar_config, garage_config, created_at')
+        .select('id, email, nickname, region, avatar_config, garage_config, is_income_private, platforms, created_at')
         .eq('nickname', decodedUserId)
         .single()
       
@@ -67,7 +67,7 @@ export async function GET(
     const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM 형식
     const { data: earnings, error: earningsError } = await supabase
       .from('earnings')
-      .select('amount')
+      .select('total_amount')
       .eq('user_id', userProfile.id)
       .gte('date', `${currentMonth}-01`)
       .lt('date', `${currentMonth}-31`)
@@ -76,13 +76,13 @@ export async function GET(
       console.error('수익 조회 오류:', earningsError)
     }
 
-    const totalIncome = earnings?.reduce((sum, earning) => sum + earning.amount, 0) || 0
+    const totalIncome = earnings?.reduce((sum, earning) => sum + earning.total_amount, 0) || 0
 
     // 배달 건수 계산 (earnings 테이블의 레코드 수)
     const { count: deliveryCount, error: countError } = await supabase
       .from('earnings')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
+      .eq('user_id', userProfile.id)
       .gte('date', `${currentMonth}-01`)
       .lt('date', `${currentMonth}-31`)
 
@@ -112,7 +112,7 @@ export async function GET(
     // 전체 사용자 중 순위 계산
     const { data: allUsers, error: rankError } = await supabase
       .from('earnings')
-      .select('user_id, amount')
+      .select('user_id, total_amount')
       .gte('date', `${currentMonth}-01`)
       .lt('date', `${currentMonth}-31`)
 
@@ -121,7 +121,7 @@ export async function GET(
       const userIncomes = new Map()
       allUsers.forEach(earning => {
         const currentTotal = userIncomes.get(earning.user_id) || 0
-        userIncomes.set(earning.user_id, currentTotal + earning.amount)
+        userIncomes.set(earning.user_id, currentTotal + earning.total_amount)
       })
       
       const sortedIncomes = Array.from(userIncomes.values()).sort((a, b) => b - a)
@@ -129,15 +129,21 @@ export async function GET(
       if (rank === 0) rank = sortedIncomes.length + 1
     }
 
+    // 사용자 플랫폼 정보 (users 테이블의 platforms 필드 우선 사용)
+    const userPlatforms = userProfile.platforms && Array.isArray(userProfile.platforms) 
+      ? userProfile.platforms.map((p: any) => p.name || p.id || p).filter(Boolean)
+      : platforms
+
     const profileData = {
       id: userProfile.id,
       nickname: userProfile.nickname,
       region: userProfile.region,
       income: totalIncome,
       count: deliveryCount || 0,
-      platforms,
+      platforms: userPlatforms,
       rank,
       grade,
+      isIncomePrivate: userProfile.is_income_private || false,
       avatar_config: userProfile.avatar_config,
       garage_config: userProfile.garage_config,
       memberSince: userProfile.created_at
@@ -198,7 +204,7 @@ export async function PUT(
     }
 
     // 업데이트할 필드 확인 및 필터링
-    const allowedFields = ['nickname', 'region', 'status_message', 'avatar_config', 'garage_config']
+    const allowedFields = ['nickname', 'region', 'status_message', 'avatar_config', 'garage_config', 'is_income_private']
     const updateData: any = {}
 
     allowedFields.forEach(field => {

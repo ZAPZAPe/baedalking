@@ -6,7 +6,7 @@ interface GoalSettingsPanelProps {
   dailyGoal: number
   weeklyGoal: number
   monthlyGoal: number
-  onUpdateGoals: (daily: number, weekly: number, monthly: number) => void
+  onUpdateGoals: (daily: number, weekly: number, monthly: number) => Promise<boolean>
 }
 
 export default function GoalSettingsPanel({
@@ -29,9 +29,18 @@ export default function GoalSettingsPanel({
     }
   }, [isOpen, dailyGoal, weeklyGoal, monthlyGoal])
 
-  const handleSave = () => {
-    onUpdateGoals(tempDailyGoal, tempWeeklyGoal, tempMonthlyGoal)
-    onClose()
+  const handleSave = async () => {
+    try {
+      const success = await onUpdateGoals(tempDailyGoal, tempWeeklyGoal, tempMonthlyGoal)
+      if (success) {
+        onClose()
+      } else {
+        alert('목표 설정 저장에 실패했습니다. 다시 시도해주세요.')
+      }
+    } catch (error) {
+      console.error('목표 설정 저장 오류:', error)
+      alert('목표 설정 저장 중 오류가 발생했습니다.')
+    }
   }
 
   const handleReset = () => {

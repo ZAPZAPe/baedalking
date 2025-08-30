@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Platform } from '@/hooks/useAppState'
+import { useServerTime } from '@/hooks/useServerTime'
 import { VIEW_COLORS, PLATFORM_COLORS } from '@/data/colors'
 // @ts-ignore
 import domtoimage from 'dom-to-image-more'
@@ -37,9 +38,15 @@ export default function DailyView({
   onEditRecord,
   onDeleteRecord
 }: DailyViewProps) {
-  // 선택된 날짜 또는 오늘 날짜
-  const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  // 서버 시간 사용
+  const { serverTime } = useServerTime()
+  
+  // 서버 시간 기준으로 오늘 날짜 계산
+  const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
+  const todayStr = serverTime ? serverTime.koreaDate : 
+                   today.getFullYear() + '-' + 
+                   String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(today.getDate()).padStart(2, '0')
   const currentDate = selectedDate || todayStr
   
   // 선택된 날짜의 데이터 계산
@@ -47,10 +54,12 @@ export default function DailyView({
   const todayTotal = selectedRecords.reduce((sum, record) => sum + (record.amount || 0) + (record.missionAmount || 0), 0)
   const todayCount = selectedRecords.reduce((sum, record) => sum + record.count, 0)
   
-  // 전날 데이터
+  // 전날 데이터 (서버 시간 기준)
   const yesterday = new Date(currentDate)
   yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toISOString().split('T')[0]
+  const yesterdayStr = yesterday.getFullYear() + '-' + 
+                      String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + 
+                      String(yesterday.getDate()).padStart(2, '0')
   const yesterdayRecords = allRecords.filter(record => record.date === yesterdayStr)
   const yesterdayTotal = yesterdayRecords.reduce((sum, record) => sum + (record.amount || 0) + (record.missionAmount || 0), 0)
   
@@ -202,12 +211,17 @@ export default function DailyView({
               {/* 오늘 버튼 */}
               <button
                 onClick={() => {
-                  const today = new Date()
-                  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+                  const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
+                  const todayStr = serverTime ? serverTime.koreaDate : 
+                                   `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
                   if (onDateChange) onDateChange(todayStr)
                 }}
                 className={`px-3 py-1 text-xs font-mono border-2 transition-all duration-200 ${
-                  currentDate === new Date().toISOString().split('T')[0]
+                  currentDate === (serverTime ? serverTime.koreaDate : 
+                                 (() => {
+                                   const today = new Date()
+                                   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+                                 })())
                     ? 'bg-[#00ff88] text-black border-[#00ff88]'
                     : 'bg-transparent text-[#00ff88] border-[#00ff88]/60 hover:border-[#00ff88]'
                 }`}
@@ -221,13 +235,13 @@ export default function DailyView({
           {/* 총 금액 표시 */}
           <div className="text-center mt-4">
             <div className="text-3xl font-bold font-mono text-[#00ff88]">
-              ₩{todayTotal.toLocaleString()}
+              ₩{(todayTotal || 0).toLocaleString()}
             </div>
             
             {/* 건당 평균금액 */}
             {todayCount > 0 && (
               <div className="mt-2 text-sm text-gray-300 font-mono">
-                건당 평균: ₩{Math.round(todayTotal / todayCount).toLocaleString()}
+                건당 평균: ₩{Math.round((todayTotal || 0) / (todayCount || 1)).toLocaleString()}
               </div>
             )}
             
@@ -265,7 +279,7 @@ export default function DailyView({
                     {goalAchievement.toFixed(1)}%
                   </div>
                   <div className="text-gray-300">
-                    ₩{todayTotal.toLocaleString()} / ₩{dailyGoal.toLocaleString()}
+                    ₩{(todayTotal || 0).toLocaleString()} / ₩{(dailyGoal || 0).toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -297,7 +311,7 @@ export default function DailyView({
           <div className="bg-[#1a202c] border-2 border-[#00ff88]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-1">배달금액</p>
             <p className="text-white font-bold text-sm font-mono">
-              ₩{selectedRecords.reduce((sum, record) => sum + (record.amount || 0), 0).toLocaleString()}
+              ₩{(selectedRecords.reduce((sum, record) => sum + (record.amount || 0), 0) || 0).toLocaleString()}
             </p>
             <div className="absolute top-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
             <div className="absolute top-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
@@ -309,7 +323,7 @@ export default function DailyView({
           <div className="bg-[#1a202c] border-2 border-[#9c88ff]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-1">미션비</p>
             <p className="text-white font-bold text-sm font-mono">
-              ₩{selectedRecords.reduce((sum, record) => sum + (record.missionAmount || 0), 0).toLocaleString()}
+              ₩{(selectedRecords.reduce((sum, record) => sum + (record.missionAmount || 0), 0) || 0).toLocaleString()}
             </p>
             <div className="absolute top-1 left-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
             <div className="absolute top-1 right-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
@@ -374,7 +388,7 @@ export default function DailyView({
                 {platformRecords.map((record, index) => {
                   const platformConfig = {
                     'baemin': { name: '배민', icon: '/baemin-logo.svg', color: '#00d4ff' },
-                    'coupang': { name: '쿠팡', icon: '/coupang-logo.svg', color: '#ff6b6b' }
+                    'coupang': { name: '쿠팡', icon: '/coupang-logo.svg', color: '#ffd93d' }
                   }
                   const config = platformConfig[record.platform as keyof typeof platformConfig] || 
                                 { name: record.platform, icon: '⚪', color: '#9c88ff' }
@@ -410,13 +424,28 @@ export default function DailyView({
                               <div className="text-xs text-gray-400 font-mono tracking-wider">DELIVERY RECORD</div>
                             </div>
                           </div>
-                          <div className="px-3 py-1 rounded-lg border font-bold text-sm font-mono"
-                               style={{
-                                 backgroundColor: `${config.color}20`,
-                                 borderColor: `${config.color}60`,
-                                 color: config.color
-                               }}>
-                            ₩{(record.amount + record.missionAmount).toLocaleString()}
+                          <div className="flex items-center gap-2">
+                            <div className="px-3 py-1 rounded-lg border font-bold text-sm font-mono"
+                                 style={{
+                                   backgroundColor: `${config.color}20`,
+                                   borderColor: `${config.color}60`,
+                                   color: config.color
+                                 }}>
+                              ₩{((record.amount || 0) + (record.missionAmount || 0)).toLocaleString()}
+                            </div>
+                            <button
+                              onClick={() => {
+                                if (confirm('이 수입 기록을 삭제하시겠습니까?')) {
+                                  if (onDeleteRecord) {
+                                    onDeleteRecord(record.id)
+                                  }
+                                }
+                              }}
+                              className="px-2 py-1 rounded-lg border border-[#ff6b6b]/50 hover:border-[#ff6b6b] text-[#ff6b6b] hover:text-white text-xs font-bold font-mono transition-all duration-200 hover:scale-105"
+                              style={{borderRadius: '4px'}}
+                            >
+                              🗑️
+                            </button>
                           </div>
                         </div>
 
@@ -437,7 +466,7 @@ export default function DailyView({
                                style={{borderColor: `${config.color}30`}}>
                             <div className="text-white text-xs font-mono font-bold mb-1">배달금액</div>
                             <div className="text-sm font-bold font-mono text-white">
-                              ₩{record.amount.toLocaleString()}
+                              ₩{(record.amount || 0).toLocaleString()}
                             </div>
                           </div>
 
@@ -447,37 +476,9 @@ export default function DailyView({
                             <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
                             <div className="text-sm font-bold font-mono"
                                  style={{color: config.color}}>
-                              ₩{record.missionAmount.toLocaleString()}
+                              ₩{(record.missionAmount || 0).toLocaleString()}
                             </div>
                           </div>
-                        </div>
-
-                        {/* 수정/삭제 버튼 */}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              if (onEditRecord) {
-                                onEditRecord(record)
-                              }
-                            }}
-                            className="flex-1 bg-gradient-to-r from-[#ffd93d]/20 to-[#ff6b6b]/20 border border-[#ffd93d]/50 hover:border-[#ffd93d] text-[#ffd93d] hover:text-white py-2 px-3 text-xs font-bold font-mono transition-all duration-200 hover:scale-105"
-                            style={{borderRadius: '4px'}}
-                          >
-                            ✏️ 수정
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm('이 수입 기록을 삭제하시겠습니까?')) {
-                                if (onDeleteRecord) {
-                                  onDeleteRecord(record.id)
-                                }
-                              }
-                            }}
-                            className="flex-1 bg-gradient-to-r from-[#ff6b6b]/20 to-[#ff4757]/20 border border-[#ff6b6b]/50 hover:border-[#ff6b6b] text-[#ff6b6b] hover:text-white py-2 px-3 text-xs font-bold font-mono transition-all duration-200 hover:scale-105"
-                            style={{borderRadius: '4px'}}
-                          >
-                            🗑️ 삭제
-                          </button>
                         </div>
                       </div>
                     </div>

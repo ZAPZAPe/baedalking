@@ -6,6 +6,7 @@ import { emotions, platforms } from '@/data/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useServerTime } from '@/hooks/useServerTime'
 import Header from '@/components/layout/Header'
 import BottomNavigation from '@/components/layout/BottomNavigation'
 import HomeTab from '@/components/tabs/HomeTab'
@@ -34,13 +35,18 @@ import UserProfileModal from '@/components/modals/UserProfileModal'
 export const dynamic = 'force-dynamic'
 
 export default function Home() {
-  const { user, loading, signOut } = useAuth()
+  const { user, loading, setUser, signOut } = useAuth()
   const router = useRouter()
+  
+  // 서버 시간 사용
+  const { serverTime } = useServerTime()
 
   // 모든 Hooks를 항상 동일한 순서로 호출
   const {
     // 🔥 사용자 정보 (새로 추가)
     user: appUser, setUser: setAppUser,
+    // 🆕 중앙화된 모달 관리
+    activeModal, openModal, closeModal,
     // 기본 상태들
     currentEmotion, setCurrentEmotion,
     speechText, setSpeechText,
@@ -59,10 +65,9 @@ export default function Home() {
     incomeAmount, setIncomeAmount,
     missionAmount, setMissionAmount,
     selectedPlatform, setSelectedPlatform,
-    // incomeDate 제거됨 - 항상 오늘 날짜 사용
-    // dailyIncomeData 제거됨 - incomeRecords 사용
+    // 수입 날짜 상태 추가
     incomeRecords, setIncomeRecords,
-    saveIncomeRecord, loadIncomeRecords,
+    saveIncomeRecord, loadIncomeRecord, deleteIncomeRecord,
     totalPoints, setTotalPoints,
     userLevel, setUserLevel,
     // userNickname, userLocation은 user 객체에서 가져옴
@@ -91,6 +96,21 @@ export default function Home() {
   const [showGoalSettings, setShowGoalSettings] = useState(false)
   const [showPlatformSettings, setShowPlatformSettings] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
+  
+  // 수입 입력 날짜 상태 (서버 시간 기준)
+  const [incomeDate, setIncomeDate] = useState(() => {
+    if (serverTime) {
+      return serverTime.koreaDate
+    }
+    const today = new Date()
+    return today.getFullYear() + '-' + 
+           String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+           String(today.getDate()).padStart(2, '0')
+  })
+  
+  // 강제 리렌더링을 위한 key 상태
+  const [forceUpdateKey, setForceUpdateKey] = useState(0)
+  
   const [showEditModal, setShowEditModal] = useState(false)
   const [showRankingDetail, setShowRankingDetail] = useState(false)
   const [topRankers, setTopRankers] = useState<any[]>([])
@@ -116,11 +136,64 @@ export default function Home() {
   const [showUserProfile, setShowUserProfile] = useState(false)
   const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null)
 
-  // 디버깅: 로컬 스토리지 확인
+  // 🆕 모달을 여는 함수들 - 중앙화된 시스템 사용
+  const openGoalSettings = () => {
+    openModal('goalSettings')
+  }
+
+  const openPlatformSettings = () => {
+    openModal('platformSettings')
+  }
+
+  const openDetailModal = () => {
+    openModal('incomeDetail')
+  }
+
+  const openEditModal = () => {
+    openModal('incomeEdit')
+  }
+
+  const openRankingDetail = () => {
+    openModal('rankingDetail')
+  }
+
+  const openGradeDetail = (grade: any) => {
+    setSelectedGrade(grade)
+    openModal('gradeDetail')
+  }
+
+  const openTopRankerProfile = (ranker: any) => {
+    setSelectedTopRanker(ranker)
+    openModal('topRankerProfile')
+  }
+
+  const openFriendDetail = (friend: any) => {
+    setSelectedFriend(friend)
+    openModal('friendDetail')
+  }
+
+  const openPrivacyPolicy = () => {
+    openModal('privacyPolicy')
+  }
+
+  const openTermsOfService = () => {
+    openModal('termsOfService')
+  }
+
+  const openDeleteAccount = () => {
+    openModal('deleteAccount')
+  }
+
+  const openFriendsModal = () => {
+    openModal('friends')
+  }
+
+  const openUserProfile = (user: any) => {
+    setSelectedUserProfile(user)
+    openModal('userProfile')
+  }
   useEffect(() => {
-    const kakaoUser = localStorage.getItem('kakaoUser')
-    console.log('메인 페이지 - 로컬 스토리지 사용자 정보:', kakaoUser)
-    console.log('useAuth user:', user)
+    console.log('메인 페이지 - useAuth user:', user)
     console.log('useAuth loading:', loading)
   }, [user, loading])
 
@@ -132,7 +205,7 @@ export default function Home() {
     }
   }, [user, appUser, setAppUser])
 
-  // 인증 체크
+  // 인증 체크 - 제대로 된 사용자 인증 흐름
   useEffect(() => {
     if (!loading && !user) {
       console.log('인증 실패 - 로그인 페이지로 이동')
@@ -210,14 +283,13 @@ export default function Home() {
     const count = parseInt(incomeCount) || 0
     const deliveryAmount = parseInt(incomeAmount) || 0
     const missionAmount_num = parseInt(missionAmount) || 0
-    const today = new Date().toISOString().split('T')[0]
 
     const success = await saveIncomeRecord({
       platform: selectedPlatform,
       delivery_count: count,
       delivery_amount: deliveryAmount,
       mission_amount: missionAmount_num,
-      date: today
+      date: incomeDate // 사용자가 선택한 날짜 사용
     })
 
     if (success) {
@@ -225,23 +297,59 @@ export default function Home() {
       setIncomeCount('')
       setIncomeAmount('')
       setMissionAmount('')
+              setIncomeDate(serverTime ? serverTime.koreaDate : 
+                     (() => {
+                       const today = new Date()
+                       return today.getFullYear() + '-' + 
+                              String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                              String(today.getDate()).padStart(2, '0')
+                     })()) // 날짜도 오늘로 리셋 (서버 시간 기준)
       setShowIncomeInputPanel(false)
       
-      console.log('✅ 수입 기록 저장 완료!')
+      console.log('✅ 수입 기록 저장 완료! INCOME 탭 강제 새로고침')
+      
+      // 강제 리렌더링을 위한 key 업데이트
+      setForceUpdateKey(prev => prev + 1)
+      
+      // 성공 피드백
+      alert('수입 기록이 성공적으로 저장되었습니다! 🎉')
     } else {
       alert('수입 기록 저장에 실패했습니다. 다시 시도해주세요.')
     }
   }
+
+  // 🗑️ 수입 기록 삭제 핸들러
+  const onDeleteIncomeRecord = async (recordId: string) => {
+    if (confirm('이 수입 기록을 삭제하시겠습니까?')) {
+      const success = await deleteIncomeRecord(recordId)
+      if (success) {
+        // 강제 리렌더링
+        setForceUpdateKey(prev => prev + 1)
+        alert('수입 기록이 삭제되었습니다.')
+      } else {
+        alert('수입 기록 삭제에 실패했습니다.')
+      }
+    }
+  }
   
-  // 오늘 날짜
-  const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  // 오늘 날짜 (서버 시간 기준)
+  const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
+  const todayStr = serverTime ? serverTime.koreaDate : 
+                   today.getFullYear() + '-' + 
+                   String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(today.getDate()).padStart(2, '0')
   
   // 실제 수입 기록만 사용 (테스트 데이터 제거)
   const allRecords = incomeRecords
 
+  // 오늘 수입 계산 (INCOME 탭과 동일한 방식)
+  const todayIncome = (() => {
+    const todayRecords = allRecords.filter(record => record.date === todayStr)
+    return todayRecords.reduce((sum, record) => sum + (record.delivery_amount || 0) + (record.mission_amount || 0), 0)
+  })()
+  
   // 총 수입 계산
-  const totalIncome = incomeRecords.reduce((total, record) => total + record.total_amount, 0)
+  const totalIncome = allRecords.reduce((total, record) => total + (record.delivery_amount || 0) + (record.mission_amount || 0), 0)
 
   // 날씨 아이콘 함수
   const getWeatherIcon = (condition: string): string => {
@@ -320,6 +428,7 @@ export default function Home() {
                 incomeRecords={incomeRecords}
                 totalIncome={totalIncome}
                 isClient={isClient}
+                userId={user?.id || ''}
                 setShowBackgroundItemPanel={setShowBackgroundItemPanel}
                 setShowVehicleItemPanel={setShowVehicleItemPanel}
                 setShowCharacterItemPanel={setShowCharacterItemPanel}
@@ -331,6 +440,7 @@ export default function Home() {
             {/* INCOME 탭 */}
             {activeTab === 'income' && (
               <IncomeTab
+                key={`income-tab-${forceUpdateKey}`}
                 incomeRecords={incomeRecords}
                 totalIncome={totalIncome}
                 getTotalIncomeByPlatform={(platform: string) => {
@@ -351,9 +461,9 @@ export default function Home() {
                 weeklyGoal={weeklyGoal}
                 monthlyGoal={monthlyGoal}
                 updateGoals={updateGoals}
-                setShowGoalSettings={setShowGoalSettings}
-                setShowPlatformSettings={setShowPlatformSettings}
-                setShowDetailModal={setShowDetailModal}
+                setShowGoalSettings={openGoalSettings}
+                setShowPlatformSettings={openPlatformSettings}
+                setShowDetailModal={openDetailModal}
                 setSelectedDate={(date: string | null) => setSelectedDate(date)}
                 selectedDate={selectedDate}
                 showDetailModal={showDetailModal}
@@ -362,35 +472,7 @@ export default function Home() {
                   console.log('수입 기록 수정:', record)
                   alert('수입 기록 수정 기능은 곧 구현 예정입니다.')
                 }}
-                onDeleteRecord={async (recordId: string) => {
-                  try {
-                    if (!user?.id) {
-                      alert('로그인이 필요합니다.')
-                      return
-                    }
-
-                    const response = await fetch(`/api/earnings/${recordId}`, {
-                      method: 'DELETE',
-                    })
-
-                    const data = await response.json()
-
-                    if (response.ok) {
-                      alert('수입 기록이 성공적으로 삭제되었습니다.')
-                      
-                      // 로컬 상태에서 해당 기록 제거
-                      setIncomeRecords(incomeRecords.filter(record => record.id.toString() !== recordId))
-                      
-                      // 포인트 차감 (별도 구현 필요)
-                    } else {
-                      console.error('수입 기록 삭제 실패:', data.error)
-                      alert('수입 기록 삭제에 실패했습니다.')
-                    }
-                  } catch (error) {
-                    console.error('수입 기록 삭제 오류:', error)
-                    alert('오류가 발생했습니다. 다시 시도해주세요.')
-                  }
-                }}
+                onDeleteRecord={onDeleteIncomeRecord}
               />
             )}
 
@@ -398,8 +480,9 @@ export default function Home() {
             {activeTab === 'ranking' && (
               <RankingTab 
                 isVerified={true}
-                allRecords={incomeRecords}
+                todayIncome={todayIncome}
                 dailyGoal={dailyGoal}
+                isIncomePrivate={user?.is_income_private || false}
                 onShowGradeDetail={(grade: {
                   name: string
                   icon: string
@@ -408,18 +491,15 @@ export default function Home() {
                   maxIncome: number
                   description: string
                 }) => {
-                  setSelectedGrade(grade)
-                  setShowGradeDetail(true)
+                  openGradeDetail(grade)
                 }}
                 onShowTopRankerProfile={(ranker) => {
-                  setSelectedTopRanker(ranker)
-                  setShowTopRankerProfile(true)
+                  openTopRankerProfile(ranker)
                 }}
-                onShowRankingDetail={() => setShowRankingDetail(true)}
+                onShowRankingDetail={openRankingDetail}
                 onTopRankersUpdate={setTopRankers}
                 onShowUserProfile={(userProfile) => {
-                  setSelectedUserProfile(userProfile)
-                  setShowUserProfile(true)
+                  openUserProfile(userProfile)
                 }}
               />
             )}
@@ -428,11 +508,10 @@ export default function Home() {
             {activeTab === 'friends' && (
               <FriendsTab
                 currentUserId={user?.id || ''}
-                setShowFriendDetail={setShowFriendDetail}
+                setShowFriendDetail={openFriendDetail}
                 setSelectedFriend={setSelectedFriend}
                 onShowUserProfile={(userProfile) => {
-                  setSelectedUserProfile(userProfile)
-                  setShowUserProfile(true)
+                  openUserProfile(userProfile)
                 }}
                 friendRequests={friendRequests}
                 setFriendRequests={setFriendRequests}
@@ -448,13 +527,37 @@ export default function Home() {
                 emotions={emotions}
                 isIncomePrivate={user?.is_income_private || false}
                 setIsIncomePrivate={(isPrivate: boolean) => {
-                  // 사용자 프로필 업데이트 로직 필요
                   console.log('isIncomePrivate 업데이트:', isPrivate)
+                  
+                  // 사용자 상태 업데이트
+                  if (user) {
+                    const updatedUser = { ...user, is_income_private: isPrivate }
+                    
+                    // 1. useAppState의 user 상태 업데이트
+                    setAppUser(updatedUser)
+                    
+                    // 2. useAuth의 user 상태도 업데이트 (실시간 반영을 위해)
+                    setUser(updatedUser)
+                    
+                    // 3. localStorage의 카카오 세션도 업데이트 (세션 유지를 위해)
+                    if (typeof window !== 'undefined') {
+                      const kakaoUser = localStorage.getItem('kakaoUser')
+                      if (kakaoUser) {
+                        try {
+                          const userData = JSON.parse(kakaoUser)
+                          userData.is_income_private = isPrivate
+                          localStorage.setItem('kakaoUser', JSON.stringify(userData))
+                          console.log('✅ localStorage 세션도 업데이트됨')
+                        } catch (error) {
+                          console.error('localStorage 업데이트 오류:', error)
+                        }
+                      }
+                    }
+                  }
                 }}
-                setShowPrivacyPolicy={setShowPrivacyPolicy}
-                setShowTermsOfService={setShowTermsOfService}
-                setShowDeleteAccount={setShowDeleteAccount}
-                setShowFriendsModal={setShowFriendsModal}
+                setShowPrivacyPolicy={openPrivacyPolicy}
+                setShowTermsOfService={openTermsOfService}
+                setShowDeleteAccount={openDeleteAccount}
                 onLogout={async () => {
                   // 로그아웃 처리
                   await signOut()
@@ -480,19 +583,29 @@ export default function Home() {
                     if (response.ok) {
                       console.log('✅ 프로필 업데이트 성공:', { field, value })
                       
-                      // 사용자 객체 업데이트
+                      // 실시간 상태 업데이트
                       if (user) {
                         const updatedUser = { ...user, [field]: value }
-                        // useAuth의 user 상태 업데이트는 useAuth에서 관리
-                        // useAppState의 user 상태 업데이트
+                        
+                        // 1. useAppState의 user 상태 업데이트
                         setAppUser(updatedUser)
                         
-                        // 로컬스토리지의 사용자 정보도 업데이트
-                        const kakaoUser = localStorage.getItem('kakaoUser')
-                        if (kakaoUser) {
-                          const userData = JSON.parse(kakaoUser)
-                          userData[field] = value
-                          localStorage.setItem('kakaoUser', JSON.stringify(userData))
+                        // 2. useAuth의 user 상태도 업데이트 (실시간 반영을 위해)
+                        setUser(updatedUser)
+                        
+                        // 3. localStorage의 카카오 세션도 업데이트 (세션 유지를 위해)
+                        if (typeof window !== 'undefined') {
+                          const kakaoUser = localStorage.getItem('kakaoUser')
+                          if (kakaoUser) {
+                            try {
+                              const userData = JSON.parse(kakaoUser)
+                              userData[field] = value
+                              localStorage.setItem('kakaoUser', JSON.stringify(userData))
+                              console.log('✅ localStorage 세션도 업데이트됨')
+                            } catch (error) {
+                              console.error('localStorage 업데이트 오류:', error)
+                            }
+                          }
                         }
                       }
                       return true
@@ -535,8 +648,8 @@ export default function Home() {
         setMissionAmount={setMissionAmount}
         selectedPlatform={selectedPlatform}
         setSelectedPlatform={setSelectedPlatform}
-        incomeDate={new Date().toISOString().split('T')[0]}
-        setIncomeDate={() => {}} // 항상 오늘 날짜 사용
+        incomeDate={incomeDate}
+        setIncomeDate={setIncomeDate}
         onSubmit={onIncomeSubmit}
         platforms={appPlatforms}
       />
@@ -590,8 +703,8 @@ export default function Home() {
       />
 
       <GoalSettingsPanel 
-        isOpen={showGoalSettings}
-        onClose={() => setShowGoalSettings(false)}
+        isOpen={activeModal === 'goalSettings'}
+        onClose={closeModal}
         dailyGoal={dailyGoal}
         weeklyGoal={weeklyGoal}
         monthlyGoal={monthlyGoal}
@@ -599,8 +712,8 @@ export default function Home() {
       />
 
       <PlatformSettingsPanel 
-        isOpen={showPlatformSettings}
-        onClose={() => setShowPlatformSettings(false)}
+        isOpen={activeModal === 'platformSettings'}
+        onClose={closeModal}
         platforms={appPlatforms}
         onTogglePlatform={togglePlatform}
         onAddCustomPlatform={addCustomPlatform}
@@ -608,20 +721,20 @@ export default function Home() {
       />
 
       <IncomeDetailModal 
-        isOpen={showDetailModal}
-        onClose={() => setShowDetailModal(false)}
+        isOpen={activeModal === 'incomeDetail'}
+        onClose={closeModal}
         selectedDate={selectedDate}
         allRecords={incomeRecords}
         platforms={appPlatforms}
         onEdit={(date, records) => {
           setEditData({date, records})
-          setShowEditModal(true)
+          openModal('incomeEdit')
         }}
       />
 
       <IncomeEditModal 
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
+        isOpen={activeModal === 'incomeEdit'}
+        onClose={closeModal}
         selectedDate={editData?.date || ''}
         records={editData?.records || []}
         platforms={appPlatforms}
@@ -640,25 +753,25 @@ export default function Home() {
           alert('수익 기록이 수정되었습니다!')
           
           // 수정 모달 닫기
-          setShowEditModal(false)
+          closeModal()
         }}
       />
 
       <FriendDetailModal 
-        isOpen={showFriendDetail}
-        onClose={() => setShowFriendDetail(false)}
+        isOpen={activeModal === 'friendDetail'}
+        onClose={closeModal}
         friend={selectedFriend}
       />
 
       <TopRankerProfileModal 
-        isOpen={showTopRankerProfile}
-        onClose={() => setShowTopRankerProfile(false)}
+        isOpen={activeModal === 'topRankerProfile'}
+        onClose={closeModal}
         user={selectedTopRanker}
       />
 
       <GradeDetailModal 
-        isOpen={showGradeDetail}
-        onClose={() => setShowGradeDetail(false)}
+        isOpen={activeModal === 'gradeDetail'}
+        onClose={closeModal}
         grade={selectedGrade || {
           name: '',
           minIncome: 0,
@@ -666,45 +779,45 @@ export default function Home() {
           color: '#ffffff',
           description: ''
         }}
-        userIncome={0}
+        userIncome={todayIncome}
         userRank={0}
         totalUsers={0}
       />
 
       <RankingDetailModal 
-        isOpen={showRankingDetail}
-        onClose={() => setShowRankingDetail(false)}
+        isOpen={activeModal === 'rankingDetail'}
+        onClose={closeModal}
         userRank={incomeRecords.length > 0 ? Math.floor(Math.random() * 100) + 1 : 0}
-        userIncome={0}
+        userIncome={todayIncome}
         totalUsers={1000}
         topRankers={topRankers}
         onShowUserDetail={(ranker) => {
           setSelectedTopRanker(ranker)
-          setShowTopRankerProfile(true)
+          openModal('topRankerProfile')
         }}
       />
 
       <PrivacyPolicyModal 
-        isOpen={showPrivacyPolicy}
-        onClose={() => setShowPrivacyPolicy(false)}
+        isOpen={activeModal === 'privacyPolicy'}
+        onClose={closeModal}
       />
 
       <TermsOfServiceModal 
-        isOpen={showTermsOfService}
-        onClose={() => setShowTermsOfService(false)}
+        isOpen={activeModal === 'termsOfService'}
+        onClose={closeModal}
       />
 
       {/* 친구 관리 모달 */}
       <FriendsModal
-        isOpen={showFriendsModal}
-        onClose={() => setShowFriendsModal(false)}
+        isOpen={activeModal === 'friends'}
+        onClose={closeModal}
         currentUserId={user?.id || ''}
       />
 
       {/* 사용자 프로필 모달 */}
       <UserProfileModal
-        isOpen={showUserProfile}
-        onClose={() => setShowUserProfile(false)}
+        isOpen={activeModal === 'userProfile'}
+        onClose={closeModal}
         user={selectedUserProfile}
         title="USER PROFILE"
       />

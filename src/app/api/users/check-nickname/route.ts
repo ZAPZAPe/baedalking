@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // 4. 금지어 검사
-    const bannedWords = ['관리자', 'admin', 'test', '배달킹', '운영자', 'null', 'undefined', 'system']
+    // 4. 금지어 검사 (배달킹 제외)
+    const bannedWords = ['관리자', 'admin', 'test', '운영자', 'null', 'undefined', 'system']
     if (bannedWords.some(word => nickname.toLowerCase().includes(word.toLowerCase()))) {
       return NextResponse.json({
         available: false,
@@ -65,9 +65,9 @@ export async function GET(request: NextRequest) {
       query = query.neq('id', userId)
     }
     
-    const { data: existingUser, error: checkError } = await query.single()
+    const { data: existingUsers, error: checkError } = await query
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = No rows found (정상)
+    if (checkError) {
       console.error('닉네임 중복 체크 오류:', checkError)
       return NextResponse.json(
         { error: '닉네임 중복 체크 중 오류가 발생했습니다.' },
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (existingUser) {
+    if (existingUsers && existingUsers.length > 0) {
       return NextResponse.json({
         available: false,
         error: '이미 사용 중인 닉네임입니다.'

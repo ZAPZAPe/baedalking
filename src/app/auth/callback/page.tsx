@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,7 @@ export const dynamic = 'force-dynamic'
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { handleKakaoLogin } = useAuth()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
 
@@ -19,9 +21,9 @@ function AuthCallbackContent() {
 
   const handleAuthCallback = async () => {
     try {
-      // 이미 로그인된 사용자가 있는지 확인
-      const existingKakaoUser = localStorage.getItem('kakaoUser')
-      if (existingKakaoUser) {
+      // Supabase 세션 확인으로 변경
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
         console.log('이미 로그인된 사용자가 있습니다. 메인 페이지로 이동합니다.')
         setStatus('success')
         setMessage('이미 로그인되어 있습니다. 메인 페이지로 이동합니다.')
@@ -47,6 +49,8 @@ function AuthCallbackContent() {
       }
 
       // 카카오 액세스 토큰 획득
+      console.log('카카오 토큰 요청 시작:', { code: code.substring(0, 10) + '...' })
+      
       const tokenResponse = await fetch('/api/auth/kakao/token', {
         method: 'POST',
         headers: {
@@ -56,7 +60,9 @@ function AuthCallbackContent() {
       })
 
       if (!tokenResponse.ok) {
-        throw new Error('토큰 획득 실패')
+        const errorText = await tokenResponse.text()
+        console.error('토큰 획득 실패:', { status: tokenResponse.status, error: errorText })
+        throw new Error(`토큰 획득 실패: ${tokenResponse.status}`)
       }
 
       const { access_token } = await tokenResponse.json()
@@ -75,28 +81,25 @@ function AuthCallbackContent() {
       const kakaoUser = await userResponse.json()
 
       // 카카오 사용자 ID로 기존 사용자 확인
-      let existingUser = null;
-      try {
-        const { data: userData, error: fetchError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('kakao_id', kakaoUser.id.toString())
-          .single()
+      console.log('카카오 사용자 ID로 기존 사용자 조회:', kakaoUser.id.toString())
+      
+      const { data: existingUser, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('kakao_id', kakaoUser.id.toString())
+        .maybeSingle() // single() 대신 maybeSingle() 사용으로 404 에러 방지
 
-        if (userData) {
-          existingUser = userData;
-        }
-      } catch (error) {
-        // 조회 실패 시 기존 사용자가 없는 것으로 간주
-        console.log('기존 사용자 조회 실패, 새 사용자로 진행:', error);
+      // 실제 데이터베이스 오류만 처리 (사용자 없음은 정상)
+      if (fetchError) {
+        console.error('사용자 조회 중 오류:', fetchError)
+        throw new Error(`사용자 조회 실패: ${fetchError.message}`)
       }
 
       if (existingUser) {
         // 기존 사용자가 있는 경우 - 로그인 성공
         console.log('기존 사용자 로그인:', existingUser)
-        // 로컬 스토리지에 사용자 정보 저장
-        localStorage.setItem('kakaoUser', JSON.stringify(existingUser))
-        console.log('로컬 스토리지에 기존 사용자 정보 저장됨:', localStorage.getItem('kakaoUser'))
+        // handleKakaoLogin을 통해 Supabase Auth 세션 생성
+        await handleKakaoLogin(existingUser)
         
         setStatus('success')
         setMessage('로그인 성공! 메인 페이지로 이동합니다.')
@@ -110,30 +113,47 @@ function AuthCallbackContent() {
         return
       }
 
-      // 새 사용자 생성
+      // 새 사용자 생성 - 스키마에 맞는 데이터 구조 사용
+      const profileImageUrl = kakaoUser.properties?.profile_image || kakaoUser.kakao_account?.profile?.profile_image_url
+      const userData = {
+        email: `${kakaoUser.id}@kakao.com`,
+        nickname: kakaoUser.properties?.nickname || kakaoUser.kakao_account?.profile?.nickname || '배달킹',
+        kakao_id: kakaoUser.id.toString(),
+        region: '서울',
+        avatar_config: profileImageUrl ? { profileImageUrl } : {},
+        garage_config: {},
+        status_message: null,
+        is_income_private: false,
+        platforms: [
+          { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', isActive: true, type: 'default' },
+          { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', isActive: true, type: 'default' }
+        ],
+        goals: { daily: 50000, weekly: 350000, monthly: 1500000 },
+        total_visitors: 0,
+        daily_visitors: 0
+      }
+
+      console.log('새 사용자 데이터 삽입 시도:', userData)
+      
       const { data: newUser, error: insertError } = await supabase
         .from('users')
-        .insert({
-          email: `${kakaoUser.id}@kakao.com`,
-          nickname: kakaoUser.properties?.nickname || '카카오사용자',
-          kakao_id: kakaoUser.id.toString(),
-          avatar_url: kakaoUser.properties?.profile_image,
-          region: '서울', // 기본 지역 설정
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .insert(userData)
         .select()
         .single()
 
       if (insertError) {
-        console.error('사용자 정보 저장 오류:', insertError)
-        throw new Error('사용자 생성 실패')
+        console.error('사용자 정보 저장 오류:', {
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint
+        })
+        throw new Error(`사용자 생성 실패: ${insertError.message}`)
       }
 
       console.log('새 사용자 생성:', newUser)
-      // 로컬 스토리지에 사용자 정보 저장
-      localStorage.setItem('kakaoUser', JSON.stringify(newUser))
-      console.log('로컬 스토리지에 사용자 정보 저장됨')
+      // handleKakaoLogin을 통해 Supabase Auth 세션 생성
+      await handleKakaoLogin(newUser)
       
       setStatus('success')
       setMessage('회원가입 성공! 계정 설정 페이지로 이동합니다.')

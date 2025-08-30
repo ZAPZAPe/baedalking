@@ -2,34 +2,52 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    // 로컬 스토리지에서 사용자 정보 확인
-    const kakaoUser = localStorage.getItem('kakaoUser')
-    if (kakaoUser) {
-      // 이미 로그인된 사용자는 메인 페이지로 리다이렉트
-      router.push('/')
+    // Supabase 세션 확인으로 변경
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        // 이미 로그인된 사용자는 메인 페이지로 리다이렉트
+        router.push('/')
+      }
     }
+    checkSession()
   }, [router])
 
   const handleKakaoLogin = async () => {
     try {
       setIsLoading(true)
       
-      // 카카오 로그인 URL로 직접 리다이렉트
-      const clientId = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || '2a6e20ac0ba97afb3b35ecefb5e1f8ed'
-      const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI || 'http://localhost:3000/auth/callback'
+      // 환경변수 검증
+      const clientId = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID
+      const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI
       
-      const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`
+      if (!clientId || !redirectUri) {
+        console.error('카카오 환경변수 누락:', { 
+          clientId: !!clientId, 
+          redirectUri: !!redirectUri,
+          env: process.env.NODE_ENV
+        })
+        alert('카카오 로그인 설정에 문제가 있습니다. 관리자에게 문의하세요.')
+        setIsLoading(false)
+        return
+      }
       
+      const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`
+      
+      console.log('카카오 로그인 시도:', { clientId, redirectUri })
       console.log('카카오 로그인 URL:', kakaoAuthUrl)
+      
       window.location.href = kakaoAuthUrl
     } catch (error) {
       console.error('카카오 로그인 오류:', error)
+      alert('로그인 중 오류가 발생했습니다. 다시 시도해주세요.')
       setIsLoading(false)
     }
   }

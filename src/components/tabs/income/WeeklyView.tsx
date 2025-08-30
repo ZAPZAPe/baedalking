@@ -1,6 +1,7 @@
 'use client'
 
 import { Platform } from '@/hooks/useAppState'
+import { useServerTime } from '@/hooks/useServerTime'
 import html2canvas from 'html2canvas'
 
 interface WeeklyViewProps {
@@ -28,17 +29,25 @@ export default function WeeklyView({
   selectedWeek,
   onWeekChange
 }: WeeklyViewProps) {
-  // 선택된 주 또는 이번 주 (로컬 시간 기준)
-  const today = new Date()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  // 서버 시간 사용
+  const { serverTime } = useServerTime()
+  
+  // 서버 시간 기준으로 오늘 날짜 계산
+  const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
+  const todayStr = serverTime ? serverTime.koreaDate : 
+                   today.getFullYear() + '-' + 
+                   String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(today.getDate()).padStart(2, '0')
   
   let startOfWeek: Date
   if (selectedWeek) {
     startOfWeek = new Date(selectedWeek)
   } else {
-    // 일요일부터 시작하는 주 계산
+    // 일요일부터 시작하는 주 계산 (서버 시간 기준)
     startOfWeek = new Date(today)
-    startOfWeek.setDate(today.getDate() - today.getDay())
+    const dayOfWeek = today.getDay() // 0: 일요일, 1: 월요일, ..., 6: 토요일
+    const daysToSubtract = dayOfWeek // 일요일을 0으로 만들기
+    startOfWeek.setDate(today.getDate() - daysToSubtract)
   }
   
   // weekData 배열 초기화
@@ -47,7 +56,11 @@ export default function WeeklyView({
   for (let i = 0; i < 7; i++) {
     const date = new Date(startOfWeek)
     date.setDate(startOfWeek.getDate() + i)
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    // 서버 시간 기준으로 날짜 문자열 생성
+    const dateStr = date.getFullYear() + '-' + 
+                   String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(date.getDate()).padStart(2, '0')
+    
     const dayRecords = allRecords.filter(r => r.date === dateStr)
     const dayCount = dayRecords.reduce((sum, r) => sum + r.count, 0)
     const dayAmount = dayRecords.reduce((sum, r) => sum + (r.amount || 0), 0)
@@ -56,7 +69,7 @@ export default function WeeklyView({
     
     weekData.push({
       date: dateStr,
-      dayName: ['일', '월', '화', '수', '목', '금', '토'][i],
+      dayName: ['일', '월', '화', '수', '목', '금', '토'][i], // 일요일부터 시작
       dayOfWeek: i, // 0: 일요일, 6: 토요일
       count: dayCount,
       amount: dayAmount,
@@ -68,8 +81,11 @@ export default function WeeklyView({
   
   // 디버깅용 로그
   console.log('🔍 주간 데이터 생성:', {
+    serverTime: serverTime?.koreaDate,
     today: todayStr,
-    startOfWeek: startOfWeek.toISOString().split('T')[0],
+    startOfWeek: startOfWeek.getFullYear() + '-' + 
+                 String(startOfWeek.getMonth() + 1).padStart(2, '0') + '-' + 
+                 String(startOfWeek.getDate()).padStart(2, '0'),
     weekData: weekData.map(d => `${d.dayName}(${d.date})`)
   })
 
@@ -120,7 +136,9 @@ export default function WeeklyView({
       buttons.forEach(btn => (btn as HTMLElement).style.display = '')
 
       // 모바일에서 이미지 다운로드
-      const weekStart = startOfWeek.toISOString().split('T')[0].replace(/-/g, '')
+      const weekStart = (startOfWeek.getFullYear() + '-' + 
+                        String(startOfWeek.getMonth() + 1).padStart(2, '0') + '-' + 
+                        String(startOfWeek.getDate()).padStart(2, '0')).replace(/-/g, '')
       const link = document.createElement('a')
       link.download = `주간수익_${weekStart}.png`
       link.href = canvas.toDataURL('image/png', 1.0)
@@ -201,7 +219,10 @@ export default function WeeklyView({
                     if (onWeekChange) {
                       const prevWeek = new Date(startOfWeek)
                       prevWeek.setDate(prevWeek.getDate() - 7)
-                      onWeekChange(prevWeek.toISOString().split('T')[0])
+                      const prevWeekStr = prevWeek.getFullYear() + '-' + 
+                                        String(prevWeek.getMonth() + 1).padStart(2, '0') + '-' + 
+                                        String(prevWeek.getDate()).padStart(2, '0')
+                      onWeekChange(prevWeekStr)
                     }
                   }}
                   className="px-2 py-1 text-xs font-mono border-2 border-[#ff6b6b]/60 text-[#ff6b6b] hover:border-[#ff6b6b] transition-all duration-200"
@@ -215,7 +236,10 @@ export default function WeeklyView({
                     if (onWeekChange) {
                       const nextWeek = new Date(startOfWeek)
                       nextWeek.setDate(nextWeek.getDate() + 7)
-                      onWeekChange(nextWeek.toISOString().split('T')[0])
+                      const nextWeekStr = nextWeek.getFullYear() + '-' + 
+                                        String(nextWeek.getMonth() + 1).padStart(2, '0') + '-' + 
+                                        String(nextWeek.getDate()).padStart(2, '0')
+                      onWeekChange(nextWeekStr)
                     }
                   }}
                   className="px-2 py-1 text-xs font-mono border-2 border-[#ff6b6b]/60 text-[#ff6b6b] hover:border-[#ff6b6b] transition-all duration-200"
@@ -229,20 +253,28 @@ export default function WeeklyView({
               <button
                 onClick={() => {
                   if (onWeekChange) {
-                    // 오늘 날짜를 기준으로 일요일부터 시작하는 주의 시작일 계산
-                    const today = new Date()
+                    // 서버 시간 기준으로 일요일부터 시작하는 주의 시작일 계산
+                    const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
                     const startOfThisWeek = new Date(today)
                     startOfThisWeek.setDate(today.getDate() - today.getDay())
-                    const startOfThisWeekStr = startOfThisWeek.toISOString().split('T')[0]
+                    const startOfThisWeekStr = startOfThisWeek.getFullYear() + '-' + 
+                                             String(startOfThisWeek.getMonth() + 1).padStart(2, '0') + '-' + 
+                                             String(startOfThisWeek.getDate()).padStart(2, '0')
                     onWeekChange(startOfThisWeekStr)
                   }
                 }}
                 className={`px-3 py-1 text-xs font-mono border-2 transition-all duration-200 ${
-                  startOfWeek.toISOString().split('T')[0] === (() => {
-                    const today = new Date()
+                  (() => {
+                    const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
                     const startOfThisWeek = new Date(today)
                     startOfThisWeek.setDate(today.getDate() - today.getDay())
-                    return startOfThisWeek.toISOString().split('T')[0]
+                    return startOfThisWeek.getFullYear() + '-' + 
+                           String(startOfThisWeek.getMonth() + 1).padStart(2, '0') + '-' + 
+                           String(startOfThisWeek.getDate()).padStart(2, '0')
+                  })() === (() => {
+                    return startOfWeek.getFullYear() + '-' + 
+                           String(startOfWeek.getMonth() + 1).padStart(2, '0') + '-' + 
+                           String(startOfWeek.getDate()).padStart(2, '0')
                   })()
                     ? 'bg-[#ff6b6b] text-black border-[#ff6b6b]'
                     : 'bg-transparent text-[#ff6b6b] border-[#ff6b6b]/60 hover:border-[#ff6b6b]'
@@ -257,13 +289,13 @@ export default function WeeklyView({
           {/* 총 금액 표시 */}
           <div className="text-center mt-4">
             <div className="text-3xl font-bold font-mono text-[#ff6b6b]">
-              ₩{weekTotal.toLocaleString()}
+              ₩{(weekTotal || 0).toLocaleString()}
             </div>
             
             {/* 건당 평균금액 */}
             {weekCount > 0 && (
               <div className="mt-2 text-sm text-gray-300 font-mono">
-                건당 평균: ₩{Math.round(weekTotal / weekCount).toLocaleString()}
+                건당 평균: ₩{Math.round((weekTotal || 0) / (weekCount || 1)).toLocaleString()}
               </div>
             )}
             
@@ -296,7 +328,7 @@ export default function WeeklyView({
                     {weekGoalAchievement.toFixed(1)}%
                   </div>
                   <div className="text-gray-300">
-                    ₩{weekTotal.toLocaleString()} / ₩{weeklyGoal.toLocaleString()}
+                    ₩{(weekTotal || 0).toLocaleString()} / ₩{(weeklyGoal || 0).toLocaleString()}
                   </div>
                 </div>
               </div>

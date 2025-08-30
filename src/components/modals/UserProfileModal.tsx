@@ -10,7 +10,7 @@ interface UserProfile {
   platforms: string[] // 수입 등록된 플랫폼들
   rank?: number // 랭킹 정보 (선택적)
   grade?: string // 등급 정보 (선택적)
-  isIncomePrivate?: boolean // 수익 비공개 설정 (선택적)
+  isIncomePrivate: boolean // 수익 비공개 설정 (필수)
   minihomeId?: string // 미니홈피 ID (선택적)
 }
 
@@ -147,12 +147,19 @@ export default function UserProfileModal({
                 {/* 상세 정보 그리드 - INCOME DETAIL과 동일한 스타일 */}
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {/* 수입 */}
-                  <div className="bg-[#1a202c]/50 p-2 sm:p-3 rounded-lg text-center border"
-                       style={{borderColor: '#00d4ff30', borderRadius: '4px'}}>
-                    <div className="text-white text-xs font-mono font-bold mb-1">수입</div>
-                    <div className="text-sm font-bold font-mono text-white">
+                  <div className={`p-2 sm:p-3 rounded-lg text-center border transition-all duration-200 ${
+                    user.isIncomePrivate 
+                      ? 'bg-gray-600/20 border-gray-500/30' 
+                      : 'bg-[#1a202c]/50 border-[#00d4ff]/30'
+                  }`} style={{borderRadius: '4px'}}>
+                    <div className={`text-xs font-mono font-bold mb-1 ${
+                      user.isIncomePrivate ? 'text-gray-500' : 'text-white'
+                    }`}>수입</div>
+                    <div className={`text-sm font-bold font-mono ${
+                      user.isIncomePrivate ? 'text-gray-500' : 'text-white'
+                    }`}>
                       {user.isIncomePrivate ? (
-                        <span className="text-gray-400">비공개</span>
+                        <span className="text-gray-500">비공개</span>
                       ) : (
                         `₩${user.income.toLocaleString()}`
                       )}
@@ -160,12 +167,19 @@ export default function UserProfileModal({
                   </div>
                   
                   {/* 건수 */}
-                  <div className="bg-[#1a202c]/50 p-2 sm:p-3 rounded-lg text-center border"
-                       style={{borderColor: '#9c88ff30', borderRadius: '4px'}}>
-                    <div className="text-white text-xs font-mono font-bold mb-1">건수</div>
-                    <div className="text-sm font-bold font-mono text-white">
+                  <div className={`p-2 sm:p-3 rounded-lg text-center border transition-all duration-200 ${
+                    user.isIncomePrivate 
+                      ? 'bg-gray-600/20 border-gray-500/30' 
+                      : 'bg-[#1a202c]/50 border-[#9c88ff]/30'
+                  }`} style={{borderRadius: '4px'}}>
+                    <div className={`text-xs font-mono font-bold mb-1 ${
+                      user.isIncomePrivate ? 'text-gray-500' : 'text-white'
+                    }`}>건수</div>
+                    <div className={`text-sm font-bold font-mono ${
+                      user.isIncomePrivate ? 'text-gray-500' : 'text-white'
+                    }`}>
                       {user.isIncomePrivate ? (
-                        <span className="text-gray-400">비공개</span>
+                        <span className="text-gray-500">비공개</span>
                       ) : (
                         `${user.count}건`
                       )}
@@ -230,14 +244,14 @@ export default function UserProfileModal({
                   // 미니홈피 방문 로직
                   console.log('UserProfileModal Visit 버튼 클릭:', user.id)
                   try {
-                    router.push(`/minihompy/${user.id}`)
+                    router.push(`/garage/${user.id}`)
                     console.log('UserProfileModal 라우터 푸시 완료')
                     onClose() // 모달 닫기
                   } catch (error) {
                     console.error('UserProfileModal 라우터 푸시 에러:', error)
                     // 폴백: window.location.href 사용
                     console.log('UserProfileModal 폴백 방법 사용: window.location.href')
-                    window.location.href = `/minihompy/${user.id}`
+                    window.location.href = `/garage/${user.id}`
                     onClose() // 모달 닫기
                   }
                 }}

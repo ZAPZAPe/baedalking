@@ -17,7 +17,6 @@ interface ProfileTabProps {
   setShowPrivacyPolicy: (show: boolean) => void
   setShowTermsOfService: (show: boolean) => void
   setShowDeleteAccount: (show: boolean) => void
-  setShowFriendsModal: (show: boolean) => void
   onLogout: () => void
   onUpdateProfile: (field: string, value: string) => Promise<boolean>
   userId: string
@@ -33,7 +32,6 @@ export default function ProfileTab({
   setShowPrivacyPolicy,
   setShowTermsOfService,
   setShowDeleteAccount,
-  setShowFriendsModal,
   onLogout,
   onUpdateProfile,
   userId
@@ -45,12 +43,84 @@ export default function ProfileTab({
   const [tempNickname, setTempNickname] = useState(userNickname)
   const [tempLocation, setTempLocation] = useState(userLocation)
   
+
+  
   // 🔍 닉네임 검증 상태
   const [nicknameValidation, setNicknameValidation] = useState<{
     isValid: boolean
     message: string
     isChecking: boolean
   }>({ isValid: true, message: '', isChecking: false })
+
+  // 지역 데이터
+  const regionData = {
+    '서울특별시': [
+      '강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', 
+      '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', 
+      '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'
+    ],
+    '부산광역시': [
+      '강서구', '금정구', '남구', '동구', '동래구', '부산진구', '북구', '사상구', 
+      '사하구', '서구', '수영구', '연제구', '영도구', '중구', '해운대구', '기장군'
+    ],
+    '대구광역시': [
+      '남구', '달서구', '달성군', '동구', '북구', '서구', '수성구', '중구'
+    ],
+    '인천광역시': [
+      '계양구', '남구', '남동구', '동구', '부평구', '서구', '연수구', '중구', '강화군', '옹진군'
+    ],
+    '광주광역시': [
+      '광산구', '남구', '동구', '북구', '서구'
+    ],
+    '대전광역시': [
+      '대덕구', '동구', '서구', '유성구', '중구'
+    ],
+    '울산광역시': [
+      '남구', '동구', '북구', '중구', '울주군'
+    ],
+    '세종특별자치시': [
+      '세종특별자치시'
+    ],
+    '경기도': [
+      '수원시', '성남시', '의정부시', '안양시', '부천시', '광명시', '평택시', '과천시', 
+      '오산시', '시흥시', '군포시', '의왕시', '하남시', '용인시', '파주시', '이천시', 
+      '안성시', '김포시', '화성시', '광주시', '여주시', '양평군', '고양시', '구리시', 
+      '남양주시', '동두천시', '안산시', '가평군', '연천군'
+    ],
+    '강원도': [
+      '춘천시', '원주시', '강릉시', '태백시', '속초시', '삼척시', '홍천군', '횡성군', 
+      '영월군', '평창군', '정선군', '철원군', '화천군', '양구군', '인제군', '고성군', '양양군'
+    ],
+    '충청북도': [
+      '청주시', '충주시', '제천시', '보은군', '옥천군', '영동군', '증평군', '진천군', '괴산군', '음성군', '단양군'
+    ],
+    '충청남도': [
+      '천안시', '공주시', '보령시', '아산시', '서산시', '논산시', '계룡시', '당진시', 
+      '금산군', '부여군', '서천군', '청양군', '홍성군', '예산군', '태안군'
+    ],
+    '전라북도': [
+      '전주시', '군산시', '익산시', '정읍시', '남원시', '김제시', '완주군', '진안군', 
+      '무주군', '장수군', '임실군', '순창군', '고창군', '부안군'
+    ],
+    '전라남도': [
+      '목포시', '여수시', '순천시', '나주시', '광양시', '담양군', '곡성군', '구례군', 
+      '고흥군', '보성군', '화순군', '장흥군', '강진군', '해남군', '영암군', '무안군', 
+      '함평군', '영광군', '장성군', '완도군', '진도군', '신안군'
+    ],
+    '경상북도': [
+      '포항시', '경주시', '김천시', '안동시', '구미시', '영주시', '영천시', '상주시', 
+      '문경시', '경산시', '군위군', '의성군', '청송군', '영양군', '영덕군', '청도군', 
+      '고령군', '성주군', '칠곡군', '예천군', '봉화군', '울진군', '울릉군'
+    ],
+    '경상남도': [
+      '창원시', '진주시', '통영시', '사천시', '김해시', '밀양시', '거제시', '양산시', 
+      '의령군', '함안군', '창녕군', '고성군', '남해군', '하동군', '산청군', '함양군', 
+      '거창군', '합천군'
+    ],
+    '제주특별자치도': [
+      '제주시', '서귀포시'
+    ]
+  }
 
   // 🔍 실시간 닉네임 검증
   const checkNickname = async (nickname: string) => {
@@ -97,6 +167,8 @@ export default function ProfileTab({
       })
     }
   }
+
+
 
   // 닉네임 입력 변경 시 검증 (디바운싱)
   const handleNicknameChange = (value: string) => {
@@ -347,42 +419,93 @@ export default function ProfileTab({
           
           {/* 지역 변경 */}
           {isEditingLocation ? (
-            <div className="bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded" style={{borderRadius: '4px'}}>
-              <div className="text-white text-sm font-bold font-mono mb-2">지역 변경</div>
-              <select
-                value={tempLocation}
-                onChange={(e) => setTempLocation(e.target.value)}
-                className="w-full bg-[#1a202c] border border-[#00ff88]/50 text-white text-sm p-2 rounded mb-2"
-                style={{borderRadius: '4px'}}
-              >
-                <option value="서울특별시">서울특별시</option>
-                <option value="부산광역시">부산광역시</option>
-                <option value="대구광역시">대구광역시</option>
-                <option value="인천광역시">인천광역시</option>
-                <option value="광주광역시">광주광역시</option>
-                <option value="대전광역시">대전광역시</option>
-                <option value="울산광역시">울산광역시</option>
-                <option value="세종특별자치시">세종특별자치시</option>
-                <option value="경기도">경기도</option>
-                <option value="강원도">강원도</option>
-                <option value="충청북도">충청북도</option>
-                <option value="충청남도">충청남도</option>
-                <option value="전라북도">전라북도</option>
-                <option value="전라남도">전라남도</option>
-                <option value="경상북도">경상북도</option>
-                <option value="경상남도">경상남도</option>
-                <option value="제주특별자치도">제주특별자치도</option>
-              </select>
+            <div className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left transition-all" 
+                 style={{borderRadius: '4px'}}>
+              <div className="mb-2">
+                <div>
+                  <div className="text-white text-sm font-bold font-mono">지역 설정</div>
+                  <div className="text-gray-400 text-xs font-mono">현재: {userLocation || '지역 없음'}</div>
+                </div>
+              </div>
+              
+              {/* 시/도 및 구 선택 */}
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                {/* 시/도 선택 */}
+                <div>
+                  <select
+                    value={tempLocation.split(' ')[0] || ''}
+                    onChange={(e) => {
+                      const province = e.target.value
+                      const district = regionData[province as keyof typeof regionData]?.[0] || ''
+                      const newLocation = district ? `${province} ${district}` : province
+                      setTempLocation(newLocation)
+                    }}
+                    className="w-full bg-[#1a202c] border border-[#00ff88]/50 rounded px-2 py-1 text-white text-sm focus:border-[#00ff88] focus:outline-none"
+                  >
+                    <option value="">시/도 선택</option>
+                    {Object.keys(regionData).map((province) => (
+                      <option key={province} value={province}>
+                        {province}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* 구 선택 */}
+                <div>
+                  <select
+                    value={tempLocation.split(' ').slice(1).join(' ') || ''}
+                    onChange={(e) => {
+                      const province = tempLocation.split(' ')[0]
+                      const district = e.target.value
+                      const newLocation = district ? `${province} ${district}` : province
+                      setTempLocation(newLocation)
+                    }}
+                    className="w-full bg-[#1a202c] border border-[#00ff88]/50 rounded px-2 py-1 text-white text-sm focus:border-[#00ff88] focus:outline-none"
+                    disabled={!tempLocation.split(' ')[0]}
+                  >
+                    <option value="">구 선택</option>
+                    {tempLocation.split(' ')[0] && regionData[tempLocation.split(' ')[0] as keyof typeof regionData]?.map((district) => (
+                      <option key={district} value={district}>
+                        {district}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              {/* 저장/취소 버튼 */}
               <div className="flex gap-2">
                 <button
-                  onClick={handleSaveLocation}
+                  onClick={async () => {
+                    if (!tempLocation.trim()) {
+                      alert('지역을 선택해주세요.')
+                      return
+                    }
+                    
+                    try {
+                      const success = await onUpdateProfile('region', tempLocation)
+                      if (success) {
+                        setIsEditingLocation(false)
+                        alert('지역이 성공적으로 변경되었습니다.')
+                      } else {
+                        alert('지역 변경에 실패했습니다. 다시 시도해주세요.')
+                      }
+                    } catch (error) {
+                      console.error('지역 저장 오류:', error)
+                      alert('지역 저장 중 오류가 발생했습니다.')
+                    }
+                  }}
                   className="flex-1 bg-[#00ff88]/20 border border-[#00ff88]/50 text-[#00ff88] hover:bg-[#00ff88]/30 py-2 rounded text-sm font-bold transition-all"
                   style={{borderRadius: '4px'}}
                 >
                   저장
                 </button>
                 <button
-                  onClick={handleCancelLocation}
+                  onClick={() => {
+                    setTempLocation(userLocation)
+                    setIsEditingLocation(false)
+                  }}
                   className="flex-1 bg-[#ff6b6b]/20 border border-[#ff6b6b]/50 text-[#ff6b6b] hover:bg-[#ff6b6b]/30 py-2 rounded text-sm font-bold transition-all"
                   style={{borderRadius: '4px'}}
                 >
@@ -396,16 +519,15 @@ export default function ProfileTab({
               className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
               style={{borderRadius: '4px'}}
             >
-              <div className="text-white text-sm font-bold font-mono">지역 변경</div>
-              <div className="text-gray-400 text-xs font-mono">현재: {userLocation || '지역 없음'}</div>
+              <div>
+                <div className="text-white text-sm font-bold font-mono">지역 설정</div>
+                <div className="text-gray-400 text-xs font-mono">현재: {userLocation || '지역 없음'}</div>
+              </div>
             </button>
           )}
 
-          <button 
-            onClick={() => setIsIncomePrivate(!isIncomePrivate)}
-            className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
-            style={{borderRadius: '4px'}}
-          >
+          <div className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left transition-all" 
+               style={{borderRadius: '4px'}}>
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-white text-sm font-bold font-mono">수익 비공개</div>
@@ -417,6 +539,39 @@ export default function ProfileTab({
               {/* 토글 스위치 */}
               <div className="relative">
                 <div 
+                  onClick={async () => {
+                    const newValue = !isIncomePrivate
+                    console.log('토글 클릭! 현재값:', isIncomePrivate, '새값:', newValue)
+                    
+                    // 즉시 로컬 상태 업데이트 (즉시 반응)
+                    setIsIncomePrivate(newValue)
+                    
+                    try {
+                      const response = await fetch(`/api/users/${userId}`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          is_income_private: newValue
+                        }),
+                      })
+                      
+                      if (response.ok) {
+                        console.log('수익 비공개 설정이 저장되었습니다:', newValue)
+                      } else {
+                        console.error('수익 비공개 설정 저장 실패')
+                        // 실패 시 원래 값으로 되돌리기
+                        setIsIncomePrivate(!newValue)
+                        alert('설정 저장에 실패했습니다. 다시 시도해주세요.')
+                      }
+                    } catch (error) {
+                      console.error('수익 비공개 설정 저장 오류:', error)
+                      // 에러 시 원래 값으로 되돌리기
+                      setIsIncomePrivate(!newValue)
+                      alert('설정 저장 중 오류가 발생했습니다.')
+                    }
+                  }}
                   className={`w-12 h-6 rounded-full transition-all duration-300 ease-in-out cursor-pointer ${
                     isIncomePrivate 
                       ? 'bg-[#00ff88] shadow-lg shadow-[#00ff88]/30' 
@@ -442,7 +597,7 @@ export default function ProfileTab({
                 </div>
               </div>
             </div>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -479,32 +634,9 @@ export default function ProfileTab({
         </div>
         
         <div className="space-y-2">
-          <button 
-            onClick={() => window.location.href = `/minihompy/${userId || 'temp'}`}
-            className="w-full bg-[#1a202c]/60 border border-[#9c88ff]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
-            style={{borderRadius: '4px'}}
-          >
-            <div className="text-[#9c88ff] text-sm font-bold font-mono">내 미니홈피</div>
-            <div className="text-gray-400 text-xs font-mono">프로필 보기 및 방명록 관리</div>
-          </button>
 
-          <button 
-            onClick={() => setShowFriendsModal(true)}
-            className="w-full bg-[#1a202c]/60 border border-[#00ff88]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
-            style={{borderRadius: '4px'}}
-          >
-            <div className="text-[#00ff88] text-sm font-bold font-mono">친구 관리</div>
-            <div className="text-gray-400 text-xs font-mono">친구 추가, 요청 관리, 친구 찾기</div>
-          </button>
 
-          <button 
-            onClick={() => window.location.href = '/shop'}
-            className="w-full bg-[#1a202c]/60 border border-[#ffd93d]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
-            style={{borderRadius: '4px'}}
-          >
-            <div className="text-[#ffd93d] text-sm font-bold font-mono">🏪 상점</div>
-            <div className="text-gray-400 text-xs font-mono">아이템 구매, 포인트 사용, 꾸미기</div>
-          </button>
+
 
           <button 
             onClick={() => setShowPrivacyPolicy(true)}
@@ -587,12 +719,6 @@ export default function ProfileTab({
           </button>
         </div>
       </div>
-
-
-
-
-
-
 
 
     </div>

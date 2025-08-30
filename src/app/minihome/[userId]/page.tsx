@@ -4,11 +4,15 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { MinihomeData } from '@/types/social'
 import UserProfileModal from '@/components/modals/UserProfileModal'
+import { useAppState } from '@/hooks/useAppState'
 
 export default function MinihomePage() {
   const params = useParams()
   const router = useRouter()
   const minihomeId = params.userId as string // URL 파라미터는 minihomeId
+  
+  // useAppState에서 garageIntro 가져오기
+  const { garageIntro } = useAppState()
   
   const [minihomeData, setMinihomeData] = useState<MinihomeData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -57,7 +61,7 @@ export default function MinihomePage() {
           background: 'background.png',
           characterEmotion: 'happy',
           vehicle: 'scooter',
-          speechText: '오늘도 안전운전!',
+          garageIntro: '열심히 달리는 배달킹입니다! 🛵💨',
           isPublic: true,
           createdAt: new Date(),
           updatedAt: new Date()
@@ -261,7 +265,7 @@ export default function MinihomePage() {
               <div className="w-8 h-8 bg-[#00d4ff] rounded-full"></div>
             </div>
           </div>
-          <div className="text-2xl font-bold font-mono mb-2">미니홈피 로딩 중...</div>
+          <div className="text-2xl font-bold font-mono mb-2">차고 로딩 중...</div>
           <div className="text-gray-400 font-mono">잠시만 기다려주세요</div>
         </div>
       </div>
@@ -275,7 +279,7 @@ export default function MinihomePage() {
           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-[#ff6b6b] to-[#ff4757] rounded-full flex items-center justify-center">
             <div className="text-3xl">❌</div>
           </div>
-          <div className="text-2xl font-bold font-mono mb-2">미니홈피를 찾을 수 없습니다</div>
+          <div className="text-2xl font-bold font-mono mb-2">차고를 찾을 수 없습니다</div>
           <div className="text-gray-400 font-mono">존재하지 않는 사용자입니다</div>
         </div>
       </div>
@@ -309,13 +313,13 @@ export default function MinihomePage() {
         <div className="flex-1 relative bg-gradient-to-b from-[#0f0f23] to-[#1a1a2e] scroll-container">
           <div className="p-2 sm:p-3 lg:p-4 pb-24">
             <div className="max-w-md mx-auto w-full space-y-2 sm:space-y-3 lg:space-y-4">
-              {/* 메인 헤더 - "닉네임의 미니홈피" */}
+              {/* 메인 헤더 - "닉네임의 차고" */}
               <div className="bg-gradient-to-r from-[#1a202c] to-[#2d3748] p-3 sm:p-4 border-2 border-[#9c88ff] relative text-center" style={{borderRadius: '4px'}}>
                 <h1 className="text-white font-bold text-lg sm:text-xl font-mono mb-3" style={{
                   textShadow: '2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000',
                   imageRendering: 'pixelated'
                 }}>
-                  {minihomeData.profile.nickname}의 미니홈피
+                  {minihomeData.profile.nickname}의 차고
                 </h1>
                 
                 {/* Total & Today 방문자 수 */}
@@ -393,11 +397,11 @@ export default function MinihomePage() {
                   <div className="absolute bottom-2 right-2 w-4 h-4 border-l-2 border-b-2 border-[#00ff88]/60 rounded-br-lg"></div>
                 </div>
 
-                {/* 가라지 소개 - 홈 메인과 동일한 스타일 */}
+                {/* GARAGE INTRO - 홈 메인과 동일한 스타일 */}
                 <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 border border-[#00ff88]/20">
                   <div className="text-center">
                     <p className="text-white text-sm font-medium leading-relaxed">
-                      {minihomeData.settings.speechText || '가라지 소개글이 없습니다...'}
+                      {garageIntro || 'GARAGE INTRO가 설정되지 않았습니다...'}
                     </p>
                   </div>
                 </div>

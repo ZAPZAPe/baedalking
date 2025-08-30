@@ -1,6 +1,7 @@
 'use client'
 
 import PixelButton from '@/components/ui/PixelButton'
+import { useServerTime } from '@/hooks/useServerTime'
 
 interface HomeTabProps {
   currentBackground: string
@@ -14,6 +15,7 @@ interface HomeTabProps {
   incomeRecords: any[]
   totalIncome: number
   isClient: boolean
+  userId: string
   setShowBackgroundItemPanel: (show: boolean) => void
   setShowVehicleItemPanel: (show: boolean) => void
   setShowCharacterItemPanel: (show: boolean) => void
@@ -33,15 +35,22 @@ export default function HomeTab({
   incomeRecords,
   totalIncome,
   isClient,
+  userId,
   setShowBackgroundItemPanel,
   setShowVehicleItemPanel,
   setShowCharacterItemPanel,
   setShowIncomeInputPanel,
   setActiveTab
 }: HomeTabProps) {
-  // 오늘 날짜 계산 (INCOME 탭과 동일한 방식)
-  const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  // 서버 시간 사용
+  const { serverTime } = useServerTime()
+  
+  // 서버 시간 기준으로 오늘 날짜 계산
+  const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
+  const todayStr = serverTime ? serverTime.koreaDate : 
+                   today.getFullYear() + '-' + 
+                   String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(today.getDate()).padStart(2, '0')
   
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -50,6 +59,8 @@ export default function HomeTab({
 
         {/* 배경, 캐릭터, 스쿠터 꾸미기 공간 - 비율 유지하며 크기 조절 */}
         <div className="relative bg-gradient-to-b from-[#2d3748] to-[#1a202c] rounded-xl p-3 sm:p-4 lg:p-5 mb-2 sm:mb-3 lg:mb-4 min-h-[330px] sm:min-h-[370px] lg:min-h-[420px] border border-[#00ff88]/30 shadow-inner">
+          
+
           {/* 배경 이미지 - 클릭 가능 */}
           <button 
             onClick={() => setShowBackgroundItemPanel(true)}
@@ -155,15 +166,9 @@ export default function HomeTab({
                 <div className="absolute bottom-0.5 right-0.5 w-1 h-1 bg-[#696969]/80 rounded-full shadow-inner"></div>
                 
                 <div className="relative z-10">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col items-center justify-center">
-                      <p className="text-[#5D4037] text-xs font-bold h-3 flex items-center justify-center">Today</p>
-                      <p className="text-[#2F1B14] text-sm font-black drop-shadow-sm h-5 flex items-center justify-center">{todayVisitors}명</p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center">
-                      <p className="text-[#5D4037] text-xs font-bold h-3 flex items-center justify-center">Weather</p>
-                      <p className="text-[#2F1B14] text-sm font-black drop-shadow-sm h-5 flex items-center justify-center">{getWeatherIcon(currentWeather.condition)} {currentWeather.temp}°</p>
-                    </div>
+                  <div className="flex flex-col items-center justify-center">
+                    <p className="text-[#5D4037] text-xs font-bold h-3 flex items-center justify-center">Weather</p>
+                    <p className="text-[#2F1B14] text-sm font-black drop-shadow-sm h-5 flex items-center justify-center">{getWeatherIcon(currentWeather.condition)} {currentWeather.temp}°</p>
                   </div>
                 </div>
               </div>
@@ -188,6 +193,18 @@ export default function HomeTab({
         </div>
 
       </div>
+
+      {/* 내 차고 방문 버튼 */}
+      <button 
+        onClick={() => window.location.href = `/garage/${userId || 'temp'}`}
+        className="w-full bg-gradient-to-r from-[#9c88ff]/20 to-[#ffd93d]/20 border-2 border-[#9c88ff]/50 hover:border-[#9c88ff] p-4 rounded text-center hover:from-[#9c88ff]/30 hover:to-[#ffd93d]/30 transition-all duration-300 shadow-lg" 
+        style={{borderRadius: '8px'}}
+      >
+        <div className="flex flex-col items-center justify-center">
+          <div className="text-[#9c88ff] text-sm font-bold font-mono">내 차고</div>
+          <div className="text-gray-300 text-xs font-mono">프로필 보기 및 방명록 관리</div>
+        </div>
+      </button>
 
       {/* 카카오 광고 - 클라이언트에서만 렌더링 */}
       <div className="bg-gradient-to-br from-[#2d2d2d]/90 to-[#1a1a1a]/90 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 border border-gray-600/20 shadow-2xl mb-2 sm:mb-3 lg:mb-4 text-center flex-shrink-0 min-h-[100px] flex items-center justify-center">
@@ -226,7 +243,7 @@ true
             boxShadow: '0 0 10px #00ff8840, inset 0 0 10px #00ff8820'
           }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-1 px-2">
             <div className="flex items-center gap-3">
               <div>
                 <h3 className="text-white font-bold text-base font-mono" style={{
@@ -251,7 +268,7 @@ true
           </div>
 
           {/* 총 금액 표시 */}
-          <div className="text-center mt-4">
+          <div className="text-center mt-3 mb-2 px-2">
             <div className="text-3xl font-bold font-mono text-[#00ff88]">
               ₩{(incomeRecords.filter(record => record.date === todayStr)
                   .reduce((sum, record) => sum + (record.delivery_amount || 0), 0) + 
@@ -289,7 +306,7 @@ true
           {/* 건수 */}
           <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center relative" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-2">건수</p>
-            <p className="text-white font-bold text-lg font-mono">
+            <p className="text-white font-bold text-sm font-mono">
               {incomeRecords.filter(record => record.date === todayStr)
                 .reduce((sum, record) => sum + record.delivery_count, 0)}건
             </p>
@@ -302,8 +319,8 @@ true
 
           {/* 배달금액 */}
           <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center relative" style={{borderRadius: '4px'}}>
-                            <p className="text-white text-xs font-mono font-bold mb-2">배달금액</p>
-            <p className="text-white font-bold text-lg font-mono">
+            <p className="text-gray-300 text-xs font-mono mb-2">배달금액</p>
+            <p className="text-white font-bold text-sm font-mono">
               ₩{incomeRecords.filter(record => record.date === todayStr)
                 .reduce((sum, record) => sum + (record.delivery_amount || 0), 0).toLocaleString()}
             </p>
@@ -316,8 +333,8 @@ true
 
           {/* 미션비 */}
           <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center relative" style={{borderRadius: '4px'}}>
-                            <p className="text-white text-xs font-mono font-bold mb-2">미션비</p>
-            <p className="text-white font-bold text-lg font-mono">
+            <p className="text-gray-300 text-xs font-mono mb-2">미션비</p>
+            <p className="text-white font-bold text-sm font-mono">
               ₩{incomeRecords.filter(record => record.date === todayStr)
                 .reduce((sum, record) => sum + (record.mission_amount || 0), 0).toLocaleString()}
             </p>
@@ -330,20 +347,17 @@ true
         </div>
       </div>
 
-      {/* 수입 입력 버튼 - 픽셀아트 스타일 */}
-      <div className="mb-2 sm:mb-3 lg:mb-4 flex-shrink-0">
-        <PixelButton
-          onClick={() => setShowIncomeInputPanel(true)}
-          variant="secondary"
-          size="lg"
-          fullWidth
-        >
-          <div className="text-center">
-            <p className="text-base font-bold">수입 기록하기</p>
-            <p className="text-xs opacity-80 mt-1">오늘의 배달 수익을 입력하세요</p>
-          </div>
-        </PixelButton>
-      </div>
+      {/* 수입 입력 버튼 */}
+      <button 
+        onClick={() => setShowIncomeInputPanel(true)}
+        className="w-full bg-gradient-to-r from-[#00ff88]/20 to-[#00d4ff]/20 border-2 border-[#00ff88]/50 hover:border-[#00ff88] p-4 rounded text-center hover:from-[#00ff88]/30 hover:to-[#00d4ff]/30 transition-all duration-300 shadow-lg" 
+        style={{borderRadius: '8px'}}
+      >
+        <div className="flex flex-col items-center justify-center">
+          <div className="text-[#00ff88] text-sm font-bold font-mono">수입 기록하기</div>
+          <div className="text-gray-300 text-xs font-mono">오늘의 배달 수익을 입력하세요</div>
+        </div>
+      </button>
       
       {/* 하단 여백 - 상단과 동일하게 */}
       <div className="mb-2 sm:mb-3 lg:mb-4"></div>

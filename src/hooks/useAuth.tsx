@@ -2,6 +2,7 @@
 
 import { useState, useEffect, createContext, useContext } from 'react'
 import { supabase } from '@/lib/supabase'
+import type { Session, User as SupabaseUser } from '@supabase/supabase-js'
 
 interface User {
   id: string
@@ -9,8 +10,8 @@ interface User {
   email: string
   nickname: string
   region: string
-  avatar_config: any
-  garage_config: any
+  avatar_config: any // JSONB 타입으로 프로필 이미지 URL 등 저장
+  garage_config: any // JSONB 타입으로 차고 설정 저장
   status_message?: string
   is_income_private: boolean
   platforms: any[]
@@ -27,8 +28,10 @@ interface User {
 
 interface AuthContextType {
   user: User | null
+  session: Session | null
   isLoading: boolean
   loading: boolean
+  setUser: (user: User | null) => void
   signOut: () => Promise<void>
   signIn: (email: string, password: string) => Promise<any>
   signUp: (email: string, password: string, nickname: string) => Promise<any>
@@ -48,54 +51,113 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    checkUser()
+    // 제대로 된 사용자 세션 확인
+    const initializeAuth = async () => {
+      console.log('🔄 Auth 초기화 시작')
+      
+      try {
+        // 1. 먼저 기존 Supabase 세션 확인
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user) {
+          console.log('✅ 기존 Supabase 세션 발견:', session.user.id)
+          await loadUserFromSupabase(session.user)
+          setSession(session)
+        } else {
+          console.log('❌ 기존 Supabase 세션 없음')
+          
+          // 2. 로컬에 저장된 카카오 세션 확인 (fallback)
+          if (typeof window !== 'undefined') {
+            const kakaoUser = localStorage.getItem('kakaoUser')
+            if (kakaoUser) {
+              try {
+                const userData = JSON.parse(kakaoUser)
+                console.log('📱 로컬 카카오 세션 발견:', userData.kakao_id)
+                
+                // 카카오 데이터로 사용자 복원
+                const { data: existingUser } = await supabase
+                  .from('users')
+                  .select('*')
+                  .eq('kakao_id', userData.kakao_id)
+                  .single()
+                
+                if (existingUser) {
+                  console.log('✅ 카카오 세션으로 사용자 복원:', existingUser.nickname)
+                  setUser(existingUser)
+                  
+                  // Mock 세션 생성
+                  setSession({
+                    access_token: 'restored_token',
+                    refresh_token: 'restored_refresh',
+                    expires_in: 3600,
+                    expires_at: Date.now() + 3600000,
+                    token_type: 'bearer',
+                    user: {
+                      id: existingUser.id,
+                      email: existingUser.email,
+                      user_metadata: { kakao_id: existingUser.kakao_id },
+                      app_metadata: {},
+                      aud: 'authenticated',
+                      created_at: existingUser.created_at,
+                      role: 'authenticated',
+                      updated_at: existingUser.updated_at
+                    }
+                  })
+                }
+              } catch (error) {
+                console.error('❌ 로컬 세션 복원 실패:', error)
+                // 손상된 로컬 데이터 제거
+                localStorage.removeItem('kakaoUser')
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ Auth 초기화 오류:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    initializeAuth()
   }, [])
 
-  const checkUser = async () => {
+  const loadUserFromSupabase = async (supabaseUser: SupabaseUser) => {
     try {
-      // 🔥 핵심 변경: 로컬스토리지에서 kakao_id 확인 후 Supabase에서 사용자 조회
-      const kakaoUser = localStorage.getItem('kakaoUser')
-      console.log('🔍 useAuth - 로컬 스토리지 확인:', kakaoUser)
+      const { data: dbUser, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', supabaseUser.id)
+        .single()
       
-      if (kakaoUser) {
-        const kakaoData = JSON.parse(kakaoUser)
-        console.log('📱 useAuth - 카카오 데이터:', kakaoData)
-        
-        // Supabase에서 해당 kakao_id를 가진 사용자 조회
-        const { data: dbUser, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('kakao_id', kakaoData.kakao_id || kakaoData.id)
-          .single()
-        
-        if (error && error.code !== 'PGRST116') {
-          console.error('❌ 사용자 조회 오류:', error)
-        } else if (dbUser) {
-          console.log('✅ Supabase에서 사용자 찾음:', dbUser)
-          setUser(dbUser)
-        } else {
-          console.log('⚠️ Supabase에 사용자 없음, 새로 생성 필요')
-          // 카카오 데이터는 있지만 DB에 없는 경우
-          await handleKakaoLogin(kakaoData)
-        }
+      if (error && error.code !== 'PGRST116') {
+        console.error('❌ 사용자 데이터 로드 오류:', error)
+        return
+      }
+
+      if (dbUser) {
+        console.log('✅ 사용자 데이터 로드 완료:', dbUser.nickname)
+        setUser(dbUser)
       } else {
-        console.log('❌ 로컬 스토리지에 카카오 사용자 정보 없음')
+        console.log('⚠️ 사용자 데이터 없음 - 프로필 설정 필요')
+        // 인증은 됐지만 프로필이 없는 경우
+        setUser(null)
       }
     } catch (error) {
-      console.error('❌ 사용자 세션 확인 오류:', error)
-    } finally {
-      setIsLoading(false)
+      console.error('❌ 사용자 데이터 로드 실패:', error)
     }
   }
 
-  // 🔥 핵심 변경: 카카오 로그인 처리 - Supabase 중심
+  // 🔥 카카오 로그인 처리 - 직접 사용자 데이터 관리 (Auth 없이)
   const handleKakaoLogin = async (kakaoUser: any): Promise<boolean> => {
     try {
       console.log('🔄 카카오 로그인 처리 시작:', kakaoUser)
       
+      // 1. 사용자 데이터 준비
       const userData = {
         kakao_id: kakaoUser.kakao_id || kakaoUser.id || String(kakaoUser.id),
         email: kakaoUser.email || `${kakaoUser.kakao_id || kakaoUser.id}@kakao.com`,
@@ -109,51 +171,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', isActive: true, type: 'default' },
           { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', isActive: true, type: 'default' }
         ],
-        goals: kakaoUser.goals || { daily: 50000, weekly: 350000, monthly: 1500000 }
+        goals: kakaoUser.goals || { daily: 50000, weekly: 350000, monthly: 1500000 },
+        total_visitors: 0,
+        daily_visitors: 0
       }
 
       console.log('📊 생성할 사용자 데이터:', userData)
 
-      // Supabase에서 해당 사용자가 이미 있는지 확인
+      // 2. 기존 사용자 확인
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('*')
         .eq('kakao_id', userData.kakao_id)
         .single()
 
+      let finalUser: User
+
       if (checkError && checkError.code !== 'PGRST116') {
-        console.error('❌ 사용자 확인 오류:', checkError)
+        console.error('❌ 사용자 조회 오류:', checkError)
         return false
       }
 
-      let finalUser: User
-
       if (existingUser) {
-        console.log('✅ 기존 사용자 발견, 업데이트:', existingUser)
-        
-        // 기존 사용자 정보 업데이트
-        const { data: updatedUser, error: updateError } = await supabase
-          .from('users')
-          .update({
-            email: userData.email,
-            nickname: userData.nickname,
-            region: userData.region,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingUser.id)
-          .select()
-          .single()
-
-        if (updateError) {
-          console.error('❌ 사용자 업데이트 오류:', updateError)
-          return false
-        }
-
-        finalUser = updatedUser
+        console.log('✅ 기존 사용자 발견:', existingUser)
+        finalUser = existingUser
       } else {
         console.log('🆕 새 사용자 생성')
         
-        // 새 사용자 생성
+        // 3. 새 사용자 생성
         const { data: newUser, error: createError } = await supabase
           .from('users')
           .insert([userData])
@@ -169,16 +214,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log('✅ 최종 사용자 정보:', finalUser)
-
-      // 상태 업데이트
       setUser(finalUser)
-      
-      // 로컬 스토리지에 카카오 정보 저장 (세션 유지용)
-      localStorage.setItem('kakaoUser', JSON.stringify({
-        ...kakaoUser,
-        id: finalUser.id,
-        kakao_id: finalUser.kakao_id
-      }))
+
+      // 4. 로컬 스토리지에 카카오 세션 저장 (세션 복원용)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kakaoUser', JSON.stringify({
+          ...kakaoUser,
+          id: finalUser.id,
+          kakao_id: finalUser.kakao_id,
+          nickname: finalUser.nickname,
+          email: finalUser.email
+        }))
+      }
+
+      // 5. 세션 상태 설정
+      setSession({
+        access_token: 'kakao_token',
+        refresh_token: 'kakao_refresh',
+        expires_in: 3600,
+        expires_at: Date.now() + 3600000,
+        token_type: 'bearer',
+        user: {
+          id: finalUser.id,
+          email: finalUser.email,
+          user_metadata: { kakao_id: finalUser.kakao_id },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: finalUser.created_at,
+          role: 'authenticated',
+          updated_at: finalUser.updated_at
+        }
+      })
 
       console.log('🎉 카카오 로그인 처리 완료!')
       return true
@@ -192,29 +258,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       // 로컬 스토리지 정리
-      localStorage.removeItem('kakaoUser')
-      localStorage.removeItem('cached_income_records')
-      localStorage.removeItem('userIncomePrivate')
-      localStorage.removeItem('userPlatforms')
-      localStorage.removeItem('userIncomeRecords')
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('kakaoUser')
+      }
       
       // 상태 초기화
       setUser(null)
+      setSession(null)
       
-      console.log('✅ 로그아웃 완료 - 모든 데이터 정리됨')
+      console.log('✅ 로그아웃 완료 - 모든 세션 데이터 정리됨')
     } catch (error) {
       console.error('❌ 로그아웃 오류:', error)
     }
   }
 
-  // Vercel 호환성을 위한 더미 함수들
+  // 카카오 로그인 시작 함수
   const signIn = async (email: string, password: string) => {
     if (email === 'kakao') {
       try {
         const clientId = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID
-        const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI || 'http://localhost:3001/auth/callback'
+        const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI
         
-        const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`
+        if (!clientId || !redirectUri) {
+          console.error('❌ 카카오 환경변수 누락:', { clientId: !!clientId, redirectUri: !!redirectUri })
+          return { data: null, error: new Error('카카오 로그인 설정이 누락되었습니다.') }
+        }
+        
+        const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`
         
         console.log('🔗 카카오 로그인 URL:', kakaoAuthUrl)
         window.location.href = kakaoAuthUrl
@@ -240,8 +310,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
+    session,
     isLoading,
     loading: isLoading,
+    setUser,
     signOut,
     signIn,
     signUp,

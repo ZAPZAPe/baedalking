@@ -30,22 +30,23 @@ export async function GET(request: NextRequest) {
         break
     }
 
-    // 사용자별 수익 합계 계산
+    // 사용자별 수익 합계 계산 (수익 비공개 사용자 제외)
     const { data: earnings, error } = await supabase
       .from('earnings')
       .select(`
         user_id,
-        amount,
+        total_amount,
         platform,
         users!inner (
           id,
           nickname,
           region,
-          avatar_config
+          avatar_config,
+          is_income_private
         )
       `)
       .gte('date', startDate)
-      .order('amount', { ascending: false })
+      .order('total_amount', { ascending: false })
 
     if (error) {
       console.error('랭킹 조회 오류:', error)
@@ -55,15 +56,22 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 사용자별 총 수익 및 건수 계산
+    // 사용자별 총 수익 및 건수 계산 (수익 비공개 사용자 제외)
     const userIncomes = new Map()
     const userCounts = new Map()
     const userInfo = new Map()
     const userPlatforms = new Map()
+    let excludedPrivateUsers = 0
 
     earnings?.forEach(earning => {
       const userId = earning.user_id
       const userProfile = Array.isArray(earning.users) ? earning.users[0] : earning.users
+      
+      // 수익 비공개 사용자는 랭킹에서 제외
+      if (userProfile?.is_income_private) {
+        excludedPrivateUsers++
+        return
+      }
       
       if (!userIncomes.has(userId)) {
         userIncomes.set(userId, 0)
@@ -72,12 +80,14 @@ export async function GET(request: NextRequest) {
         userPlatforms.set(userId, new Set())
       }
       
-      userIncomes.set(userId, userIncomes.get(userId) + earning.amount)
+      userIncomes.set(userId, userIncomes.get(userId) + earning.total_amount)
       userCounts.set(userId, userCounts.get(userId) + 1)
       if (earning.platform) {
         userPlatforms.get(userId).add(earning.platform)
       }
     })
+
+    console.log(`📊 랭킹 계산: 총 ${earnings?.length || 0}건, 비공개 사용자 ${excludedPrivateUsers}명 제외, 최종 ${userIncomes.size}명`)
 
     // 랭킹 생성
     const rankings = Array.from(userIncomes.entries())

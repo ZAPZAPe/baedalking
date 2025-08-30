@@ -72,21 +72,15 @@ export default function PixelButton({
   const sizeStyles = {
     sm: {
       padding: 'py-2 px-3',
-      text: 'text-xs',
-      dot: 'w-1.5 h-1.5',
-      gap: 'gap-1'
+      text: 'text-xs'
     },
     md: {
       padding: 'py-3 px-4',
-      text: 'text-sm sm:text-base',
-      dot: 'w-2.5 h-2.5 sm:w-3 sm:h-3',
-      gap: 'gap-1.5 sm:gap-2'
+      text: 'text-sm sm:text-base'
     },
     lg: {
       padding: 'py-4 px-6',
-      text: 'text-base sm:text-lg',
-      dot: 'w-3 h-3 sm:w-4 sm:h-4',
-      gap: 'gap-2 sm:gap-3'
+      text: 'text-base sm:text-lg'
     }
   }
 
@@ -125,17 +119,9 @@ export default function PixelButton({
         boxShadow: `0 0 15px ${disabledStyles.shadow}`
       }}
     >
-      <div className={`flex items-center justify-center ${sizeStyle.gap}`}>
-        <div className={`${sizeStyle.dot} ${disabledStyles.dotColor} border border-white`} style={{borderRadius: '1px'}}></div>
+      <div className="flex items-center justify-center">
         <span className={sizeStyle.text}>{children}</span>
-        <div className={`${sizeStyle.dot} ${disabledStyles.dotColor} border border-white`} style={{borderRadius: '1px'}}></div>
       </div>
-      
-      {/* 버튼 모서리 픽셀 도트 */}
-      <div className={`absolute top-1 left-1 w-1 h-1 ${disabledStyles.dotColor}`} style={{borderRadius: '1px'}}></div>
-      <div className={`absolute top-1 right-1 w-1 h-1 ${disabledStyles.dotColor}`} style={{borderRadius: '1px'}}></div>
-      <div className={`absolute bottom-1 left-1 w-1 h-1 ${disabledStyles.dotColor}`} style={{borderRadius: '1px'}}></div>
-      <div className={`absolute bottom-1 right-1 w-1 h-1 ${disabledStyles.dotColor}`} style={{borderRadius: '1px'}}></div>
     </button>
   )
 }

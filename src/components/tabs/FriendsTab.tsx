@@ -2,47 +2,127 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserProfile, Friendship } from '@/types/social'
+import { UserProfile, Friendship, FriendData } from '@/types/social'
 
 interface FriendsTabProps {
   currentUserId: string
   setShowFriendDetail: (show: boolean) => void
   setSelectedFriend: (friend: any) => void
   onShowUserProfile: (userProfile: any) => void
-  friendRequests: { id: number; name: string; level: number; message: string }[]
-  setFriendRequests: (requests: { id: number; name: string; level: number; message: string }[]) => void
+  friendRequests: { id: number | string; name: string; level: number; message: string; friendId?: string }[]
+  setFriendRequests: (requests: { id: number | string; name: string; level: number; message: string; friendId?: string }[]) => void
 }
 
-export default function FriendsTab({ currentUserId, setShowFriendDetail, setSelectedFriend, onShowUserProfile, friendRequests, setFriendRequests }: FriendsTabProps) {
+export default function FriendsTab({ currentUserId, setShowFriendDetail, setSelectedFriend, onShowUserProfile, friendRequests: initialFriendRequests, setFriendRequests }: FriendsTabProps) {
   const router = useRouter()
-  const [friends, setFriends] = useState<Friendship[]>([])
+  const [friends, setFriends] = useState<FriendData[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [activeView, setActiveView] = useState<'friends' | 'requests' | 'search'>('friends')
+  const [friendRequests, setLocalFriendRequests] = useState<{ id: number | string; name: string; level: number; message: string; friendId?: string }[]>([])
   
   // 친구 목록 검색 및 페이지네이션
   const [friendSearchQuery, setFriendSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const friendsPerPage = 10
 
-  // 친구 목록 가져오기
+  // 친구 목록 및 친구 요청 가져오기
   useEffect(() => {
     loadFriends()
+    loadFriendRequests()
+    
+    // 친구 요청만 30초마다 새로고침 (친구 목록은 제외 - 자주 변하지 않음)
+    const interval = setInterval(() => {
+      console.log('자동 새로고침 실행 - 친구 요청만')
+      loadFriendRequests()
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [currentUserId])
+
+  // 탭 변경 시 필요한 데이터만 새로고침
+  useEffect(() => {
+    console.log('탭 변경 감지:', activeView)
+    if (activeView === 'requests') {
+      loadFriendRequests() // 친구 요청 탭에서는 요청만 새로고침
+    }
+    // 친구 목록은 탭 변경 시 새로고침하지 않음 (불필요)
+  }, [activeView])
+
+  // 브라우저 탭 포커스 시 친구 요청만 새로고침
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('브라우저 탭 포커스 - 친구 요청만 새로고침')
+      loadFriendRequests() // 친구 요청만 새로고침
+    }
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('페이지 가시성 변경 - 친구 요청만 새로고침')
+        loadFriendRequests() // 친구 요청만 새로고침
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   const loadFriends = async () => {
     try {
-      const response = await fetch(`/api/friends?userId=${currentUserId}`)
+      console.log('친구 목록 로딩 시작 - userId:', currentUserId)
+      const response = await fetch(`/api/friends?userId=${currentUserId}&status=accepted`)
       const data = await response.json()
       
+      console.log('친구 목록 API 응답:', { response: response.ok, data })
+      
       if (response.ok && data.friends) {
+        console.log('친구 목록 설정:', data.friends)
         setFriends(data.friends)
       } else {
+        console.log('친구 목록 없음 또는 에러')
         setFriends([])
       }
     } catch (error) {
       console.error('친구 목록 로딩 오류:', error)
       setFriends([])
+    }
+  }
+
+  // 받은 친구 요청 목록 가져오기
+  const loadFriendRequests = async () => {
+    try {
+      const response = await fetch(`/api/friends?userId=${currentUserId}&status=pending`)
+      const data = await response.json()
+      
+      if (response.ok && data.friends) {
+        // 내가 받은 친구요청만 필터링 (receiverId가 나인 경우)
+        const receivedRequests = data.friends
+          .filter((req: any) => req.receiverId === currentUserId)
+          .map((req: any) => ({
+            id: req.id, // friendship ID 사용
+            name: req.requesterNickname || '배달킹',
+            level: 1, // 기본값
+            message: '친구가 되고 싶어요!',
+            friendId: req.requesterId // 요청자 ID 저장
+          }))
+        
+        console.log('받은 친구요청 (필터링됨):', receivedRequests)
+        console.log('전체 pending 친구관계:', data.friends)
+        setLocalFriendRequests(receivedRequests)
+        setFriendRequests(receivedRequests) // 상위 컴포넌트도 업데이트
+      } else {
+        setLocalFriendRequests([])
+        setFriendRequests([])
+      }
+    } catch (error) {
+      console.error('친구 요청 로딩 오류:', error)
+      setLocalFriendRequests([])
+      setFriendRequests([])
     }
   }
 
@@ -71,25 +151,55 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
   }
 
   // 친구 상세보기 열기
-  const handleOpenFriendDetail = (friendship: any) => {
-    // UserProfileModal을 위한 사용자 프로필 데이터 생성
-    const userProfile = {
-      id: friendship.friendId || friendship.id,
-      nickname: friendship.nickname || '배달킹',
-      region: friendship.region || '서울특별시',
-      income: 0, // 기본값, 실제로는 API에서 가져와야 함
-      count: 0, // 기본값, 실제로는 API에서 가져와야 함
-      platforms: [], // 기본값, 실제로는 API에서 가져와야 함
-      minihomeId: friendship.friendId || friendship.id
+  const handleOpenFriendDetail = async (friendship: any) => {
+    try {
+      console.log('친구 상세보기 로딩 시작:', friendship)
+      
+      // 실제 사용자 데이터 API 호출
+      const userId = friendship.friendId || friendship.id
+      console.log('친구 데이터 요청 userId:', userId, 'friendship:', friendship)
+      const response = await fetch(`/api/users/${userId}`)
+      const data = await response.json()
+      
+      if (response.ok && data.user) {
+        console.log('친구 상세 데이터 로드 완료:', data.user)
+        onShowUserProfile(data.user)
+      } else {
+        console.error('친구 데이터 로드 실패:', data.error)
+        // 폴백으로 기본 데이터 사용
+        const userProfile = {
+          id: friendship.friendId || friendship.id,
+          nickname: friendship.nickname || '배달킹',
+          region: friendship.region || '서울특별시',
+          income: 0,
+          count: 0,
+          platforms: [],
+          isIncomePrivate: false,
+          minihomeId: friendship.friendId || friendship.id
+        }
+        onShowUserProfile(userProfile)
+      }
+    } catch (error) {
+      console.error('친구 상세보기 API 오류:', error)
+      // 폴백으로 기본 데이터 사용
+      const userProfile = {
+        id: friendship.friendId || friendship.id,
+        nickname: friendship.nickname || '배달킹',
+        region: friendship.region || '서울특별시',
+        income: 0,
+        count: 0,
+        platforms: [],
+        isIncomePrivate: false,
+        minihomeId: friendship.friendId || friendship.id
+      }
+      onShowUserProfile(userProfile)
     }
-    
-    onShowUserProfile(userProfile)
   }
 
 
 
   // 친구 요청 수락
-  const handleAcceptFriend = async (requestId: number) => {
+  const handleAcceptFriend = async (requestId: number | string) => {
     try {
       const response = await fetch(`/api/friends/${requestId}`, {
         method: 'PUT',
@@ -99,21 +209,25 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
         body: JSON.stringify({ action: 'accept' }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        // 친구 요청 목록에서 제거
-        setFriendRequests(friendRequests.filter(req => req.id !== requestId))
-        // 친구 목록 새로고침
+        alert(data.message || '친구 요청을 수락했습니다!')
+        // 친구 요청 목록 새로고침
+        loadFriendRequests()
+        // 친구 목록 새로고침 (수락 후에는 친구가 추가되므로 필요)
         loadFriends()
       } else {
-        console.error('친구 요청 수락 실패')
+        alert(data.error || '친구 요청 수락에 실패했습니다.')
       }
     } catch (error) {
       console.error('친구 요청 수락 오류:', error)
+      alert('친구 요청 수락 중 오류가 발생했습니다.')
     }
   }
 
   // 친구 요청 거절
-  const handleRejectFriend = async (requestId: number) => {
+  const handleRejectFriend = async (requestId: number | string) => {
     try {
       const response = await fetch(`/api/friends/${requestId}`, {
         method: 'PUT',
@@ -123,14 +237,18 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
         body: JSON.stringify({ action: 'reject' }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        // 친구 요청 목록에서 제거
-        setFriendRequests(friendRequests.filter(req => req.id !== requestId))
+        alert(data.message || '친구 요청을 거절했습니다.')
+        // 친구 요청 목록 새로고침
+        loadFriendRequests()
       } else {
-        console.error('친구 요청 거절 실패')
+        alert(data.error || '친구 요청 거절에 실패했습니다.')
       }
     } catch (error) {
       console.error('친구 요청 거절 오류:', error)
+      alert('친구 요청 거절 중 오류가 발생했습니다.')
     }
   }
 
@@ -156,6 +274,8 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
         setSearchResults(prev => prev.map(user => 
           user.id === userId ? { ...user, friendStatus: 'pending_sent' } : user
         ))
+        // 친구 요청 목록만 새로고침
+        loadFriendRequests()
       } else {
         alert(data.error || '친구 요청에 실패했습니다.')
       }
@@ -165,18 +285,44 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
     }
   }
 
+  // 친구 삭제
+  const handleDeleteFriend = async (friendshipId: string, friendNickname: string) => {
+    if (!confirm(`정말로 '${friendNickname}'님을 친구에서 삭제하시겠습니까?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/friends/${friendshipId}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert(data.message || '친구를 삭제했습니다.')
+        // 친구 목록 새로고침 (삭제 후에는 새로고침 필요)
+        loadFriends()
+      } else {
+        alert(data.error || '친구 삭제에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('친구 삭제 오류:', error)
+      alert('친구 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
         // 미니홈피 방문
       const handleVisitMinihome = (minihomeId: string) => {
         console.log('미니홈피 방문 시도:', minihomeId)
         try {
           // 미니홈피 페이지로 이동
-          router.push(`/minihompy/${minihomeId}`)
+          router.push(`/garage/${minihomeId}`)
           console.log('라우터 푸시 완료')
         } catch (error) {
           console.error('라우터 푸시 에러:', error)
           // 폴백: window.location.href 사용
           console.log('폴백 방법 사용: window.location.href')
-          window.location.href = `/minihompy/${minihomeId}`
+          window.location.href = `/garage/${minihomeId}`
         }
       }
 
@@ -321,36 +467,63 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
             
             {/* 친구 검색 */}
             <div className="mb-4">
-              <input
-                type="text"
-                placeholder="친구 검색..."
-                value={friendSearchQuery}
-                onChange={(e) => setFriendSearchQuery(e.target.value)}
-                className="w-full bg-[#1a202c] border border-[#00ff88]/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-[#00ff88] focus:outline-none font-mono"
-                style={{borderRadius: '4px'}}
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="친구 검색..."
+                  value={friendSearchQuery}
+                  onChange={(e) => setFriendSearchQuery(e.target.value)}
+                  className="flex-1 bg-[#1a202c] border border-[#00ff88]/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:border-[#00ff88] focus:outline-none font-mono text-sm"
+                  style={{borderRadius: '4px'}}
+                />
+                <button
+                  onClick={() => {
+                    // 친구 검색 로직 (필터링은 이미 실시간으로 작동)
+                    console.log('친구 목록에서 검색:', friendSearchQuery)
+                    setCurrentPage(1) // 검색 시 첫 페이지로 이동
+                  }}
+                  className="bg-[#00ff88] hover:bg-[#00cc6a] text-black font-bold py-2 px-4 rounded-lg transition-all duration-200 font-mono text-sm"
+                  style={{borderRadius: '4px'}}
+                >
+                  검색
+                </button>
+              </div>
             </div>
             
             {friends.length === 0 ? (
-              <div className="text-center py-8 text-gray-400 font-mono bg-[#1a202c]/30 rounded-lg border border-[#00ff88]/20">
-                <p>아직 친구가 없습니다.</p>
-                <p className="text-sm mt-2">친구 찾기로 새로운 친구를 만들어보세요!</p>
+              <div className="text-center py-6 text-gray-400 font-mono bg-[#1a202c]/30 rounded-lg border border-[#00ff88]/20">
+                <p className="text-sm">아직 친구가 없습니다.</p>
+                <p className="text-xs mt-2">친구 찾기로 새로운 친구를 만들어보세요!</p>
               </div>
             ) : (
               <>
                 <div className="space-y-2">
                   {friends
                     .filter(friendship => 
-                      friendship.friend?.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
+                      friendship.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
                     )
                     .slice((currentPage - 1) * friendsPerPage, currentPage * friendsPerPage)
                     .map((friendship) => (
-                      <div key={friendship.id} className="bg-[#1a202c]/60 border-2 border-[#00ff88]/30 p-3 relative cursor-pointer hover:border-[#00ff88]/50 transition-all duration-200" 
-                           style={{borderRadius: '4px'}}
-                           onClick={() => handleOpenFriendDetail(friendship)}>
+                      <div key={friendship.id} className="bg-[#1a202c]/60 border-2 border-[#00ff88]/30 p-3 relative hover:border-[#00ff88]/50 transition-all duration-200" 
+                           style={{borderRadius: '4px'}}>
                         <div className="flex items-center justify-between">
-                          <p className="text-white font-bold font-mono text-sm">{friendship.friend?.nickname}</p>
-                          <div className="text-[#00ff88] text-sm">▶</div>
+                          <div 
+                            className="flex-1 cursor-pointer hover:text-[#00ff88] transition-colors duration-200"
+                            onClick={() => handleOpenFriendDetail(friendship)}
+                          >
+                            <p className="text-white font-bold font-mono text-sm">{friendship.nickname || '배달킹'}</p>
+                            <p className="text-gray-400 text-xs font-mono">{friendship.region || '서울'}</p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteFriend(friendship.id, friendship.nickname || '배달킹')
+                            }}
+                            className="bg-[#ff6b6b] hover:bg-[#ff5252] text-white font-bold py-1 px-2 rounded-lg transition-all duration-200 font-mono text-xs"
+                            style={{borderRadius: '4px'}}
+                          >
+                            삭제
+                          </button>
                         </div>
                         
                         {/* 픽셀 도트들 */}
@@ -364,7 +537,7 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
                 
                 {/* 페이지네이션 */}
                 {Math.ceil(friends.filter(friendship => 
-                  friendship.friend?.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
+                  friendship.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
                 ).length / friendsPerPage) > 1 && (
                   <div className="flex justify-center items-center gap-2 mt-4">
                     <button
@@ -377,15 +550,15 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
                     </button>
                     <span className="text-gray-400 font-mono text-sm">
                       {currentPage} / {Math.ceil(friends.filter(friendship => 
-                        friendship.friend?.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
+                        friendship.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
                       ).length / friendsPerPage)}
                     </span>
                     <button
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(friends.filter(friendship => 
-                        friendship.friend?.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
+                        friendship.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
                       ).length / friendsPerPage)))}
                       disabled={currentPage >= Math.ceil(friends.filter(friendship => 
-                        friendship.friend?.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
+                        friendship.nickname?.toLowerCase().includes(friendSearchQuery.toLowerCase())
                       ).length / friendsPerPage)}
                       className="bg-[#1a202c] border border-[#00ff88]/30 text-[#00ff88] px-3 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-mono"
                       style={{borderRadius: '4px'}}
@@ -420,12 +593,19 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
                 imageRendering: 'pixelated'
               }}
             >
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-between">
                 <h3 className="text-white font-bold text-base font-mono" style={{
                   imageRendering: 'pixelated'
                 }}>
                   친구 요청 ({friendRequests.length})
                 </h3>
+                <button
+                  onClick={loadFriendRequests}
+                  className="bg-[#ff6b6b] hover:bg-[#ff5252] text-white font-bold py-1 px-2 rounded-lg transition-all duration-200 font-mono text-xs"
+                  style={{borderRadius: '4px'}}
+                >
+                  새로고침
+                </button>
               </div>
               
               {/* 픽셀 도트들 */}
@@ -436,9 +616,9 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
             </div>
             
             {friendRequests.length === 0 ? (
-              <div className="text-center py-8 text-gray-400 font-mono bg-[#1a202c]/30 rounded-lg border border-[#ff6b6b]/20">
-                <p>새로운 친구 요청이 없습니다.</p>
-                <p className="text-sm mt-2">친구 찾기로 새로운 친구를 찾아보세요!</p>
+              <div className="text-center py-6 text-gray-400 font-mono bg-[#1a202c]/30 rounded-lg border border-[#ff6b6b]/20">
+                <p className="text-sm">새로운 친구 요청이 없습니다.</p>
+                <p className="text-xs mt-2">친구 찾기로 새로운 친구를 찾아보세요!</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -596,3 +776,4 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
     </div>
   )
 }
+

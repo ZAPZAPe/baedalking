@@ -40,6 +40,7 @@ export interface UserProfile {
 export interface IncomeRecord {
   id: string
   platform: string
+  // Supabase 필드명 (백엔드 호환)
   delivery_count: number
   delivery_amount: number
   mission_amount: number
@@ -47,6 +48,10 @@ export interface IncomeRecord {
   date: string
   created_at: string
   user_id?: string
+  // DailyView에서 사용하는 필드명 (프론트엔드 호환)
+  count?: number
+  amount?: number
+  missionAmount?: number
 }
 
 export interface DailyIncomeData {

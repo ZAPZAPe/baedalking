@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 
 import { Platform } from '@/hooks/useAppState'
+import { useServerTime } from '@/hooks/useServerTime'
 import DailyView from './income/DailyView'
 import WeeklyView from './income/WeeklyView'
 import MonthlyView from './income/MonthlyView'
@@ -60,15 +61,19 @@ export default function IncomeTab({
   onEditRecord,
   onDeleteRecord
 }: IncomeTabProps) {
+  // 서버 시간 사용
+  const { serverTime } = useServerTime()
+  
   const [activeView, setActiveView] = useState<'daily' | 'weekly' | 'monthly'>('daily')
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
 
 
 
-  // 오늘 날짜 (로컬 시간 기준)
-  const today = new Date()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  // 오늘 날짜 (서버 시간 기준)
+  const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
+  const todayStr = serverTime ? serverTime.koreaDate : 
+                   `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   
   // 실제 수입 기록만 사용 (테스트 데이터 제거)
   const allRecords = incomeRecords
@@ -87,7 +92,7 @@ export default function IncomeTab({
   const todayDelivery = todayRecords.reduce((sum, record) => sum + (record.amount || 0), 0)
   const todayMission = todayRecords.reduce((sum, record) => sum + (record.missionAmount || 0), 0)
   
-  // 어제 데이터
+  // 어제 데이터 (서버 시간 기준)
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
   const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`

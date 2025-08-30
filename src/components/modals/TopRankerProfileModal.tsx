@@ -31,7 +31,7 @@ export default function UserProfileModal({
 
   const handleVisitMinihome = () => {
     // 미니홈피 방문
-    router.push(`/minihompy/${user.id}`)
+    router.push(`/garage/${user.id}`)
     onClose() // 모달 닫기
   }
 

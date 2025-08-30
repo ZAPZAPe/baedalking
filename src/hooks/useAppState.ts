@@ -36,12 +36,43 @@ export interface User {
   daily_visitors: number
 }
 
+// 모달 타입 정의
+export type ModalType = 
+  | 'none'
+  | 'customize'
+  | 'income'
+  | 'incomeInput'
+  | 'headerCharacter'
+  | 'characterItem'
+  | 'vehicleItem'
+  | 'backgroundItem'
+  | 'goalSettings'
+  | 'platformSettings'
+  | 'incomeDetail'
+  | 'incomeEdit'
+  | 'friendDetail'
+  | 'topRankerProfile'
+  | 'gradeDetail'
+  | 'rankingDetail'
+  | 'privacyPolicy'
+  | 'termsOfService'
+  | 'friends'
+  | 'userProfile'
+  | 'guestbook'
+  | 'deleteAccount'
+
 export interface AppState {
   // 사용자 정보
   user: User | null
   setUser: (user: User | null) => void
   
-  // UI 상태들 (기존과 동일)
+  // 중앙화된 모달 관리
+  activeModal: ModalType
+  setActiveModal: (modal: ModalType) => void
+  openModal: (modal: ModalType) => void
+  closeModal: () => void
+  
+  // UI 상태들 (기존과 동일 - 하위 호환성 유지)
   currentEmotion: string
   setCurrentEmotion: (emotion: string) => void
   speechText: string
@@ -84,6 +115,7 @@ export interface AppState {
   setIncomeRecords: (records: IncomeRecord[]) => void
   loadIncomeRecords: () => Promise<void>
   saveIncomeRecord: (record: Omit<IncomeRecord, 'id' | 'created_at' | 'total_amount'>) => Promise<boolean>
+  deleteIncomeRecord: (recordId: string) => Promise<boolean>
   
   // 계산된 값들
   totalIncome: number
@@ -124,7 +156,7 @@ export interface AppState {
   dailyGoal: number
   weeklyGoal: number
   monthlyGoal: number
-  updateGoals: (daily: number, weekly: number, monthly: number) => void
+  updateGoals: (daily: number, weekly: number, monthly: number) => Promise<boolean>
   
   // 유틸리티 함수들
   getWeatherIcon: (condition: string) => string
@@ -137,7 +169,10 @@ export function useAppState(): AppState {
   // 🔥 핵심 변경: 사용자 정보 Supabase 중심
   const [user, setUser] = useState<User | null>(null)
   
-  // 기본 UI 상태들 (기존과 동일)
+  // 🆕 중앙화된 모달 관리
+  const [activeModal, setActiveModal] = useState<ModalType>('none')
+  
+  // 기본 UI 상태들 (기존과 동일 - 하위 호환성 유지)
   const [currentEmotion, setCurrentEmotion] = useState('happy')
   const [speechText, setSpeechText] = useState('안녕하세요!')
   const [showCustomizePanel, setShowCustomizePanel] = useState(false)
@@ -205,9 +240,12 @@ export function useAppState(): AppState {
       const formattedRecords: IncomeRecord[] = data.map(record => ({
         id: record.id,
         platform: record.platform,
-        delivery_count: record.delivery_count,
-        delivery_amount: record.delivery_amount,
-        mission_amount: record.mission_amount,
+        count: record.delivery_count, // DailyView에서 사용하는 필드명으로 매핑
+        amount: record.delivery_amount, // DailyView에서 사용하는 필드명으로 매핑
+        missionAmount: record.mission_amount, // DailyView에서 사용하는 필드명으로 매핑
+        delivery_count: record.delivery_count, // 기존 호환성 유지
+        delivery_amount: record.delivery_amount, // 기존 호환성 유지
+        mission_amount: record.mission_amount, // 기존 호환성 유지
         total_amount: record.total_amount,
         date: record.date,
         created_at: record.created_at
@@ -215,28 +253,16 @@ export function useAppState(): AppState {
       
       setIncomeRecords(formattedRecords)
       console.log('✅ 수입 기록 로드 완료:', formattedRecords.length, '건')
-      
-      // 로컬 스토리지에 캐싱
-      localStorage.setItem('cached_income_records', JSON.stringify(formattedRecords))
+      console.log('📊 로드된 수입 기록:', formattedRecords)
+      console.log('💰 총 수입:', formattedRecords.reduce((sum, r) => sum + r.total_amount, 0))
       
     } catch (error) {
-      console.error('수입 기록 로드 실패:', error)
-      
-      // 실패시 로컬 캐시에서 로드
-      try {
-        const cached = localStorage.getItem('cached_income_records')
-        if (cached) {
-          const cachedRecords = JSON.parse(cached)
-          setIncomeRecords(cachedRecords)
-          console.log('📱 캐시된 수입 기록 로드:', cachedRecords.length, '건')
-        }
-      } catch (cacheError) {
-        console.error('캐시 로드 실패:', cacheError)
-      }
+      console.error('❌ 수입 기록 로드 실패:', error)
+      // localStorage 캐싱 제거 - Supabase만 사용
     }
   }
 
-  // 🔥 핵심 변경: Supabase에 수입 기록 저장
+  // 🔥 핵심 변경: Supabase에 수입 기록 저장 (중복 방지)
   const saveIncomeRecord = async (record: Omit<IncomeRecord, 'id' | 'created_at' | 'total_amount'>): Promise<boolean> => {
     if (!user?.id) {
       console.error('사용자 정보가 없습니다.')
@@ -244,18 +270,57 @@ export function useAppState(): AppState {
     }
     
     try {
-      const { data, error } = await supabase
+      // 1. 먼저 같은 날짜 + 같은 플랫폼 데이터가 있는지 확인
+      const { data: existingData, error: checkError } = await supabase
         .from('earnings')
-        .insert({
-          user_id: user.id,
-          platform: record.platform,
-          delivery_count: record.delivery_count,
-          delivery_amount: record.delivery_amount,
-          mission_amount: record.mission_amount,
-          date: record.date
-        })
-        .select()
-        .single()
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('platform', record.platform)
+        .eq('date', record.date)
+        .maybeSingle()
+      
+      if (checkError) {
+        console.error('기존 데이터 확인 오류:', checkError)
+        return false
+      }
+      
+      let data, error
+      
+      if (existingData) {
+        // 2. 기존 데이터가 있으면 업데이트
+        console.log('🔄 기존 수입 기록 업데이트:', existingData.id)
+        const updateResult = await supabase
+          .from('earnings')
+          .update({
+            delivery_count: record.delivery_count,
+            delivery_amount: record.delivery_amount,
+            mission_amount: record.mission_amount,
+          })
+          .eq('id', existingData.id)
+          .select()
+          .single()
+        
+        data = updateResult.data
+        error = updateResult.error
+      } else {
+        // 3. 기존 데이터가 없으면 새로 생성
+        console.log('✨ 새 수입 기록 생성')
+        const insertResult = await supabase
+          .from('earnings')
+          .insert({
+            user_id: user.id,
+            platform: record.platform,
+            delivery_count: record.delivery_count,
+            delivery_amount: record.delivery_amount,
+            mission_amount: record.mission_amount,
+            date: record.date
+          })
+          .select()
+          .single()
+        
+        data = insertResult.data
+        error = insertResult.error
+      }
       
       if (error) {
         console.error('수입 기록 저장 오류:', error)
@@ -264,8 +329,14 @@ export function useAppState(): AppState {
       
       console.log('✅ 수입 기록 저장 완료:', data)
       
-      // 수입 기록 다시 로드
+      // 수입 기록 다시 로드 (강제로 여러 번 실행)
       await loadIncomeRecords()
+      
+      // 0.5초 후 한 번 더 로드 (네트워크 지연 대비)
+      setTimeout(async () => {
+        await loadIncomeRecords()
+        console.log('🔄 추가 데이터 로드 완료')
+      }, 500)
       
       // 포인트 추가
       const earnedPoints = (record.delivery_count * 5) + Math.floor((record.delivery_amount + record.mission_amount) * 0.01)
@@ -279,11 +350,40 @@ export function useAppState(): AppState {
     }
   }
 
+  // 🗑️ 수입 기록 삭제
+  const deleteIncomeRecord = async (recordId: string): Promise<boolean> => {
+    if (!user?.id) {
+      console.error('사용자 정보가 없습니다.')
+      return false
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('earnings')
+        .delete()
+        .eq('id', recordId)
+        .eq('user_id', user.id) // 보안: 본인 데이터만 삭제 가능
+      
+      if (error) {
+        console.error('수입 기록 삭제 오류:', error)
+        return false
+      }
+      
+      console.log('✅ 수입 기록 삭제 완료:', recordId)
+      
+      // 수입 기록 다시 로드
+      await loadIncomeRecords()
+      
+      return true
+      
+    } catch (error) {
+      console.error('수입 기록 삭제 실패:', error)
+      return false
+    }
+  }
+
   // 계산된 값들
   const today = new Date().toISOString().split('T')[0]
-  const todayRecords = incomeRecords.filter(record => record.date === today)
-  const todayIncome = todayRecords.reduce((sum, record) => sum + record.total_amount, 0)
-  const totalIncome = incomeRecords.reduce((sum, record) => sum + record.total_amount, 0)
 
   // 클라이언트 사이드 확인
   useEffect(() => {
@@ -308,15 +408,36 @@ export function useAppState(): AppState {
   }, [user?.id])
 
   // 플랫폼 관리 함수들
-  const togglePlatform = (platformId: string) => {
-    setPlatforms(prev => prev.map(p => 
+  const togglePlatform = async (platformId: string) => {
+    if (!user?.id) return
+
+    const updatedPlatforms = platforms.map(p => 
       p.id === platformId ? { ...p, isActive: !p.isActive } : p
-    ))
+    )
+    
+    setPlatforms(updatedPlatforms)
+    
+    // 서버에 저장
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ platforms: updatedPlatforms })
+        .eq('id', user.id)
+
+      if (error) {
+        console.error('플랫폼 설정 저장 실패:', error)
+      } else {
+        console.log('✅ 플랫폼 설정이 서버에 저장되었습니다!')
+      }
+    } catch (error) {
+      console.error('플랫폼 설정 저장 중 오류:', error)
+    }
   }
 
-  const addCustomPlatform = (name: string) => {
+  const addCustomPlatform = async (name: string) => {
     if (platforms.length >= 5) return
-    
+    if (!user?.id) return
+
     const newPlatform: Platform = {
       id: `custom_${Date.now()}`,
       name,
@@ -327,18 +448,91 @@ export function useAppState(): AppState {
       type: 'custom'
     }
     
-    setPlatforms(prev => [...prev, newPlatform])
+    const updatedPlatforms = [...platforms, newPlatform]
+    setPlatforms(updatedPlatforms)
+    
+    // 서버에 저장
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ platforms: updatedPlatforms })
+        .eq('id', user.id)
+
+      if (error) {
+        console.error('플랫폼 추가 저장 실패:', error)
+      } else {
+        console.log('✅ 플랫폼이 서버에 저장되었습니다!')
+      }
+    } catch (error) {
+      console.error('플랫폼 추가 저장 중 오류:', error)
+    }
   }
 
-  const removeCustomPlatform = (platformId: string) => {
-    setPlatforms(prev => prev.filter(p => p.id !== platformId))
+  const removeCustomPlatform = async (platformId: string) => {
+    if (!user?.id) return
+
+    const updatedPlatforms = platforms.filter(p => p.id !== platformId)
+    setPlatforms(updatedPlatforms)
+    
+    // 서버에 저장
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ platforms: updatedPlatforms })
+        .eq('id', user.id)
+
+      if (error) {
+        console.error('플랫폼 삭제 저장 실패:', error)
+      } else {
+        console.log('✅ 플랫폼 삭제가 서버에 저장되었습니다!')
+      }
+    } catch (error) {
+      console.error('플랫폼 삭제 저장 중 오류:', error)
+    }
   }
 
   // 목표 설정
-  const updateGoals = (daily: number, weekly: number, monthly: number) => {
-    setDailyGoal(daily)
-    setWeeklyGoal(weekly)
-    setMonthlyGoal(monthly)
+  const updateGoals = async (daily: number, weekly: number, monthly: number) => {
+    if (!user?.id) {
+      console.error('사용자 ID가 없어서 목표를 저장할 수 없습니다.')
+      return false
+    }
+
+    try {
+      // Supabase에 목표 업데이트
+      const { error } = await supabase
+        .from('users')
+        .update({
+          goals: {
+            daily,
+            weekly,
+            monthly
+          }
+        })
+        .eq('id', user.id)
+
+      if (error) {
+        console.error('목표 저장 실패:', error)
+        return false
+      }
+
+      // 로컬 상태 업데이트
+      setDailyGoal(daily)
+      setWeeklyGoal(weekly)
+      setMonthlyGoal(monthly)
+
+      // 사용자 정보도 업데이트
+      setUser(prev => prev ? {
+        ...prev,
+        goals: { daily, weekly, monthly }
+      } : null)
+
+      console.log('✅ 목표 설정이 서버에 저장되었습니다!')
+      return true
+    } catch (error) {
+      console.error('목표 저장 중 오류:', error)
+      return false
+    }
   }
 
   // 유틸리티 함수들 (기존과 동일)
@@ -371,20 +565,113 @@ export function useAppState(): AppState {
 
   const canAfford = (price: number) => totalPoints >= price
 
+  // 🆕 중앙화된 모달 관리 함수들
+  const openModal = (modal: ModalType) => {
+    // 기존 모달이 열려있으면 자동으로 닫고 새 모달 열기
+    setActiveModal(modal)
+    
+    // 하위 호환성을 위해 기존 상태들도 업데이트
+    setShowCustomizePanel(modal === 'customize')
+    setShowIncomePanel(modal === 'income')
+    setShowIncomeInputPanel(modal === 'incomeInput')
+    setShowHeaderCharacterPanel(modal === 'headerCharacter')
+    setShowCharacterItemPanel(modal === 'characterItem')
+    setShowVehicleItemPanel(modal === 'vehicleItem')
+    setShowBackgroundItemPanel(modal === 'backgroundItem')
+    
+    console.log(`🔄 모달 전환: ${activeModal} → ${modal}`)
+  }
+
+  const closeModal = () => {
+    setActiveModal('none')
+    
+    // 모든 모달 상태를 false로 설정
+    setShowCustomizePanel(false)
+    setShowIncomePanel(false)
+    setShowIncomeInputPanel(false)
+    setShowHeaderCharacterPanel(false)
+    setShowCharacterItemPanel(false)
+    setShowVehicleItemPanel(false)
+    setShowBackgroundItemPanel(false)
+    
+    console.log('❌ 모든 모달 닫음')
+  }
+
+  // 기존 setter들을 openModal과 연동 (하위 호환성)
+  const enhancedSetShowCustomizePanel = (show: boolean) => {
+    if (show) {
+      openModal('customize')
+    } else if (activeModal === 'customize') {
+      closeModal()
+    }
+  }
+
+  const enhancedSetShowIncomePanel = (show: boolean) => {
+    if (show) {
+      openModal('income')
+    } else if (activeModal === 'income') {
+      closeModal()
+    }
+  }
+
+  const enhancedSetShowIncomeInputPanel = (show: boolean) => {
+    if (show) {
+      openModal('incomeInput')
+    } else if (activeModal === 'incomeInput') {
+      closeModal()
+    }
+  }
+
+  const enhancedSetShowHeaderCharacterPanel = (show: boolean) => {
+    if (show) {
+      openModal('headerCharacter')
+    } else if (activeModal === 'headerCharacter') {
+      closeModal()
+    }
+  }
+
+  const enhancedSetShowCharacterItemPanel = (show: boolean) => {
+    if (show) {
+      openModal('characterItem')
+    } else if (activeModal === 'characterItem') {
+      closeModal()
+    }
+  }
+
+  const enhancedSetShowVehicleItemPanel = (show: boolean) => {
+    if (show) {
+      openModal('vehicleItem')
+    } else if (activeModal === 'vehicleItem') {
+      closeModal()
+    }
+  }
+
+  const enhancedSetShowBackgroundItemPanel = (show: boolean) => {
+    if (show) {
+      openModal('backgroundItem')
+    } else if (activeModal === 'backgroundItem') {
+      closeModal()
+    }
+  }
+
   return {
     // 사용자 정보
     user, setUser,
     
-    // UI 상태들
+    // 🆕 중앙화된 모달 관리
+    activeModal, setActiveModal,
+    openModal, closeModal,
+    
+    // UI 상태들 (enhanced 함수들로 대체)
     currentEmotion, setCurrentEmotion,
     speechText, setSpeechText,
-    showCustomizePanel, setShowCustomizePanel,
-    showIncomePanel, setShowIncomePanel,
-    showIncomeInputPanel, setShowIncomeInputPanel,
-    showHeaderCharacterPanel, setShowHeaderCharacterPanel,
-    showCharacterItemPanel, setShowCharacterItemPanel,
-    showVehicleItemPanel, setShowVehicleItemPanel,
-    showBackgroundItemPanel, setShowBackgroundItemPanel,
+    showCustomizePanel, setShowCustomizePanel: enhancedSetShowCustomizePanel,
+    showIncomePanel, setShowIncomePanel: enhancedSetShowIncomePanel,
+    showIncomeInputPanel, setShowIncomeInputPanel: enhancedSetShowIncomeInputPanel,
+    showHeaderCharacterPanel, setShowHeaderCharacterPanel: enhancedSetShowHeaderCharacterPanel,
+    showCharacterItemPanel, setShowCharacterItemPanel: enhancedSetShowCharacterItemPanel,
+    showVehicleItemPanel, setShowVehicleItemPanel: enhancedSetShowVehicleItemPanel,
+    showBackgroundItemPanel, setShowBackgroundItemPanel: enhancedSetShowBackgroundItemPanel,
     currentCharacterItem, setCurrentCharacterItem,
     currentVehicle, setCurrentVehicle,
     currentBackground, setCurrentBackground,
@@ -398,10 +685,9 @@ export function useAppState(): AppState {
     
     // 수입 기록 (Supabase 중심)
     incomeRecords, setIncomeRecords,
-    loadIncomeRecords, saveIncomeRecord,
+    loadIncomeRecords, saveIncomeRecord, deleteIncomeRecord,
     
-    // 계산된 값들
-    totalIncome, todayIncome,
+    // 계산된 값들 (홈에서 직접 계산)
     
     // 기타
     totalPoints, setTotalPoints,

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 
 // 시/도 목록
 const REGIONS = [
@@ -256,6 +257,7 @@ function GoalStep({
 
 export default function SetupPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -303,13 +305,10 @@ export default function SetupPage() {
     try {
       setIsLoading(true)
 
-      // 로컬 스토리지에서 사용자 정보 가져오기
-      const userJson = localStorage.getItem('kakaoUser')
-      if (!userJson) {
+      // useAuth에서 사용자 정보 가져오기
+      if (!user) {
         throw new Error('사용자 정보를 찾을 수 없습니다.')
       }
-
-      const user = JSON.parse(userJson)
 
       // 사용자 정보 업데이트
       const { error: updateError } = await supabase
@@ -355,7 +354,8 @@ export default function SetupPage() {
           monthly: monthlyGoal
         }
       }
-      localStorage.setItem('kakaoUser', JSON.stringify(updatedUser))
+      
+      // localStorage 사용 제거 - Supabase가 데이터 저장함
 
       // 메인 페이지로 이동
       router.push('/')

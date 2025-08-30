@@ -1,11 +1,13 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { Platform } from '@/hooks/useAppState'
 
 interface RankingTabProps {
   isVerified?: boolean
-  allRecords: any[]
+  todayIncome: number  // 홈에서 계산된 오늘 수입을 직접 받음
   dailyGoal: number
+  isIncomePrivate: boolean  // 수익 비공개 여부
   onShowGradeDetail: (grade: GradeInfo) => void
   onShowTopRankerProfile: (ranker: TopRanker) => void
   onShowRankingDetail: () => void
@@ -33,33 +35,17 @@ interface TopRanker {
   platforms: string[] // 수입 등록된 플랫폼들
 }
 
-export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, onShowTopRankerProfile, onShowRankingDetail, onTopRankersUpdate, onShowUserProfile }: RankingTabProps) {
-
-
-  // 오늘 일간 수입 계산
-  const getDailyIncome = () => {
-    if (!allRecords || allRecords.length === 0) return 0
-    
-    const today = new Date()
-    const todayStr = today.toISOString().split('T')[0]
-    
-    return allRecords
-      .filter(record => record.date === todayStr)
-      .reduce((total, record) => total + record.amount + record.missionAmount, 0)
-  }
-
-  // 실제 사용자 수입 계산
-  const myIncome = getDailyIncome()
-  // const myIncome = getDailyIncome() // 실제 데이터 사용 시 이 줄 사용
+export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, onShowGradeDetail, onShowTopRankerProfile, onShowRankingDetail, onTopRankersUpdate, onShowUserProfile }: RankingTabProps) {
+  // 홈에서 계산된 오늘 수입을 직접 사용
+  const myIncome = todayIncome
 
   // 등급별 정보 정의 - 수입 기반
   const grades: GradeInfo[] = [
-    { name: 'LEGEND', icon: '👑', color: '#ff6b35', minIncome: 300000, maxIncome: Infinity, description: '전설의 배달왕' },
-    { name: 'DIAMOND', icon: '💎', color: '#00d4ff', minIncome: 200000, maxIncome: 299999, description: '다이아몬드 배달왕' },
-    { name: 'PLATINUM', icon: '🥇', color: '#9c88ff', minIncome: 150000, maxIncome: 199999, description: '플래티넘 배달왕' },
-    { name: 'GOLD', icon: '🥈', color: '#ffd93d', minIncome: 100000, maxIncome: 149999, description: '골드 배달왕' },
-    { name: 'SILVER', icon: '🥉', color: '#c0c0c0', minIncome: 50000, maxIncome: 99999, description: '실버 배달왕' },
-    { name: 'BRONZE', icon: '🏅', color: '#cd7f32', minIncome: 0, maxIncome: 49999, description: '브론즈 배달왕' }
+    { name: 'DIAMOND', icon: '💎', color: '#b9f2ff', minIncome: 300000, maxIncome: Infinity, description: '레전드 배달러' },
+    { name: 'PLATINUM', icon: '🥇', color: '#e5e4e2', minIncome: 200000, maxIncome: 299999, description: '마스터 배달러' },
+    { name: 'GOLD', icon: '🥈', color: '#ffd700', minIncome: 100000, maxIncome: 199999, description: '전문 배달러' },
+    { name: 'SILVER', icon: '🥉', color: '#c0c0c0', minIncome: 50000, maxIncome: 99999, description: '경험 배달러' },
+    { name: 'BRONZE', icon: '🏅', color: '#cd7f32', minIncome: 0, maxIncome: 49999, description: '신입 배달러' }
   ]
 
   // 내 등급 찾기 (수입이 있을 때만)
@@ -68,14 +54,6 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
   // 상위 5명 랭킹 생성 (시뮬레이션)
   const generateTopRankers = (): TopRanker[] => {
     const baseIncome = myIncome * 1.5 // 내 수입보다 높은 수입으로 시작
-    const nicknames = ['배달왕김철수', '배달여신이영희', '스피드맨박민수', '정확맨최지영', '친절맨정수민']
-    const regions = [
-      '서울특별시 강남구',
-      '서울특별시 서초구', 
-      '서울특별시 마포구',
-      '서울특별시 종로구',
-      '서울특별시 용산구'
-    ]
     
     return Array.from({ length: 5 }, (_, index) => {
       // 랜덤하게 1~3개 플랫폼 선택
@@ -85,14 +63,21 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
         .sort(() => Math.random() - 0.5)
         .slice(0, platformCount)
       
+      // 랜덤 닉네임 생성
+      const randomNickname = `배달러${String.fromCharCode(65 + index)}` // A, B, C, D, E
+      
+      // 랜덤 지역 생성
+      const regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종']
+      const randomRegion = regions[Math.floor(Math.random() * regions.length)]
+      
       return {
         id: `top-ranker-${index + 1}`,
         rank: index + 1,
         income: Math.floor(baseIncome + (index * 50000) + Math.random() * 100000),
         count: Math.floor(15 + Math.random() * 20),
         platform: platforms[0], // 기존 호환성을 위해 유지
-        nickname: nicknames[index],
-        region: regions[index],
+        nickname: randomNickname,
+        region: randomRegion,
         platforms: platforms
       }
     })
@@ -111,29 +96,56 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
   useEffect(() => {
     const fetchRankings = async () => {
       try {
+        console.log('🔍 랭킹 데이터 가져오기 시작...')
         const response = await fetch('/api/rankings?period=daily&limit=5')
         const data = await response.json()
         
-        if (response.ok && data.rankings) {
-          const formattedRankers = data.rankings.map((ranking: any) => ({
-            id: ranking.user_id,
-            rank: ranking.rank,
-            income: ranking.total_income,
-            count: 0, // API에서 제공되지 않으면 0으로 설정
-            platform: '배민', // 기본값
-            nickname: ranking.nickname,
-            region: ranking.region,
-            platforms: ['배민'] // 기본값
-          }))
+        console.log('📊 API 응답:', { response: response.ok, data })
+        
+        if (response.ok && data.rankings && Array.isArray(data.rankings) && data.rankings.length > 0) {
+          console.log('✅ 실제 랭킹 데이터 사용:', data.rankings)
+          console.log('🔍 첫 번째 랭킹 데이터 상세:', JSON.stringify(data.rankings[0], null, 2))
+          
+          const formattedRankers = data.rankings.map((ranking: any, index: number) => {
+            console.log(`📋 랭킹 ${index + 1} 데이터:`, {
+              original: ranking,
+              formatted: {
+                id: ranking.user_id || ranking.id,
+                rank: ranking.rank || index + 1,
+                income: ranking.income || ranking.total_amount || 0,
+                count: ranking.count || ranking.delivery_count || 0,
+                platform: ranking.platform || '배민',
+                nickname: ranking.nickname || '알 수 없음',
+                region: ranking.region || '서울',
+                platforms: ranking.platforms || [ranking.platform || '배민']
+              }
+            })
+            
+            return {
+              id: ranking.user_id || ranking.id,
+              rank: ranking.rank || index + 1,
+              income: ranking.income || ranking.total_amount || 0,
+              count: ranking.count || ranking.delivery_count || 0,
+              platform: ranking.platform || '배민',
+              nickname: ranking.nickname || '알 수 없음',
+              region: ranking.region || '서울',
+              platforms: ranking.platforms || [ranking.platform || '배민']
+            }
+          })
+          
+          console.log('🎯 최종 포맷된 랭커들:', formattedRankers)
           setTopRankers(formattedRankers)
         } else {
-          // API 응답이 없으면 빈 배열
-          setTopRankers([])
+          console.log('⚠️ API 응답이 없거나 비어있음, 시뮬레이션 데이터 사용')
+          // API 응답이 없으면 시뮬레이션 데이터 생성
+          const simulationRankers = generateTopRankers()
+          setTopRankers(simulationRankers)
         }
       } catch (error) {
-        console.error('랭킹 데이터 로딩 오류:', error)
-        // 에러 시에도 빈 배열
-        setTopRankers([])
+        console.error('❌ 랭킹 데이터 로딩 오류:', error)
+        // 에러 시에도 시뮬레이션 데이터 사용
+        const simulationRankers = generateTopRankers()
+        setTopRankers(simulationRankers)
       } finally {
         setIsLoadingRanking(false)
       }
@@ -247,9 +259,9 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
           {/* 내 등급 */}
           <div 
             className={`bg-[#1a202c]/50 p-3 rounded-lg text-center border border-[#ffd93d]/30 relative transition-all duration-200 ${
-              myGrade ? 'cursor-pointer hover:bg-[#1a202c]/70' : 'cursor-not-allowed opacity-60'
+              myGrade && !isIncomePrivate ? 'cursor-pointer hover:bg-[#1a202c]/70' : 'cursor-not-allowed opacity-60'
             }`}
-            onClick={() => myGrade && handleShowGradeDetail(myGrade)}
+            onClick={() => myGrade && !isIncomePrivate && handleShowGradeDetail(myGrade)}
           >
             {/* 픽셀 도트들 */}
             <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
@@ -259,16 +271,16 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
             
             <div className="text-white text-xs font-mono font-bold mb-1">내 등급</div>
             <div className="text-sm font-bold font-mono text-[#ffd93d]">
-              {myGrade ? myGrade.name : '등급 없음'}
+              {isIncomePrivate ? '비공개' : (myGrade ? myGrade.name : '등급 없음')}
             </div>
           </div>
 
           {/* 내 순위 */}
           <div 
             className={`bg-[#1a202c]/50 p-3 rounded-lg text-center border border-[#ffd93d]/30 relative transition-all duration-200 ${
-              myGrade ? 'cursor-pointer hover:bg-[#1a202c]/70' : 'cursor-not-allowed opacity-60'
+              myGrade && !isIncomePrivate ? 'cursor-pointer hover:bg-[#1a202c]/70' : 'cursor-not-allowed opacity-60'
             }`}
-            onClick={() => myGrade && onShowRankingDetail()}
+            onClick={() => myGrade && !isIncomePrivate && onShowRankingDetail()}
           >
             {/* 픽셀 도트들 */}
             <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
@@ -278,13 +290,13 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
             
             <div className="text-white text-xs font-mono font-bold mb-1">내 순위</div>
             <div className="text-sm font-bold font-mono text-[#ffd93d]">
-              {myGrade ? `${Math.floor(Math.random() * 100) + 1}위` : '순위 없음'}
+              {isIncomePrivate ? '비공개' : (myGrade ? `${Math.floor(Math.random() * 100) + 1}위` : '순위 없음')}
             </div>
           </div>
         </div>
         
-        {/* 수입 미입력 시 안내 메시지 */}
-        {!myGrade && (
+        {/* 수입 미입력 또는 비공개 시 안내 메시지 */}
+        {(!myGrade || isIncomePrivate) && (
           <div className="text-center text-gray-400 text-xs font-mono bg-[#1a202c]/30 p-2 rounded-lg border border-[#ffd93d]/20 relative">
             {/* 픽셀 도트들 */}
             <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
@@ -292,7 +304,10 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
             <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
             <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
             
-            수입을 기록하고 순위를 확인해보세요
+            {isIncomePrivate 
+              ? <span>수익이 비공개로 설정되어 있습니다.<br/>프로필에서 공개 설정을 변경하세요.</span>
+              : '수입을 기록하고 순위를 확인해보세요'
+            }
           </div>
         )}
       </div>
@@ -356,12 +371,12 @@ export default function RankingTab({ allRecords, dailyGoal, onShowGradeDetail, o
                       onClick={() => handleShowTopRankerProfile(ranker)}
                       className="text-white font-bold text-sm sm:text-base font-mono hover:text-[#00d4ff] transition-colors duration-200 cursor-pointer"
                     >
-                      배달왕 {ranker.rank}호
+                      {ranker.nickname || `배달러 ${ranker.rank}호`}
                     </button>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[#ffd93d] font-bold text-sm sm:text-base font-mono">₩{ranker.income.toLocaleString()}</div>
+                  <div className="text-[#ffd93d] font-bold text-sm sm:text-base font-mono">₩{(ranker.income || 0).toLocaleString()}</div>
                   <div className="text-gray-400 text-xs sm:text-sm font-mono">{ranker.count}건</div>
                 </div>
               </div>

@@ -34,6 +34,22 @@ export interface Friendship {
   friend?: UserProfile // 친구 정보 (JOIN 시 포함)
 }
 
+// API 응답용 친구 데이터 타입
+export interface FriendData {
+  id: string
+  friendId: string
+  nickname: string
+  region: string
+  avatar_config: any
+  status: string
+  created_at: string
+  isRequester: boolean
+  requesterId?: string
+  requesterNickname?: string
+  receiverId?: string
+  receiverNickname?: string
+}
+
 export interface GuestbookEntry {
   id: string
   minihomeUserId: string

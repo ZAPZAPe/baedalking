@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-// 환경 변수가 없을 경우 하드코딩된 값 사용 (개발 환경용)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dumdqkfzwhdegfbonfhd.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1bWRxa2Z6d2hkZWdmYm9uZmhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NzczODgsImV4cCI6MjA3MjA1MzM4OH0.7KUvjleLOyMpAs6cB8iiFgORUEJAelg2kVf1rvk8-E8'
+// 환경 변수 문제로 인해 직접 하드코딩
+const supabaseUrl = 'https://dumdqkfzwhdegfbonfhd.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1bWRxa2Z6d2hkZWdmYm9uZmhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NzczODgsImV4cCI6MjA3MjA1MzM4OH0.7KUvjleLOyMpAs6cB8iiFgORUEJAelg2kVf1rvk8-E8'
 
 // 환경 변수 확인
 console.log('🔍 Supabase 설정:')

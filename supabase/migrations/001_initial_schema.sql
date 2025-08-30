@@ -4,13 +4,21 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    kakao_id TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     nickname TEXT NOT NULL,
-    region TEXT NOT NULL,
-    kakao_id TEXT UNIQUE,
-    avatar_url TEXT,
+    region TEXT NOT NULL DEFAULT '서울',
     avatar_config JSONB DEFAULT '{}',
     garage_config JSONB DEFAULT '{}',
+    status_message TEXT,
+    is_income_private BOOLEAN DEFAULT false,
+    platforms JSONB DEFAULT '[
+        {"id": "baemin", "name": "배민", "icon": "/baemin-logo.svg", "color": "#00C851", "isActive": true, "type": "default"},
+        {"id": "coupang", "name": "쿠팡", "icon": "/coupang-logo.svg", "color": "#E4002B", "isActive": true, "type": "default"}
+    ]',
+    goals JSONB DEFAULT '{"daily": 50000, "weekly": 350000, "monthly": 1500000}',
+    total_visitors INTEGER DEFAULT 0,
+    daily_visitors INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -19,14 +27,17 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS earnings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    amount INTEGER NOT NULL,
+    platform TEXT NOT NULL DEFAULT 'baemin',
+    delivery_count INTEGER NOT NULL DEFAULT 0,
+    delivery_amount INTEGER NOT NULL DEFAULT 0,
+    mission_amount INTEGER NOT NULL DEFAULT 0,
+    total_amount INTEGER GENERATED ALWAYS AS (delivery_amount + mission_amount) STORED,
     date DATE NOT NULL,
-    screenshot_url TEXT NOT NULL,
-    verified BOOLEAN DEFAULT TRUE,
+    screenshot_url TEXT,
+    verified BOOLEAN DEFAULT true,
     points_awarded INTEGER DEFAULT 0,
     screenshot_text TEXT DEFAULT '',
     verified_score DECIMAL(5,2) DEFAULT 95.0,
-    platform TEXT CHECK (platform IN ('baemin', 'coupang', 'other')) DEFAULT 'baemin',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -36,6 +47,7 @@ CREATE TABLE IF NOT EXISTS points (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     amount INTEGER NOT NULL,
     type TEXT CHECK (type IN ('earn', 'spend')) NOT NULL,
+    reason TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -43,7 +55,7 @@ CREATE TABLE IF NOT EXISTS points (
 CREATE TABLE IF NOT EXISTS items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
-    type TEXT CHECK (type IN ('character', 'garage')) NOT NULL,
+    type TEXT CHECK (type IN ('character', 'vehicle', 'background', 'decoration')) NOT NULL,
     asset_url TEXT NOT NULL,
     price INTEGER NOT NULL,
     description TEXT DEFAULT '',
@@ -56,7 +68,7 @@ CREATE TABLE IF NOT EXISTS user_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     item_id UUID NOT NULL REFERENCES items(id) ON DELETE CASCADE,
-    equipped BOOLEAN DEFAULT FALSE,
+    equipped BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(user_id, item_id)
 );
@@ -79,30 +91,22 @@ CREATE TABLE IF NOT EXISTS visits (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create rewards table
-CREATE TABLE IF NOT EXISTS rewards (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    reward_type TEXT NOT NULL,
-    status TEXT DEFAULT 'pending',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 -- Create guestbook table
 CREATE TABLE IF NOT EXISTS guestbook (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     visitor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     message TEXT NOT NULL,
-    is_private BOOLEAN DEFAULT FALSE,
+    is_private BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_kakao_id ON users(kakao_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_earnings_user_id ON earnings(user_id);
 CREATE INDEX IF NOT EXISTS idx_earnings_date ON earnings(date);
-
+CREATE INDEX IF NOT EXISTS idx_earnings_platform ON earnings(platform);
 CREATE INDEX IF NOT EXISTS idx_points_user_id ON points(user_id);
 CREATE INDEX IF NOT EXISTS idx_points_type ON points(type);
 CREATE INDEX IF NOT EXISTS idx_user_items_user_id ON user_items(user_id);
@@ -114,18 +118,21 @@ CREATE INDEX IF NOT EXISTS idx_guestbook_visitor_id ON guestbook(visitor_id);
 
 -- Insert sample items
 INSERT INTO items (name, type, asset_url, price, description, category) VALUES
-('기본 배경', 'garage', '/assets/garage/default-bg.png', 0, '시작할 때 제공되는 기본 배경입니다.', 'background'),
-('레트로 배경', 'garage', '/assets/garage/retro-bg.png', 1000, '80년대 감성의 레트로 스타일 배경입니다.', 'background'),
-('미래지향 배경', 'garage', '/assets/garage/futuristic-bg.png', 2000, '첨단 기술의 미래적인 배경입니다.', 'background'),
-('자연 배경', 'garage', '/assets/garage/nature-bg.png', 1500, '평화로운 자연의 배경입니다.', 'background'),
-('식물 장식', 'garage', '/assets/garage/plant.png', 500, '싱그러운 식물로 공간을 꾸며보세요.', 'decoration'),
-('램프 장식', 'garage', '/assets/garage/lamp.png', 300, '따뜻한 조명으로 분위기를 연출합니다.', 'decoration'),
-('트로피 장식', 'garage', '/assets/garage/trophy.png', 2000, '배달왕의 명예를 보여주는 트로피입니다.', 'decoration'),
-('선물 상자', 'garage', '/assets/garage/gift.png', 800, '신비로운 선물 상자입니다.', 'decoration'),
-('기본 의상', 'character', '/assets/character/default-outfit.png', 0, '시작할 때 입고 있는 기본 의상입니다.', 'outfit'),
-('스포츠 의상', 'character', '/assets/character/sports-outfit.png', 1500, '활동적인 스포츠 의상입니다.', 'outfit'),
-('정장', 'character', '/assets/character/suit.png', 3000, '격식 있는 정장 스타일입니다.', 'outfit'),
-('캐주얼 의상', 'character', '/assets/character/casual-outfit.png', 1000, '편안한 캐주얼 의상입니다.', 'outfit')
+-- Background items
+('기본 배경', 'background', '/assets/background/background.png', 0, '시작할 때 제공되는 기본 배경입니다.', 'background'),
+('레트로 배경', 'background', '/assets/background/background1.png', 1000, '80년대 감성의 레트로 스타일 배경입니다.', 'background'),
+('미래지향 배경', 'background', '/assets/background/background2.png', 2000, '첨단 기술의 미래적인 배경입니다.', 'background'),
+('자연 배경', 'background', '/assets/background/background3.png', 1500, '평화로운 자연의 배경입니다.', 'background'),
+('도시 배경', 'background', '/assets/background/background4.png', 1800, '활기찬 도시의 야경 배경입니다.', 'background'),
+
+-- Character items
+('기본 캐릭터', 'character', '/assets/character/character-base.png', 0, '시작할 때 제공되는 기본 캐릭터입니다.', 'character'),
+('행복한 표정', 'character', '/assets/character/character-happy.png', 500, '기분 좋은 날의 행복한 표정입니다.', 'character'),
+('화난 표정', 'character', '/assets/character/character-angry.png', 300, '스트레스받는 날의 화난 표정입니다.', 'character'),
+('피곤한 표정', 'character', '/assets/character/character-tired.png', 400, '힘든 하루 끝의 피곤한 표정입니다.', 'character'),
+
+-- Vehicle items
+('기본 스쿠터', 'vehicle', '/assets/vehicle/scooter.png', 0, '배달의 기본! 믿음직한 스쿠터입니다.', 'vehicle')
 ON CONFLICT DO NOTHING;
 
 -- Create function to update updated_at timestamp
@@ -149,92 +156,43 @@ ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE visits ENABLE ROW LEVEL SECURITY;
-ALTER TABLE rewards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE guestbook ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies
--- Users can only see their own data
-CREATE POLICY "Users can view own profile" ON users
-    FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users can update own profile" ON users
-    FOR UPDATE USING (auth.uid() = id);
+-- 개발 환경용 간단한 RLS 정책 (모든 사용자가 접근 가능)
+-- Users policies
+CREATE POLICY "Enable read access for all users" ON users FOR SELECT USING (true);
+CREATE POLICY "Enable insert for all users" ON users FOR INSERT WITH CHECK (true);
+CREATE POLICY "Enable update for all users" ON users FOR UPDATE USING (true);
 
 -- Earnings policies
-CREATE POLICY "Users can view own earnings" ON earnings
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own earnings" ON earnings
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable read access for all users" ON earnings FOR SELECT USING (true);
+CREATE POLICY "Enable insert for all users" ON earnings FOR INSERT WITH CHECK (true);
+CREATE POLICY "Enable update for all users" ON earnings FOR UPDATE USING (true);
+CREATE POLICY "Enable delete for all users" ON earnings FOR DELETE USING (true);
 
 -- Points policies
-CREATE POLICY "Users can view own points" ON points
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own points" ON points
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable read access for all users" ON points FOR SELECT USING (true);
+CREATE POLICY "Enable insert for all users" ON points FOR INSERT WITH CHECK (true);
 
 -- Items policies (public read access)
-CREATE POLICY "Anyone can view items" ON items
-    FOR SELECT USING (true);
+CREATE POLICY "Enable read access for all users" ON items FOR SELECT USING (true);
 
 -- User items policies
-CREATE POLICY "Users can view own items" ON user_items
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own items" ON user_items
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own items" ON user_items
-    FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Enable read access for all users" ON user_items FOR SELECT USING (true);
+CREATE POLICY "Enable insert for all users" ON user_items FOR INSERT WITH CHECK (true);
+CREATE POLICY "Enable update for all users" ON user_items FOR UPDATE USING (true);
 
 -- Friends policies
-CREATE POLICY "Users can view own friends" ON friends
-    FOR SELECT USING (auth.uid() = user_id OR auth.uid() = friend_id);
-
-CREATE POLICY "Users can insert friend requests" ON friends
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update friend status" ON friends
-    FOR UPDATE USING (auth.uid() = friend_id);
+CREATE POLICY "Enable read access for all users" ON friends FOR SELECT USING (true);
+CREATE POLICY "Enable insert for all users" ON friends FOR INSERT WITH CHECK (true);
+CREATE POLICY "Enable update for all users" ON friends FOR UPDATE USING (true);
 
 -- Visits policies
-CREATE POLICY "Users can view visits to their garage" ON visits
-    FOR SELECT USING (auth.uid() = visited_user_id);
-
-CREATE POLICY "Users can record visits" ON visits
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable read access for all users" ON visits FOR SELECT USING (true);
+CREATE POLICY "Enable insert for all users" ON visits FOR INSERT WITH CHECK (true);
 
 -- Guestbook policies
-CREATE POLICY "Users can view guestbook messages" ON guestbook
-    FOR SELECT USING (auth.uid() = user_id OR auth.uid() = visitor_id);
-
-CREATE POLICY "Users can insert guestbook messages" ON guestbook
-    FOR INSERT WITH CHECK (auth.uid() = visitor_id);
-
-CREATE POLICY "Users can delete own messages or messages on their guestbook" ON guestbook
-    FOR DELETE USING (auth.uid() = visitor_id OR auth.uid() = user_id);
-
--- Rewards policies
-CREATE POLICY "Users can view own rewards" ON rewards
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own rewards" ON rewards
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Items are public
-CREATE POLICY "Items are viewable by everyone" ON items
-    FOR SELECT USING (true);
-
--- Guestbook policies
-CREATE POLICY "Users can view guestbook messages on their page" ON guestbook
-    FOR SELECT USING (auth.uid() = user_id OR auth.uid() = visitor_id);
-
-CREATE POLICY "Users can write guestbook messages" ON guestbook
-    FOR INSERT WITH CHECK (auth.uid() = visitor_id);
-
-CREATE POLICY "Users can delete messages on their own guestbook" ON guestbook
-    FOR DELETE USING (auth.uid() = user_id);
-
-CREATE POLICY "Message writers can delete their own messages" ON guestbook
-    FOR DELETE USING (auth.uid() = visitor_id);
+CREATE POLICY "Enable read access for all users" ON guestbook FOR SELECT USING (true);
+CREATE POLICY "Enable insert for all users" ON guestbook FOR INSERT WITH CHECK (true);
+CREATE POLICY "Enable update for all users" ON guestbook FOR UPDATE USING (true);
+CREATE POLICY "Enable delete for all users" ON guestbook FOR DELETE USING (true);

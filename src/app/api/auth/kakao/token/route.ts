@@ -14,6 +14,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 환경변수 검증
+    const clientId = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID
+    const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI
+    
+    if (!clientId || !redirectUri) {
+      console.error('카카오 환경변수 누락:', { clientId: !!clientId, redirectUri: !!redirectUri })
+      return NextResponse.json(
+        { error: '카카오 설정이 올바르지 않습니다.' },
+        { status: 500 }
+      )
+    }
+
+    console.log('카카오 토큰 요청:', { clientId, redirectUri, code: code.substring(0, 10) + '...' })
+
     // 카카오 액세스 토큰 획득
     const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
       method: 'POST',
@@ -22,8 +36,8 @@ export async function POST(request: NextRequest) {
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        client_id: process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID!,
-        redirect_uri: process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI!,
+        client_id: clientId,
+        redirect_uri: redirectUri,
         code,
       }),
     })
