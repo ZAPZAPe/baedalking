@@ -688,6 +688,10 @@ export function useAppState(): AppState {
     loadIncomeRecords, saveIncomeRecord, deleteIncomeRecord,
     
     // 계산된 값들 (홈에서 직접 계산)
+    totalIncome: incomeRecords.reduce((sum, record) => sum + record.total_amount, 0),
+    todayIncome: incomeRecords
+      .filter(record => record.date === new Date().toISOString().split('T')[0])
+      .reduce((sum, record) => sum + record.total_amount, 0),
     
     // 기타
     totalPoints, setTotalPoints,
