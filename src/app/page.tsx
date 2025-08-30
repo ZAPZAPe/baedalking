@@ -67,7 +67,7 @@ export default function Home() {
     selectedPlatform, setSelectedPlatform,
     // 수입 날짜 상태 추가
     incomeRecords, setIncomeRecords,
-    saveIncomeRecord, loadIncomeRecord, deleteIncomeRecord,
+    saveIncomeRecord, loadIncomeRecords, deleteIncomeRecord,
     totalPoints, setTotalPoints,
     userLevel, setUserLevel,
     // userNickname, userLocation은 user 객체에서 가져옴
