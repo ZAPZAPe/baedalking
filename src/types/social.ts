@@ -19,6 +19,7 @@ export interface MinihomeSettings {
   characterEmotion: string
   vehicle: string
   speechText: string
+  garageIntro: string
   isPublic: boolean
   createdAt: Date
   updatedAt: Date
