@@ -147,8 +147,8 @@ export interface AppState {
   // 친구/소셜 관련 (기존과 동일)
   friends: { id: number; name: string; level: number; totalIncome: number; isOnline: boolean; avatar: string }[]
   setFriends: (friends: { id: number; name: string; level: number; totalIncome: number; isOnline: boolean; avatar: string }[]) => void
-  friendRequests: { id: number; name: string; level: number; message: string }[]
-  setFriendRequests: (requests: { id: number; name: string; level: number; message: string }[]) => void
+  friendRequests: { id: number | string; name: string; level: number; message: string; friendId?: string }[]
+  setFriendRequests: (requests: { id: number | string; name: string; level: number; message: string; friendId?: string }[]) => void
   socialFeed: { id: number; userId: number; userName: string; action: string; points: number; timestamp: string }[]
   setSocialFeed: (feed: { id: number; userId: number; userName: string; action: string; points: number; timestamp: string }[]) => void
   
@@ -218,7 +218,7 @@ export function useAppState(): AppState {
   
   // 친구/소셜 상태 - 실제 데이터는 DB에서 로드
   const [friends, setFriends] = useState<{ id: number; name: string; level: number; totalIncome: number; isOnline: boolean; avatar: string }[]>([])
-  const [friendRequests, setFriendRequests] = useState<{ id: number; name: string; level: number; message: string }[]>([])
+  const [friendRequests, setFriendRequests] = useState<{ id: number | string; name: string; level: number; message: string; friendId?: string }[]>([])
   const [socialFeed, setSocialFeed] = useState<{ id: number; userId: number; userName: string; action: string; points: number; timestamp: string }[]>([])
 
   // 🔥 핵심 변경: Supabase에서 수입 기록 로드
