@@ -61,6 +61,7 @@ export default function MinihomePage() {
           background: 'background.png',
           characterEmotion: 'happy',
           vehicle: 'scooter',
+          speechText: '안녕하세요! 배달왕입니다! 🚀',
           garageIntro: '열심히 달리는 배달킹입니다! 🛵💨',
           isPublic: true,
           createdAt: new Date(),
