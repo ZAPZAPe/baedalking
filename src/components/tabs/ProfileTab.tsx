@@ -657,12 +657,14 @@ export default function ProfileTab({
           </button>
           
           <button 
-            onClick={() => console.log('문의하기')}
+            onClick={() => {
+              window.open('http://pf.kakao.com/_xhxoxmrn/chat', '_blank')
+            }}
             className="w-full bg-[#1a202c]/60 border border-[#ffd93d]/30 p-3 rounded text-left hover:bg-[#1a202c]/80 transition-all" 
             style={{borderRadius: '4px'}}
           >
             <div className="text-white text-sm font-bold font-mono">문의하기</div>
-            <div className="text-gray-400 text-xs font-mono">고객센터 문의</div>
+            <div className="text-gray-400 text-xs font-mono">카카오톡 채널로 문의</div>
           </button>
         </div>
       </div>
