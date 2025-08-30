@@ -444,6 +444,7 @@ export default function GuestbookModal({
       {/* 사용자 프로필 모달 */}
       {showUserProfile && selectedUserProfile && (
         <UserProfileModal
+          isOpen={showUserProfile}
           user={selectedUserProfile}
           onClose={() => {
             setShowUserProfile(false)
