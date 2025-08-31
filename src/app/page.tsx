@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useServerTime } from '@/hooks/useServerTime'
+import { supabase } from '@/lib/supabase'
 import Header from '@/components/layout/Header'
 import BottomNavigation from '@/components/layout/BottomNavigation'
 import HomeTab from '@/components/tabs/HomeTab'
@@ -30,6 +31,7 @@ import PrivacyPolicyModal from '@/components/modals/PrivacyPolicyModal'
 import TermsOfServiceModal from '@/components/modals/TermsOfServiceModal'
 import FriendsModal from '@/components/modals/FriendsModal'
 import UserProfileModal from '@/components/modals/UserProfileModal'
+import DeleteAccountModal from '@/components/modals/DeleteAccountModal'
 
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
@@ -68,7 +70,7 @@ export default function Home() {
     // 수입 날짜 상태 추가
     incomeRecords, setIncomeRecords,
     saveIncomeRecord, loadIncomeRecords, deleteIncomeRecord,
-    totalPoints, setTotalPoints,
+    totalBoxes, setTotalBoxes,
     userLevel, setUserLevel,
     // userNickname, userLocation은 user 객체에서 가져옴
     currentWeather, setCurrentWeather,
@@ -135,6 +137,8 @@ export default function Home() {
   const [showFriendsModal, setShowFriendsModal] = useState(false)
   const [showUserProfile, setShowUserProfile] = useState(false)
   const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null)
+  const [myRank, setMyRank] = useState<number | null>(null)
+  const [totalUsers, setTotalUsers] = useState<number>(0)
 
   // 🆕 모달을 여는 함수들 - 중앙화된 시스템 사용
   const openGoalSettings = () => {
@@ -213,6 +217,21 @@ export default function Home() {
     }
   }, [user, loading, router])
 
+  // 사용자 프로필 설정 체크
+  useEffect(() => {
+    if (!loading && user) {
+      // 프로필이 완전히 설정되었는지 확인 (닉네임과 지역만 체크)
+      const isProfileComplete = user.nickname && user.region
+      
+      if (!isProfileComplete) {
+        console.log('프로필 설정 필요 - 프로필 설정 페이지로 이동')
+        router.push('/auth/setup')
+      } else {
+        console.log('✅ 프로필 설정 완료:', { nickname: user.nickname, region: user.region })
+      }
+    }
+  }, [user, loading, router])
+
   // 🌤️ 사용자 지역 기반 실제 날씨 데이터 가져오기
   useEffect(() => {
     const fetchWeather = async () => {
@@ -259,11 +278,11 @@ export default function Home() {
     try {
       console.log('💾 사용자 데이터 로딩 시작:', user.id)
 
-      // 포인트 데이터 로딩
-      const pointsResponse = await fetch(`/api/points?userId=${user.id}`)
-      if (pointsResponse.ok) {
-        const pointsData = await pointsResponse.json()
-        setTotalPoints(pointsData.totalPoints || 0)
+      // 박스 데이터 로딩
+      const boxesResponse = await fetch(`/api/boxes?userId=${user.id}`)
+      if (boxesResponse.ok) {
+        const boxesData = await boxesResponse.json()
+        setTotalBoxes(boxesData.totalBoxes || 0)
       }
 
       console.log('✅ 사용자 데이터 로딩 완료')
@@ -403,7 +422,7 @@ export default function Home() {
       <Header
         userNickname={user?.nickname || '배달킹'}
         currentEmotion={currentEmotion}
-        totalPoints={totalPoints}
+        totalBoxes={totalBoxes}
         emotions={emotions}
         onShowHeaderCharacterPanel={() => setShowHeaderCharacterPanel(true)}
       />
@@ -501,6 +520,10 @@ export default function Home() {
                 onShowUserProfile={(userProfile) => {
                   openUserProfile(userProfile)
                 }}
+                onMyRankUpdate={(rank: number | null, total: number) => {
+                  setMyRank(rank)
+                  setTotalUsers(total)
+                }}
               />
             )}
 
@@ -526,7 +549,7 @@ export default function Home() {
                 userLocation={user?.region || '서울'}
                 emotions={emotions}
                 isIncomePrivate={user?.is_income_private || false}
-                setIsIncomePrivate={(isPrivate: boolean) => {
+                setIsIncomePrivate={async (isPrivate: boolean) => {
                   console.log('isIncomePrivate 업데이트:', isPrivate)
                   
                   // 사용자 상태 업데이트
@@ -539,25 +562,22 @@ export default function Home() {
                     // 2. useAuth의 user 상태도 업데이트 (실시간 반영을 위해)
                     setUser(updatedUser)
                     
-                    // 3. localStorage의 카카오 세션도 업데이트 (세션 유지를 위해)
-                    if (typeof window !== 'undefined') {
-                      const kakaoUser = localStorage.getItem('kakaoUser')
-                      if (kakaoUser) {
-                        try {
-                          const userData = JSON.parse(kakaoUser)
-                          userData.is_income_private = isPrivate
-                          localStorage.setItem('kakaoUser', JSON.stringify(userData))
-                          console.log('✅ localStorage 세션도 업데이트됨')
-                        } catch (error) {
-                          console.error('localStorage 업데이트 오류:', error)
-                        }
-                      }
-                    }
+                    // 3. Supabase에 업데이트된 정보 저장
+                    await supabase
+                      .from('users')
+                      .update({ 
+                        is_income_private: isPrivate,
+                        updated_at: new Date().toISOString()
+                      })
+                      .eq('id', user.id)
+                    
+                    console.log('✅ Supabase에 업데이트된 정보 저장됨')
                   }
                 }}
                 setShowPrivacyPolicy={openPrivacyPolicy}
                 setShowTermsOfService={openTermsOfService}
-                setShowDeleteAccount={openDeleteAccount}
+                showDeleteAccount={showDeleteAccount}
+                setShowDeleteAccount={setShowDeleteAccount}
                 onLogout={async () => {
                   // 로그아웃 처리
                   await signOut()
@@ -593,20 +613,16 @@ export default function Home() {
                         // 2. useAuth의 user 상태도 업데이트 (실시간 반영을 위해)
                         setUser(updatedUser)
                         
-                        // 3. localStorage의 카카오 세션도 업데이트 (세션 유지를 위해)
-                        if (typeof window !== 'undefined') {
-                          const kakaoUser = localStorage.getItem('kakaoUser')
-                          if (kakaoUser) {
-                            try {
-                              const userData = JSON.parse(kakaoUser)
-                              userData[field] = value
-                              localStorage.setItem('kakaoUser', JSON.stringify(userData))
-                              console.log('✅ localStorage 세션도 업데이트됨')
-                            } catch (error) {
-                              console.error('localStorage 업데이트 오류:', error)
-                            }
-                          }
-                        }
+                                              // 3. Supabase에 업데이트된 정보 저장
+                      await supabase
+                        .from('users')
+                        .update({ 
+                          [field]: value,
+                          updated_at: new Date().toISOString()
+                        })
+                        .eq('id', user.id)
+                      
+                      console.log('✅ Supabase에 업데이트된 정보 저장됨')
                       }
                       return true
                     } else {
@@ -691,13 +707,14 @@ export default function Home() {
         setShowBackgroundItemPanel={setShowBackgroundItemPanel}
         currentBackground={currentBackground}
         setCurrentBackground={setCurrentBackground}
-        usePoints={(amount: number, item?: string) => {
-          if (totalPoints >= amount) {
-            setTotalPoints(totalPoints - amount)
+        totalBoxes={totalBoxes}
+        useBoxes={(amount: number, item?: string) => {
+          if (totalBoxes >= amount) {
+            setTotalBoxes(totalBoxes - amount)
             console.log(`포인트 사용: ${amount}점 (아이템: ${item || '알 수 없음'})`)
             return true
           }
-          console.log(`포인트 부족: 필요 ${amount}점, 보유 ${totalPoints}점`)
+                        console.log(`박스 부족: 필요 ${amount}개, 보유 ${totalBoxes}개`)
           return false
         }}
       />
@@ -755,6 +772,13 @@ export default function Home() {
           // 수정 모달 닫기
           closeModal()
         }}
+        onDeleteRecord={(recordId) => {
+          // 수입 기록 삭제 로직
+          if (deleteIncomeRecord) {
+            deleteIncomeRecord(recordId)
+          }
+          console.log('수입 기록 삭제:', recordId)
+        }}
       />
 
       <FriendDetailModal 
@@ -787,10 +811,11 @@ export default function Home() {
       <RankingDetailModal 
         isOpen={activeModal === 'rankingDetail'}
         onClose={closeModal}
-        userRank={incomeRecords.length > 0 ? Math.floor(Math.random() * 100) + 1 : 0}
+        userRank={myRank || 0}
         userIncome={todayIncome}
-        totalUsers={1000}
+        totalUsers={totalUsers}
         topRankers={topRankers}
+        platforms={appPlatforms}
         onShowUserDetail={(ranker) => {
           setSelectedTopRanker(ranker)
           openModal('topRankerProfile')
@@ -819,7 +844,57 @@ export default function Home() {
         isOpen={activeModal === 'userProfile'}
         onClose={closeModal}
         user={selectedUserProfile}
+        platforms={appPlatforms}
         title="USER PROFILE"
+      />
+
+      {/* 계정 삭제 모달 */}
+      <DeleteAccountModal
+        isOpen={showDeleteAccount}
+        onClose={() => setShowDeleteAccount(false)}
+        onConfirmDelete={async () => {
+          try {
+            const response = await fetch('/api/users/delete-account', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: user?.id
+              }),
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+              // Supabase에서 사용자 세션 정리
+              if (user?.id) {
+                await supabase
+                  .from('users')
+                  .update({ 
+                    last_login: null,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', user.id)
+                
+                console.log('💾 Supabase에서 사용자 세션 정리됨')
+              }
+              
+              // 성공적으로 삭제되면 로그아웃 처리
+              await signOut()
+              router.push('/login')
+              alert('계정이 성공적으로 삭제되었습니다.')
+            } else {
+              alert(`계정 삭제 실패: ${data.error}`)
+            }
+          } catch (error) {
+            console.error('계정 삭제 오류:', error)
+            alert('계정 삭제 중 오류가 발생했습니다.')
+          } finally {
+            setShowDeleteAccount(false)
+          }
+        }}
+        isLoading={false}
       />
     </div>
   )

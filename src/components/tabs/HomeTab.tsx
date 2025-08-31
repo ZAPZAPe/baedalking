@@ -2,6 +2,7 @@
 
 import PixelButton from '@/components/ui/PixelButton'
 import { useServerTime } from '@/hooks/useServerTime'
+import KakaoAd from '@/components/ui/KakaoAd'
 
 interface HomeTabProps {
   currentBackground: string
@@ -197,7 +198,7 @@ export default function HomeTab({
       {/* 내 차고 방문 버튼 */}
       <button 
         onClick={() => window.location.href = `/garage/${userId || 'temp'}`}
-        className="w-full bg-gradient-to-r from-[#9c88ff]/20 to-[#ffd93d]/20 border-2 border-[#9c88ff]/50 hover:border-[#9c88ff] p-4 rounded text-center hover:from-[#9c88ff]/30 hover:to-[#ffd93d]/30 transition-all duration-300 shadow-lg" 
+        className="w-full bg-gradient-to-r from-[#9c88ff]/20 to-[#ffd93d]/20 border-2 border-[#9c88ff]/50 hover:border-[#9c88ff] p-2 rounded text-center hover:from-[#9c88ff]/30 hover:to-[#ffd93d]/30 transition-all duration-300 shadow-lg" 
         style={{borderRadius: '8px'}}
       >
         <div className="flex flex-col items-center justify-center">
@@ -206,22 +207,15 @@ export default function HomeTab({
         </div>
       </button>
 
-      {/* 카카오 광고 - 클라이언트에서만 렌더링 */}
-      <div className="bg-gradient-to-br from-[#2d2d2d]/90 to-[#1a1a1a]/90 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 border border-gray-600/20 shadow-2xl mb-2 sm:mb-3 lg:mb-4 text-center flex-shrink-0 min-h-[100px] flex items-center justify-center">
-        {isClient ? (
-          <>
-            <ins className="kakao_ad_area"
-              data-ad-unit="DAN-hoOuYkLu161z0omL"
-              data-ad-width="320"
-              data-ad-height="100"></ins>
-            <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
-          </>
-        ) : (
-          <div className="flex items-center justify-center text-gray-500 text-sm">
-            광고 로딩 중...
-          </div>
-        )}
-      </div>
+      {/* 카카오 광고 - 새로운 KakaoAd 컴포넌트 사용 */}
+      {isClient && (
+        <KakaoAd 
+          adUnit="DAN-hoOuYkLu161z0omL"
+          width={320}
+          height={100}
+          className="mb-2 sm:mb-3 lg:mb-4"
+        />
+      )}
 
       {/* 픽셀아트 스타일 수익 현황 */}
       <div 
@@ -350,7 +344,7 @@ true
       {/* 수입 입력 버튼 */}
       <button 
         onClick={() => setShowIncomeInputPanel(true)}
-        className="w-full bg-gradient-to-r from-[#00ff88]/20 to-[#00d4ff]/20 border-2 border-[#00ff88]/50 hover:border-[#00ff88] p-4 rounded text-center hover:from-[#00ff88]/30 hover:to-[#00d4ff]/30 transition-all duration-300 shadow-lg" 
+        className="w-full bg-gradient-to-r from-[#00ff88]/20 to-[#00d4ff]/20 border-2 border-[#00ff88]/50 hover:border-[#00ff88] p-2 rounded text-center hover:from-[#00ff88]/30 hover:to-[#00d4ff]/30 transition-all duration-300 shadow-lg" 
         style={{borderRadius: '8px'}}
       >
         <div className="flex flex-col items-center justify-center">

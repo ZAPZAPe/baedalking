@@ -122,8 +122,8 @@ export interface AppState {
   todayIncome: number
   
   // 기타 상태들 (기존과 동일)
-  totalPoints: number
-  setTotalPoints: (points: number) => void
+  totalBoxes: number
+  setTotalBoxes: (boxes: number) => void
   userLevel: number
   setUserLevel: (level: number) => void
   currentWeather: { temp: number; condition: string }
@@ -160,8 +160,8 @@ export interface AppState {
   
   // 유틸리티 함수들
   getWeatherIcon: (condition: string) => string
-  addPoints: (amount: number, reason?: string) => void
-  usePoints: (amount: number, item?: string) => boolean
+  addBoxes: (amount: number, reason?: string) => void
+  useBoxes: (amount: number, item?: string) => boolean
   canAfford: (price: number) => boolean
 }
 
@@ -197,7 +197,7 @@ export function useAppState(): AppState {
   const [incomeRecords, setIncomeRecords] = useState<IncomeRecord[]>([])
   
   // 기타 상태들
-  const [totalPoints, setTotalPoints] = useState(0)
+  const [totalBoxes, setTotalBoxes] = useState(0)
   const [userLevel, setUserLevel] = useState(1)
   const [currentWeather, setCurrentWeather] = useState({ temp: 22, condition: 'sunny' })
   const [todayVisitors, setTodayVisitors] = useState(12)
@@ -219,7 +219,7 @@ export function useAppState(): AppState {
   // 친구/소셜 상태 - 실제 데이터는 DB에서 로드
   const [friends, setFriends] = useState<{ id: number; name: string; level: number; totalIncome: number; isOnline: boolean; avatar: string }[]>([])
   const [friendRequests, setFriendRequests] = useState<{ id: number | string; name: string; level: number; message: string; friendId?: string }[]>([])
-  const [socialFeed, setSocialFeed] = useState<{ id: number; userId: number; userName: string; action: string; points: number; timestamp: string }[]>([])
+  const [socialFeed, setSocialFeed] = useState<{ id: number; userId: number; userName: string; action: string; boxes: number; timestamp: string }[]>([])
 
   // 🔥 핵심 변경: Supabase에서 수입 기록 로드
   const loadIncomeRecords = async () => {
@@ -338,9 +338,9 @@ export function useAppState(): AppState {
         console.log('🔄 추가 데이터 로드 완료')
       }, 500)
       
-      // 포인트 추가
-      const earnedPoints = (record.delivery_count * 5) + Math.floor((record.delivery_amount + record.mission_amount) * 0.01)
-      addPoints(earnedPoints, '수입 기록 등록')
+      // 박스 추가
+      const earnedBoxes = (record.delivery_count * 5) + Math.floor((record.delivery_amount + record.mission_amount) * 0.01)
+      addBoxes(earnedBoxes, '수입 기록 등록')
       
       return true
       
@@ -438,12 +438,28 @@ export function useAppState(): AppState {
     if (platforms.length >= 5) return
     if (!user?.id) return
 
+    // 커스텀 플랫폼용 색상 팔레트
+    const customColors = [
+      { color: '#FF6B6B', bgColor: '#FF6B6B' },
+      { color: '#4ECDC4', bgColor: '#4ECDC4' },
+      { color: '#45B7D1', bgColor: '#45B7D1' },
+      { color: '#96CEB4', bgColor: '#96CEB4' },
+      { color: '#FFEAA7', bgColor: '#FFEAA7' },
+      { color: '#DDA0DD', bgColor: '#DDA0DD' },
+      { color: '#98D8C8', bgColor: '#98D8C8' },
+      { color: '#F7DC6F', bgColor: '#F7DC6F' }
+    ]
+
+    // 기존 커스텀 플랫폼 수에 따라 색상 선택
+    const customPlatformCount = platforms.filter(p => p.type === 'custom').length
+    const selectedColor = customColors[customPlatformCount % customColors.length]
+
     const newPlatform: Platform = {
       id: `custom_${Date.now()}`,
       name,
-      icon: '📋',
-      color: '#9C88FF',
-      bgColor: '#9C88FF/20',
+      icon: '',
+      color: selectedColor.color,
+      bgColor: selectedColor.bgColor,
       isActive: true,
       type: 'custom'
     }
@@ -547,23 +563,23 @@ export function useAppState(): AppState {
     }
   }
 
-  const addPoints = (amount: number, reason = '') => {
-    setTotalPoints(prev => prev + amount)
-    console.log(`💎 +${amount} 포인트 획득! ${reason}`)
+  const addBoxes = (amount: number, reason = '') => {
+    setTotalBoxes(prev => prev + amount)
+    console.log(`📦 +${amount} 박스 획득! ${reason}`)
   }
 
-  const usePoints = (amount: number, item = '') => {
-    if (totalPoints >= amount) {
-      setTotalPoints(prev => prev - amount)
-      console.log(`💎 -${amount} 포인트 사용! ${item}`)
+  const useBoxes = (amount: number, item = '') => {
+    if (totalBoxes >= amount) {
+      setTotalBoxes(prev => prev - amount)
+      console.log(`📦 -${amount} 박스 사용! ${item}`)
       return true
     } else {
-      console.log(`💎 포인트가 부족합니다! (필요: ${amount}, 보유: ${totalPoints})`)
+      console.log(`📦 박스가 부족합니다! (필요: ${amount}, 보유: ${totalBoxes})`)
       return false
     }
   }
 
-  const canAfford = (price: number) => totalPoints >= price
+  const canAfford = (price: number) => totalBoxes >= price
 
   // 🆕 중앙화된 모달 관리 함수들
   const openModal = (modal: ModalType) => {
@@ -694,7 +710,7 @@ export function useAppState(): AppState {
       .reduce((sum, record) => sum + record.total_amount, 0),
     
     // 기타
-    totalPoints, setTotalPoints,
+    totalBoxes, setTotalBoxes,
     userLevel, setUserLevel,
     currentWeather, setCurrentWeather,
     todayVisitors, setTodayVisitors,
@@ -715,6 +731,6 @@ export function useAppState(): AppState {
     dailyGoal, weeklyGoal, monthlyGoal, updateGoals,
     
     // 유틸리티
-    getWeatherIcon, addPoints, usePoints, canAfford
+    getWeatherIcon, addBoxes, useBoxes, canAfford
   }
 }

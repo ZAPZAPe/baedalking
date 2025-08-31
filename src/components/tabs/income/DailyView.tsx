@@ -5,7 +5,7 @@ import { Platform } from '@/hooks/useAppState'
 import { useServerTime } from '@/hooks/useServerTime'
 import { VIEW_COLORS, PLATFORM_COLORS } from '@/data/colors'
 // @ts-ignore
-import domtoimage from 'dom-to-image-more'
+import html2canvas from 'html2canvas'
 
 interface DailyViewProps {
   todayRecords: any[]
@@ -13,7 +13,7 @@ interface DailyViewProps {
   incomeRecords: any[]
   dailyGoal: number
 
-  platforms: Platform[]
+  platforms: Platform[] | { [key: string]: boolean }
   setShowGoalSettings: (show: boolean) => void
   setShowIncomeInputPanel: (show: boolean) => void
   setShowPlatformSettings: (show: boolean) => void
@@ -69,7 +69,7 @@ export default function DailyView({
   // 목표 달성률 계산
   const goalAchievement = dailyGoal > 0 ? (todayTotal / dailyGoal) * 100 : 0
 
-  // 모바일 바이럴용 사진 출력 기능 (dom-to-image-more 사용)
+  // 모바일 바이럴용 사진 출력 기능 (html2canvas 사용)
   const captureDailyView = async () => {
     try {
       const element = document.getElementById('daily-view-container')
@@ -82,17 +82,21 @@ export default function DailyView({
       // DOM 안정화를 위한 대기
       await new Promise(resolve => setTimeout(resolve, 200))
 
-      // dom-to-image-more로 고품질 이미지 생성
-      const dataUrl = await domtoimage.toPng(element, {
-        quality: 1.0,
-        bgcolor: '#1a202c',
+      // html2canvas로 고품질 이미지 생성
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#1a202c',
+        scale: window.devicePixelRatio || 2,
         width: element.offsetWidth,
         height: element.offsetHeight,
-        style: {
-          'transform': 'scale(1)',
-          'transform-origin': 'top left'
-        }
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0,
+        useCORS: true,
+        allowTaint: true
       })
+      
+      const dataUrl = canvas.toDataURL('image/png', 1.0)
 
       // 버튼들 다시 표시
       buttons.forEach(btn => (btn as HTMLElement).style.display = '')
@@ -379,19 +383,60 @@ export default function DailyView({
 
         {/* 플랫폼별 상세 정보 - 카드 형식으로 통일 */}
         {(() => {
+          // platforms 객체를 배열로 변환하여 사용
+          const platformsArray = Array.isArray(platforms) ? platforms : Object.entries(platforms).map(([key, value]) => ({
+            id: key,
+            name: key === 'baemin' ? '배민' : key === 'coupang' ? '쿠팡' : key,
+            isActive: value as boolean,
+            color: key === 'baemin' ? '#00C851' : key === 'coupang' ? '#E4002B' : '#9c88ff'
+          }))
+          
           // 활성화된 플랫폼만 필터링
-          const activePlatforms = platforms.filter(p => p.isActive).map(p => p.id)
+          const activePlatforms = platformsArray.filter(p => p.isActive).map(p => p.id)
           const platformRecords = selectedRecords.filter(r => activePlatforms.includes(r.platform))
           if (platformRecords.length > 0) {
             return (
               <div className="space-y-3">
                 {platformRecords.map((record, index) => {
-                  const platformConfig = {
-                    'baemin': { name: '배민', icon: '/baemin-logo.svg', color: '#00d4ff' },
-                    'coupang': { name: '쿠팡', icon: '/coupang-logo.svg', color: '#ffd93d' }
+                  // 플랫폼별 설정을 위한 헬퍼 함수
+                  const getPlatformConfig = (platformId: string) => {
+                    if (platformId === 'baemin') {
+                      return { 
+                        name: '배민',
+                        icon: '/baemin-logo.svg', 
+                        color: '#00C851',
+                        showLogo: true 
+                      }
+                    } else if (platformId === 'coupang') {
+                      return { 
+                        name: '쿠팡',
+                        icon: '/coupang-logo.svg', 
+                        color: '#E4002B',
+                        showLogo: true 
+                      }
+                    } else {
+                      // 커스텀 플랫폼은 platformsArray에서 찾기
+                      const customPlatform = platformsArray.find(p => p.id === platformId)
+                      if (customPlatform) {
+                        return { 
+                          name: customPlatform.name,
+                          icon: '', 
+                          color: customPlatform.color,
+                          showLogo: false 
+                        }
+                      } else {
+                        // 플랫폼을 찾을 수 없는 경우 기본값
+                        return { 
+                          name: platformId,
+                          icon: '', 
+                          color: '#9c88ff',
+                          showLogo: false 
+                        }
+                      }
+                    }
                   }
-                  const config = platformConfig[record.platform as keyof typeof platformConfig] || 
-                                { name: record.platform, icon: '⚪', color: '#9c88ff' }
+                  
+                  const config = getPlatformConfig(record.platform)
                    
                   return (
                     <div 
@@ -412,16 +457,25 @@ export default function DailyView({
                                    backgroundColor: `${config.color}20`,
                                    borderColor: `${config.color}60`
                                  }}>
-                              <img 
-                                src={config.icon} 
-                                alt={config.name}
-                                className="w-6 h-6 object-contain"
-                                style={{ imageRendering: 'pixelated' }}
-                              />
+                              {config.showLogo ? (
+                                <img 
+                                  src={config.icon} 
+                                  alt={config.name}
+                                  className="w-6 h-6 object-contain"
+                                  style={{ imageRendering: 'pixelated' }}
+                                />
+                              ) : (
+                                <div 
+                                  className="w-5 h-5"
+                                  style={{
+                                    backgroundColor: config.color,
+                                    borderRadius: '2px'
+                                  }}
+                                />
+                              )}
                             </div>
                             <div>
                               <div className="text-white font-bold text-sm font-mono">{config.name}</div>
-                              <div className="text-xs text-gray-400 font-mono tracking-wider">DELIVERY RECORD</div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -450,11 +504,11 @@ export default function DailyView({
                         </div>
 
                         {/* 상세 정보 그리드 */}
-                        <div className="grid grid-cols-3 gap-3 mb-3">
+                        <div className="grid grid-cols-3 gap-2 mb-0">
                           {/* 건수 */}
-                          <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
+                          <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                                style={{borderColor: `${config.color}30`}}>
-                            <div className="text-white text-xs font-mono font-bold mb-1">건수</div>
+                            <div className="text-white text-xs font-mono font-bold mb-0.5">건수</div>
                             <div className="text-sm font-bold font-mono"
                                  style={{color: config.color}}>
                               {record.count}건
@@ -462,18 +516,18 @@ export default function DailyView({
                           </div>
 
                           {/* 배달 금액 */}
-                          <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
+                          <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                                style={{borderColor: `${config.color}30`}}>
-                            <div className="text-white text-xs font-mono font-bold mb-1">배달금액</div>
+                            <div className="text-white text-xs font-mono font-bold mb-0.5">배달금액</div>
                             <div className="text-sm font-bold font-mono text-white">
                               ₩{(record.amount || 0).toLocaleString()}
                             </div>
                           </div>
 
                           {/* 미션비 */}
-                          <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
+                          <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                                style={{borderColor: `${config.color}30`}}>
-                            <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
+                            <div className="text-white text-xs font-mono font-bold mb-0.5">미션비</div>
                             <div className="text-sm font-bold font-mono"
                                  style={{color: config.color}}>
                               ₩{(record.missionAmount || 0).toLocaleString()}
@@ -525,39 +579,56 @@ export default function DailyView({
 
         {/* 7일 트렌드 차트 */}
         <div className="grid grid-cols-7 gap-1">
-          {[...Array(7)].map((_, i) => {
-            const date = new Date(currentDate)
-            date.setDate(date.getDate() - (6 - i))
-            const dateStr = date.toISOString().split('T')[0]
-            const dayRecords = allRecords.filter(r => r.date === dateStr)
-            const dayTotal = dayRecords.reduce((sum, r) => sum + (r.amount || 0) + (r.missionAmount || 0), 0)
-            const maxHeight = 60
-            const height = dayTotal > 0 ? Math.max((dayTotal / 100000) * maxHeight, 10) : 0
+          {(() => {
+            // 7일간 데이터를 미리 계산하여 최대값 찾기
+            const weekData = [...Array(7)].map((_, i) => {
+              const date = new Date(currentDate)
+              date.setDate(date.getDate() - (6 - i))
+              const dateStr = date.toISOString().split('T')[0]
+              const dayRecords = allRecords.filter(r => r.date === dateStr)
+              const dayTotal = dayRecords.reduce((sum, r) => sum + (r.amount || 0) + (r.missionAmount || 0), 0)
+              return { dateStr, dayTotal }
+            })
             
-            // 금액을 만원 단위로 변환 (소수점 1자리)
-            const amountInMan = dayTotal > 0 ? (dayTotal / 10000).toFixed(1) : '-'
+            const maxValue = Math.max(...weekData.map(d => d.dayTotal))
+            const minValue = Math.min(...weekData.map(d => d.dayTotal))
+            const range = maxValue - minValue
+            const padding = range * 0.1 // 10% 여백
+            const adjustedMaxValue = maxValue + padding
             
-            return (
-              <div key={i} className="flex flex-col items-center">
-                <div className="w-full bg-[#1a202c] rounded-t relative" style={{ height: `${maxHeight}px` }}>
-                  <div 
-                    className="w-full bg-gradient-to-t from-[#00ff88] to-[#00d4ff] rounded-t transition-all duration-300"
-                    style={{ height: `${height}px`, marginTop: `${maxHeight - height}px` }}
-                  ></div>
-                   
-                  {/* 금액 표시 (그래프 안에) */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-white text-xs font-mono font-bold">
-                      {amountInMan}
+            return weekData.map((dayData, i) => {
+              const date = new Date(currentDate)
+              date.setDate(date.getDate() - (6 - i))
+              const dateStr = date.toISOString().split('T')[0]
+              const dayTotal = dayData.dayTotal
+              const maxHeight = 60
+              const height = dayTotal > 0 ? Math.max((dayTotal / adjustedMaxValue) * maxHeight, 10) : 0
+              
+              // 금액을 만원 단위로 변환 (소수점 1자리)
+              const amountInMan = dayTotal > 0 ? (dayTotal / 10000).toFixed(1) : '-'
+            
+              return (
+                <div key={i} className="flex flex-col items-center">
+                  <div className="w-full bg-[#1a202c] rounded-t relative" style={{ height: `${maxHeight}px` }}>
+                    <div 
+                      className="w-full bg-gradient-to-t from-[#00ff88] to-[#00d4ff] rounded-t transition-all duration-300"
+                      style={{ height: `${height}px`, marginTop: `${maxHeight - height}px` }}
+                    ></div>
+                     
+                    {/* 금액 표시 (그래프 안에) */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-white text-xs font-mono font-bold">
+                        {amountInMan}
+                      </div>
                     </div>
                   </div>
+                  <div className="text-xs text-gray-400 font-mono mt-1">
+                    {date.getDate()}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-400 font-mono mt-1">
-                  {date.getDate()}
-                </div>
-              </div>
-            )
-          })}
+              )
+            })
+          })()}
         </div>
          
         {/* 선택된 날짜 금액 비교 멘트 */}
@@ -615,7 +686,7 @@ export default function DailyView({
             }
             
             return (
-              <div className={`text-sm font-mono ${color}`}>
+              <div className={`text-sm font-bold font-mono ${color}`}>
                 {message}
               </div>
             )
@@ -624,46 +695,27 @@ export default function DailyView({
       </div>
 
       {/* 저장 버튼 */}
-      <button
+      <button 
         onClick={captureDailyView}
-        className="w-full bg-gradient-to-r from-[#1a202c] to-[#2d3748] border-2 border-[#00ff88]/50 hover:border-[#00ff88] text-white font-mono py-3 px-4 transition-all duration-200 relative"
-        style={{
-          borderRadius: '4px',
-          fontFamily: 'monospace',
-          imageRendering: 'pixelated'
-        }}
+        className="w-full bg-gradient-to-r from-[#9c88ff]/20 to-[#ffd93d]/20 border-2 border-[#9c88ff]/50 hover:border-[#9c88ff] p-2 rounded text-center hover:from-[#9c88ff]/30 hover:to-[#ffd93d]/30 transition-all duration-300 shadow-lg" 
+        style={{borderRadius: '8px'}}
       >
-        <div className="flex items-center justify-center">
-                      <div className="text-center">
-              <p className="text-base font-bold">📸 일간 수익 캡처 저장</p>
-            </div>
+        <div className="flex flex-col items-center justify-center">
+          <div className="text-[#9c88ff] text-sm font-bold font-mono">📸 일간 수익 캡처 저장</div>
+          <div className="text-gray-300 text-xs font-mono">오늘의 수익 현황을 이미지로 저장</div>
         </div>
-        <div className="absolute top-1 left-1 w-1 h-1 bg-[#00ff88]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute top-1 right-1 w-1 h-1 bg-[#00ff88]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00ff88]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00ff88]/60" style={{borderRadius: '1px'}}></div>
       </button>
 
       {/* 수입 입력 버튼 - 홈탭과 동일한 스타일 */}
-      <button
+      <button 
         onClick={() => setShowIncomeInputPanel(true)}
-        className="w-full bg-gradient-to-r from-[#1a202c] to-[#2d3748] border-2 border-[#00d4ff]/50 hover:border-[#00d4ff] text-white font-mono py-3 px-4 transition-all duration-200 relative"
-        style={{
-          borderRadius: '4px',
-          fontFamily: 'monospace',
-          imageRendering: 'pixelated'
-        }}
+        className="w-full bg-gradient-to-r from-[#00ff88]/20 to-[#00d4ff]/20 border-2 border-[#00ff88]/50 hover:border-[#00ff88] p-2 rounded text-center hover:from-[#00ff88]/30 hover:to-[#00d4ff]/30 transition-all duration-300 shadow-lg" 
+        style={{borderRadius: '8px'}}
       >
-        <div className="flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-base font-bold">수입 기록하기</p>
-            <p className="text-xs text-gray-300">오늘의 배달 수익을 입력하세요</p>
-          </div>
+        <div className="flex flex-col items-center justify-center">
+          <div className="text-[#00ff88] text-sm font-bold font-mono">수입 기록하기</div>
+          <div className="text-gray-300 text-xs font-mono">오늘의 배달 수익을 입력하세요</div>
         </div>
-        <div className="absolute top-1 left-1 w-1 h-1 bg-[#00d4ff]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute top-1 right-1 w-1 h-1 bg-[#00d4ff]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00d4ff]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00d4ff]/60" style={{borderRadius: '1px'}}></div>
       </button>
     </div>
   )

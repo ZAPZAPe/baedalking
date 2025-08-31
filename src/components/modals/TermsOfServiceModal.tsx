@@ -72,25 +72,25 @@ export default function TermsOfServiceModal({
           {/* 내용 */}
           <div className="p-4 sm:p-6">
             <div className="space-y-4 text-gray-300 text-sm leading-relaxed">
-              <h4 className="text-white font-bold text-lg mb-3 font-mono">1. 서비스 이용</h4>
-              <p className="font-mono">배달킹은 배달 수입 관리 및 친구들과의 소통을 위한 서비스를 제공합니다.</p>
+              <h4 className="text-white font-bold text-sm mb-3 font-mono">1. 서비스 이용</h4>
+              <p className="font-mono text-sm">배달킹은 배달 수입 관리 및 친구들과의 소통을 위한 서비스를 제공합니다.</p>
               
-              <h4 className="text-white font-bold text-lg mb-3 mt-6 font-mono">2. 이용자의 의무</h4>
-              <ul className="list-disc list-inside ml-4 space-y-1 font-mono">
+              <h4 className="text-white font-bold text-sm mb-3 mt-6 font-mono">2. 이용자의 의무</h4>
+              <ul className="list-disc list-inside ml-4 space-y-1 font-mono text-sm">
                 <li>허위 정보 입력 금지</li>
                 <li>타인의 권리 침해 금지</li>
                 <li>서비스 이용 규정 준수</li>
                 <li>불법적인 활동 금지</li>
               </ul>
               
-              <h4 className="text-white font-bold text-lg mb-3 mt-6 font-mono">3. 서비스 제한</h4>
-              <p className="font-mono">약관 위반 시 서비스 이용이 제한되거나 계정이 삭제될 수 있습니다.</p>
+              <h4 className="text-white font-bold text-sm mb-3 mt-6 font-mono">3. 서비스 제한</h4>
+              <p className="font-mono text-sm">약관 위반 시 서비스 이용이 제한되거나 계정이 삭제될 수 있습니다.</p>
               
-              <h4 className="text-white font-bold text-lg mb-3 mt-6 font-mono">4. 책임 제한</h4>
-              <p className="font-mono">서비스 이용으로 인한 손해에 대해 배달킹은 책임을 지지 않습니다.</p>
+              <h4 className="text-white font-bold text-sm mb-3 mt-6 font-mono">4. 책임 제한</h4>
+              <p className="font-mono text-sm">서비스 이용으로 인한 손해에 대해 배달킹은 책임을 지지 않습니다.</p>
               
-              <h4 className="text-white font-bold text-lg mb-3 mt-6 font-mono">5. 약관 변경</h4>
-              <p className="font-mono">약관 변경 시 사전 공지하며, 변경된 약관에 동의하지 않으면 서비스 이용을 중단할 수 있습니다.</p>
+              <h4 className="text-white font-bold text-sm mb-3 mt-6 font-mono">5. 약관 변경</h4>
+              <p className="font-mono text-sm">약관 변경 시 사전 공지하며, 변경된 약관에 동의하지 않으면 서비스 이용을 중단할 수 있습니다.</p>
             </div>
 
             {/* 닫기 버튼 */}

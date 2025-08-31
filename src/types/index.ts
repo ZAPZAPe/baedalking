@@ -173,7 +173,7 @@ export interface Emotion {
 
 export interface HeaderProps {
   userNickname: string
-  totalPoints: number
+  totalBoxes: number
   currentEmotion: string
   emotions: Emotion[]
   onShowHeaderCharacterPanel: () => void
@@ -185,7 +185,7 @@ export interface ProfileTabProps {
   userLocation: string
   emotions: Emotion[]
   isIncomePrivate: boolean
-  setIsIncomePrivate: (isPrivate: boolean) => void
+  setIsIncomePrivate: (isPrivate: boolean) => Promise<void>
   setShowPrivacyPolicy: (show: boolean) => void
   setShowTermsOfService: (show: boolean) => void
   setShowDeleteAccount: (show: boolean) => void
@@ -246,15 +246,15 @@ export interface ItemSelectionPanelsProps {
   currentBackground: string
   setCurrentBackground: (background: string) => void
   
-  // Point system
-  usePoints: (amount: number, item: string) => boolean
+  // Box system
+  useBoxes: (amount: number, item: string) => boolean
 }
 
 export interface CustomizePanelProps {
   showCustomizePanel: boolean
   setShowCustomizePanel: (show: boolean) => void
-  totalPoints: number
-  usePoints: (amount: number, item: string) => boolean
+  totalBoxes: number
+  useBoxes: (amount: number, item: string) => boolean
 }
 
 // ============================================================================
@@ -372,7 +372,7 @@ export interface UsersSearchApiResponse extends ApiResponse {
 export interface EarningsApiResponse extends ApiResponse {
   earnings?: EarningRecord[]
   earning?: EarningRecord
-  pointsAwarded?: number
+  boxesAwarded?: number
 }
 
 export interface VisitsApiResponse extends ApiResponse {
@@ -396,7 +396,7 @@ export interface EarningRecord {
   screenshot_url: string
   screenshot_text?: string
   source: 'baemin' | 'coupang' | 'other'
-  points_awarded: number
+  boxes_awarded: number
   created_at: string
   updated_at?: string
 }
@@ -619,8 +619,8 @@ export interface AppState {
   setDailyIncomeData: (data: { [key: string]: DailyIncomeData }) => void
   incomeRecords: IncomeRecord[]
   setIncomeRecords: (records: IncomeRecord[]) => void
-  totalPoints: number
-  setTotalPoints: (points: number) => void
+  totalBoxes: number
+  setTotalBoxes: (boxes: number) => void
   userLevel: number
   setUserLevel: (level: number) => void
   userNickname: string
@@ -642,22 +642,22 @@ export interface AppState {
   level: number
   setLevel: (level: number) => void
   isIncomePrivate: boolean
-  setIsIncomePrivate: (isPrivate: boolean) => void
+  setIsIncomePrivate: (isPrivate: boolean) => Promise<void>
   
   // 친구/소셜 관련 상태들
   friends: { id: number; name: string; level: number; totalIncome: number; isOnline: boolean; avatar: string }[]
   setFriends: (friends: { id: number; name: string; level: number; totalIncome: number; isOnline: boolean; avatar: string }[]) => void
   friendRequests: { id: number; name: string; level: number; message: string }[]
   setFriendRequests: (requests: { id: number; name: string; level: number; message: string }[]) => void
-  socialFeed: { id: number; userId: number; userName: string; action: string; points: number; timestamp: string }[]
-  setSocialFeed: (feed: { id: number; userId: number; userName: string; action: string; points: number; timestamp: string }[]) => void
+  socialFeed: { id: number; userId: number; userName: string; action: string; boxes: number; timestamp: string }[]
+  setSocialFeed: (feed: { id: number; userId: number; userName: string; action: string; boxes: number; timestamp: string }[]) => void
   
   // 계산된 값들과 함수들
   getTotalIncomeByPlatform: (platform: string) => number
   totalIncome: number
   getWeatherIcon: (condition: string) => string
-  addPoints: (amount: number, reason?: string) => void
-  usePoints: (amount: number, item?: string) => boolean
+  addBoxes: (amount: number, reason?: string) => void
+  useBoxes: (amount: number, item?: string) => boolean
   canAfford: (price: number) => boolean
 
   // 플랫폼 설정 상태

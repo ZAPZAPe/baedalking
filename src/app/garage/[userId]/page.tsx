@@ -8,6 +8,7 @@ import GuestbookPreview from '@/components/garage/GuestbookPreview'
 import UserProfileModal from '@/components/modals/UserProfileModal'
 import { UserProfile } from '@/types'
 import { useAppState } from '@/hooks/useAppState'
+import KakaoAd from '@/components/ui/KakaoAd'
 
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
@@ -68,11 +69,18 @@ export default function MinihompyPage() {
     try {
       // 세션 스토리지에서 오늘 방문 기록 확인
       const today = new Date().toISOString().split('T')[0]
-      const visitKey = `visit_${userId}_${today}`
-      const hasVisitedToday = sessionStorage.getItem(visitKey)
+      // 오늘 방문했는지 확인 (Supabase에서 확인)
+      const { data: todayVisits } = await supabase
+        .from('visits')
+        .select('id')
+        .eq('visitor_id', currentUser?.id)
+        .eq('visited_user_id', userId)
+        .gte('created_at', `${today}T00:00:00`)
+        .lt('created_at', `${today}T23:59:59`)
+        .limit(1)
       
-      if (hasVisitedToday) {
-        console.log('🔄 오늘 이미 방문 기록됨 (세션 기반):', userId)
+      if (todayVisits && todayVisits.length > 0) {
+        console.log('🔄 오늘 이미 방문 기록됨 (Supabase 기반):', userId)
         return
       }
       
@@ -92,8 +100,6 @@ export default function MinihompyPage() {
       const data = await response.json()
       
       if (response.ok) {
-        // 세션 스토리지에 오늘 방문 기록 저장
-        sessionStorage.setItem(visitKey, 'true')
         console.log('✅ 방문 기록 완료:', data.message)
       } else {
         console.log('ℹ️ 방문 기록 응답:', data.message)
@@ -345,13 +351,11 @@ export default function MinihompyPage() {
         </div>
 
         {/* 카카오 광고 */}
-        <div className="bg-gradient-to-br from-[#2d2d2d]/90 to-[#1a1a1a]/90 backdrop-blur-lg rounded-xl p-3 border border-gray-600/20 shadow-2xl text-center flex-shrink-0 min-h-[100px] flex items-center justify-center">
-          <ins className="kakao_ad_area" style={{display: 'none'}}
-            data-ad-unit="DAN-xsiNefKQFaudq5Uw"
-            data-ad-width="320"
-            data-ad-height="100"></ins>
-          <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
-        </div>
+        <KakaoAd 
+          adUnit="DAN-xsiNefKQFaudq5Uw"
+          width={320}
+          height={100}
+        />
 
         {/* 방명록 미리보기 */}
         <div className="bg-gradient-to-br from-[#1a4a2e]/80 to-[#1a1a2e]/80 backdrop-blur-lg rounded-xl p-4 border border-[#00ff88]/20">

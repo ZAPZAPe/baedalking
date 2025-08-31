@@ -20,6 +20,11 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
   
   // 서버 시간 기준으로 오늘 날짜 계산
   const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
+  const todayStr = serverTime ? serverTime.koreaDate : 
+                   today.getFullYear() + '-' + 
+                   String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(today.getDate()).padStart(2, '0')
+  
   let year: number
   let month: number
   
@@ -31,6 +36,10 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
     year = today.getFullYear()
     month = today.getMonth()
   }
+  
+  // currentDate 변수 추가 (선택된 달의 첫째 날 기준으로 비교)
+  const currentDate = selectedMonth ? `${selectedMonth}-01` : 
+                     `${year}-${String(month + 1).padStart(2, '0')}-01`
   
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
@@ -251,8 +260,69 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
             )}
             
             {/* 지난달 대비 증감률 */}
-            <div className="mt-1 text-xs font-mono flex items-center justify-center gap-1 text-[#ffd93d]">
-              지난달 대비 데이터 준비 중
+            <div className="mt-1 text-xs font-mono flex items-center justify-center gap-1">
+              {(() => {
+                // 지난달 데이터 계산
+                const lastMonthStart = new Date(currentDate)
+                lastMonthStart.setMonth(lastMonthStart.getMonth() - 1)
+                lastMonthStart.setDate(1)
+                
+                const lastMonthEnd = new Date(currentDate)
+                lastMonthEnd.setDate(1)
+                
+                const lastMonthRecords = allRecords.filter(r => {
+                  const recordDate = new Date(r.date)
+                  return recordDate >= lastMonthStart && recordDate < lastMonthEnd
+                })
+                
+                const lastMonthTotal = lastMonthRecords.reduce((sum, r) => sum + (r.amount || 0) + (r.missionAmount || 0), 0)
+                const lastMonthCount = lastMonthRecords.reduce((sum, r) => sum + r.count, 0)
+                const lastMonthAverage = lastMonthCount > 0 ? lastMonthTotal / lastMonthCount : 0
+                
+                const currentMonthAverage = monthCount > 0 ? monthTotal / monthCount : 0
+                
+                // 디버깅용 로그
+                console.log('🔍 월간 비교 데이터:', {
+                  selectedMonth,
+                  currentMonth: `${year}-${String(month + 1).padStart(2, '0')}`,
+                  lastMonthStart: lastMonthStart.toISOString().split('T')[0],
+                  lastMonthEnd: lastMonthEnd.toISOString().split('T')[0],
+                  lastMonthRecords: lastMonthRecords.length,
+                  lastMonthTotal,
+                  lastMonthCount,
+                  currentMonthTotal: monthTotal,
+                  currentMonthCount: monthCount
+                })
+                
+                let message = ''
+                let color = 'text-gray-400'
+                
+                if (monthTotal === 0) {
+                  message = '이번 달의 수입을 기록해보세요! 📝'
+                  color = 'text-[#9c88ff]'
+                } else if (lastMonthTotal > 0) {
+                  const change = currentMonthAverage - lastMonthAverage
+                  if (change > 0) {
+                    message = `지난달보다 ${(change / 10000).toFixed(1)}만원 더 벌었습니다! 🚀`
+                    color = 'text-[#00ff88]'
+                  } else if (change < 0) {
+                    message = `지난달보다 ${Math.abs(change / 10000).toFixed(1)}만원 적게 벌었습니다`
+                    color = 'text-[#ff6b6b]'
+                  } else {
+                    message = '지난달과 동일한 수입입니다'
+                    color = 'text-[#00d4ff]'
+                  }
+                } else {
+                  message = '지난달에 데이터가 없습니다'
+                  color = 'text-[#9c88ff]'
+                }
+                
+                return (
+                  <div className={`${color}`}>
+                    {message}
+                  </div>
+                )
+              })()}
             </div>
             
             {/* 목표 달성률 */}
@@ -523,24 +593,15 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
       </div>
 
       {/* 저장 버튼 */}
-      <button
+      <button 
         onClick={captureMonthlyView}
-        className="w-full bg-gradient-to-r from-[#1a202c] to-[#2d3748] border-2 border-[#ffd93d]/50 hover:border-[#ffd93d] text-white font-mono py-3 px-4 transition-all duration-200 relative"
-        style={{
-          borderRadius: '4px',
-          fontFamily: 'monospace',
-          imageRendering: 'pixelated'
-        }}
+        className="w-full bg-gradient-to-r from-[#9c88ff]/20 to-[#ffd93d]/20 border-2 border-[#9c88ff]/50 hover:border-[#9c88ff] p-2 rounded text-center hover:from-[#9c88ff]/30 hover:to-[#ffd93d]/30 transition-all duration-300 shadow-lg" 
+        style={{borderRadius: '8px'}}
       >
-        <div className="flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-base font-bold">📸 월간 수익 캡처 저장</p>
-          </div>
+        <div className="flex flex-col items-center justify-center">
+          <div className="text-[#9c88ff] text-sm font-bold font-mono">📸 월간 수익 캡처 저장</div>
+          <div className="text-gray-300 text-xs font-mono">이번 달의 수익 현황을 이미지로 저장</div>
         </div>
-        <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute top-1 right-1 w-1 h-1 bg-[#ffd93d]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ffd93d]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ffd93d]/60" style={{borderRadius: '1px'}}></div>
       </button>
     </div>
   )

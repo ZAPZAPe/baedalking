@@ -21,8 +21,9 @@ interface ItemSelectionPanelsProps {
   currentBackground: string
   setCurrentBackground: (background: string) => void
   
-  // Point system
-  usePoints: (amount: number, item: string) => boolean
+  // Box system
+  totalBoxes: number
+  useBoxes: (amount: number, item: string) => boolean
 }
 
 export default function ItemSelectionPanels({
@@ -38,7 +39,8 @@ export default function ItemSelectionPanels({
   setShowBackgroundItemPanel,
   currentBackground,
   setCurrentBackground,
-  usePoints
+  totalBoxes,
+  useBoxes
 }: ItemSelectionPanelsProps) {
   return (
     <>
@@ -121,7 +123,7 @@ export default function ItemSelectionPanels({
                   <button
                     key={item.id}
                     onClick={() => {
-                      if (item.price === 0 || usePoints(item.price, item.name)) {
+                      if (item.price === 0 || useBoxes(item.price, item.name)) {
                         setCurrentCharacterItem(item.id)
                         setShowCharacterItemPanel(false)
                       }
@@ -137,7 +139,7 @@ export default function ItemSelectionPanels({
                       <div className="text-lg sm:text-xl mb-1">{item.icon}</div>
                       <div className="text-white text-xs font-mono font-bold">{item.name}</div>
                       <div className="text-[#ffd93d] text-xs mt-1 font-mono">
-                        {item.price === 0 ? '무료' : `${item.price}💎`}
+                        {item.price === 0 ? '무료' : `${item.price}📦`}
                       </div>
                     </div>
                     {/* 선택된 버튼 픽셀 도트 */}
@@ -242,7 +244,7 @@ export default function ItemSelectionPanels({
                   <button
                     key={vehicle.id}
                     onClick={() => {
-                      if (vehicle.price === 0 || usePoints(vehicle.price, vehicle.name)) {
+                      if (vehicle.price === 0 || useBoxes(vehicle.price, vehicle.name)) {
                         setCurrentVehicle(vehicle.id)
                         setShowVehicleItemPanel(false)
                       }
@@ -258,7 +260,7 @@ export default function ItemSelectionPanels({
                       <div className="text-lg sm:text-xl mb-1">{vehicle.icon}</div>
                       <div className="text-white text-xs font-mono font-bold">{vehicle.name}</div>
                       <div className="text-[#ffd93d] text-xs mt-1 font-mono">
-                        {vehicle.price === 0 ? '무료' : `${vehicle.price}💎`}
+                        {vehicle.price === 0 ? '무료' : `${vehicle.price}📦`}
                       </div>
                     </div>
                     {/* 선택된 버튼 픽셀 도트 */}
@@ -363,7 +365,7 @@ export default function ItemSelectionPanels({
                   <button
                     key={background.id}
                     onClick={() => {
-                      if (background.price === 0 || usePoints(background.price, background.name)) {
+                      if (background.price === 0 || useBoxes(background.price, background.name)) {
                         setCurrentBackground(background.id)
                         setShowBackgroundItemPanel(false)
                       }
@@ -387,7 +389,7 @@ export default function ItemSelectionPanels({
                       </div>
                       <div className="text-white text-xs font-mono font-bold">{background.name}</div>
                       <div className="text-[#ffd93d] text-xs mt-1 font-mono">
-                        {background.price === 0 ? '무료' : `${background.price}💎`}
+                        {background.price === 0 ? '무료' : `${background.price}📦`}
                       </div>
                     </div>
                     {/* 선택된 버튼 픽셀 도트 */}

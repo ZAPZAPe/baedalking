@@ -13,6 +13,7 @@ interface RankingTabProps {
   onShowRankingDetail: () => void
   onTopRankersUpdate: (rankers: TopRanker[]) => void
   onShowUserProfile: (userProfile: any) => void
+  onMyRankUpdate: (rank: number | null, total: number) => void
 }
 
 interface GradeInfo {
@@ -35,7 +36,7 @@ interface TopRanker {
   platforms: string[] // 수입 등록된 플랫폼들
 }
 
-export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, onShowGradeDetail, onShowTopRankerProfile, onShowRankingDetail, onTopRankersUpdate, onShowUserProfile }: RankingTabProps) {
+export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, onShowGradeDetail, onShowTopRankerProfile, onShowRankingDetail, onTopRankersUpdate, onShowUserProfile, onMyRankUpdate }: RankingTabProps) {
   // 홈에서 계산된 오늘 수입을 직접 사용
   const myIncome = todayIncome
 
@@ -51,40 +52,12 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
   // 내 등급 찾기 (수입이 있을 때만)
   const myGrade = myIncome > 0 ? grades.find(grade => myIncome >= grade.minIncome && myIncome <= (grade.maxIncome === Infinity ? 999999999 : grade.maxIncome)) || grades[grades.length - 1] : null
 
-  // 상위 5명 랭킹 생성 (시뮬레이션)
-  const generateTopRankers = (): TopRanker[] => {
-    const baseIncome = myIncome * 1.5 // 내 수입보다 높은 수입으로 시작
-    
-    return Array.from({ length: 5 }, (_, index) => {
-      // 랜덤하게 1~3개 플랫폼 선택
-      const allPlatforms = ['baemin', 'coupang', '기타']
-      const platformCount = Math.floor(Math.random() * 3) + 1
-      const platforms = allPlatforms
-        .sort(() => Math.random() - 0.5)
-        .slice(0, platformCount)
-      
-      // 랜덤 닉네임 생성
-      const randomNickname = `배달러${String.fromCharCode(65 + index)}` // A, B, C, D, E
-      
-      // 랜덤 지역 생성
-      const regions = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종']
-      const randomRegion = regions[Math.floor(Math.random() * regions.length)]
-      
-      return {
-        id: `top-ranker-${index + 1}`,
-        rank: index + 1,
-        income: Math.floor(baseIncome + (index * 50000) + Math.random() * 100000),
-        count: Math.floor(15 + Math.random() * 20),
-        platform: platforms[0], // 기존 호환성을 위해 유지
-        nickname: randomNickname,
-        region: randomRegion,
-        platforms: platforms
-      }
-    })
-  }
+  // 가상 데이터 생성 함수 제거 - 실제 데이터만 사용
 
   // 실제 랭킹 데이터 상태
   const [topRankers, setTopRankers] = useState<TopRanker[]>([])
+  const [myRank, setMyRank] = useState<number | null>(null)
+  const [totalUsers, setTotalUsers] = useState<number>(0)
   const [isLoadingRanking, setIsLoadingRanking] = useState(true)
 
   // topRankers가 업데이트될 때마다 페이지로 전달
@@ -97,7 +70,7 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
     const fetchRankings = async () => {
       try {
         console.log('🔍 랭킹 데이터 가져오기 시작...')
-        const response = await fetch('/api/rankings?period=daily&limit=5')
+        const response = await fetch('/api/rankings?period=daily&limit=100') // 전체 랭킹을 가져와서 내순위 계산
         const data = await response.json()
         
         console.log('📊 API 응답:', { response: response.ok, data })
@@ -126,26 +99,49 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
               rank: ranking.rank || index + 1,
               income: ranking.income || ranking.total_amount || 0,
               count: ranking.count || ranking.delivery_count || 0,
-              platform: ranking.platform || '배민',
+              platform: ranking.platform || 'baemin',
               nickname: ranking.nickname || '알 수 없음',
               region: ranking.region || '서울',
-              platforms: ranking.platforms || [ranking.platform || '배민']
+              platforms: Array.isArray(ranking.platforms) && ranking.platforms.length > 0 
+                ? ranking.platforms 
+                : [ranking.platform || 'baemin']
             }
           })
           
           console.log('🎯 최종 포맷된 랭커들:', formattedRankers)
-          setTopRankers(formattedRankers)
+          // 상위 5명만 표시
+          setTopRankers(formattedRankers.slice(0, 5))
+          
+          // 내순위 계산
+          if (data.totalUsers && myIncome > 0 && !isIncomePrivate) {
+            // 내 수입보다 높은 수입을 가진 사용자 수를 계산
+            const usersWithHigherIncome = data.rankings.filter((ranking: any) => 
+              ranking.income > myIncome
+            ).length
+            
+            // 내순위 = 내 수입보다 높은 수입을 가진 사용자 수 + 1
+            const calculatedRank = usersWithHigherIncome + 1
+            setMyRank(calculatedRank)
+            setTotalUsers(data.totalUsers)
+            
+            // page.tsx로 내순위 정보 전달
+            onMyRankUpdate(calculatedRank, data.totalUsers)
+            
+            console.log(`🎯 내순위 계산: 수입 ${myIncome}, 높은 수입 사용자 ${usersWithHigherIncome}명, 내순위 ${calculatedRank}위`)
+          } else {
+            setMyRank(null)
+            setTotalUsers(data.totalUsers || 0)
+            onMyRankUpdate(null, data.totalUsers || 0)
+          }
         } else {
-          console.log('⚠️ API 응답이 없거나 비어있음, 시뮬레이션 데이터 사용')
-          // API 응답이 없으면 시뮬레이션 데이터 생성
-          const simulationRankers = generateTopRankers()
-          setTopRankers(simulationRankers)
+          console.log('⚠️ API 응답이 없거나 비어있음, 실제 데이터 없음')
+          // API 응답이 없으면 빈 배열로 설정 (설명 텍스트 표시)
+          setTopRankers([])
         }
       } catch (error) {
         console.error('❌ 랭킹 데이터 로딩 오류:', error)
-        // 에러 시에도 시뮬레이션 데이터 사용
-        const simulationRankers = generateTopRankers()
-        setTopRankers(simulationRankers)
+        // 에러 시에도 빈 배열로 설정 (설명 텍스트 표시)
+        setTopRankers([])
       } finally {
         setIsLoadingRanking(false)
       }
@@ -290,7 +286,7 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
             
             <div className="text-white text-xs font-mono font-bold mb-1">내 순위</div>
             <div className="text-sm font-bold font-mono text-[#ffd93d]">
-              {isIncomePrivate ? '비공개' : (myGrade ? `${Math.floor(Math.random() * 100) + 1}위` : '순위 없음')}
+              {isIncomePrivate ? '비공개' : (myRank ? `${myRank}위` : '순위 없음')}
             </div>
           </div>
         </div>
@@ -342,15 +338,9 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
         </div>
         
         {topRankers.length === 0 ? (
-          <div className="text-center py-8 text-gray-400 font-mono bg-[#1a202c]/30 rounded-lg border border-[#ff6b6b]/20 relative">
-            {/* 픽셀 도트들 */}
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
-            
-            <p className="text-lg mb-2">아직 랭킹 데이터가 없습니다</p>
-            <p className="text-sm">수입을 기록한 사용자가 나타나면 표시됩니다</p>
+          <div className="text-center py-6 text-gray-400 font-mono bg-[#1a202c]/30 rounded-lg border border-[#ff6b6b]/20">
+            <p className="text-sm">아직 랭킹 데이터가 없습니다</p>
+            <p className="text-xs mt-2">수입을 기록한 사용자가 나타나면 표시됩니다</p>
           </div>
         ) : (
           <div className="space-y-2 sm:space-y-3">

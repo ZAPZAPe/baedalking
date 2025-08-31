@@ -13,9 +13,10 @@ interface ProfileTabProps {
     color: string
   }>
   isIncomePrivate: boolean
-  setIsIncomePrivate: (isPrivate: boolean) => void
+  setIsIncomePrivate: (isPrivate: boolean) => Promise<void>
   setShowPrivacyPolicy: (show: boolean) => void
   setShowTermsOfService: (show: boolean) => void
+  showDeleteAccount: boolean
   setShowDeleteAccount: (show: boolean) => void
   onLogout: () => void
   onUpdateProfile: (field: string, value: string) => Promise<boolean>
@@ -31,6 +32,7 @@ export default function ProfileTab({
   setIsIncomePrivate,
   setShowPrivacyPolicy,
   setShowTermsOfService,
+  showDeleteAccount,
   setShowDeleteAccount,
   onLogout,
   onUpdateProfile,
@@ -252,10 +254,7 @@ export default function ProfileTab({
     onLogout()
   }
 
-  const handleDeleteAccount = () => {
-    // TODO: 계정 삭제 로직 구현
-    console.log('계정 삭제')
-  }
+
 
   return (
     <div className="space-y-2 sm:space-y-3">
@@ -544,7 +543,7 @@ export default function ProfileTab({
                     console.log('토글 클릭! 현재값:', isIncomePrivate, '새값:', newValue)
                     
                     // 즉시 로컬 상태 업데이트 (즉시 반응)
-                    setIsIncomePrivate(newValue)
+                    await setIsIncomePrivate(newValue)
                     
                     try {
                       const response = await fetch(`/api/users/${userId}`, {
@@ -562,13 +561,13 @@ export default function ProfileTab({
                       } else {
                         console.error('수익 비공개 설정 저장 실패')
                         // 실패 시 원래 값으로 되돌리기
-                        setIsIncomePrivate(!newValue)
+                        await setIsIncomePrivate(!newValue)
                         alert('설정 저장에 실패했습니다. 다시 시도해주세요.')
                       }
                     } catch (error) {
                       console.error('수익 비공개 설정 저장 오류:', error)
                       // 에러 시 원래 값으로 되돌리기
-                      setIsIncomePrivate(!newValue)
+                      await setIsIncomePrivate(!newValue)
                       alert('설정 저장 중 오류가 발생했습니다.')
                     }
                   }}
@@ -721,6 +720,7 @@ export default function ProfileTab({
           </button>
         </div>
       </div>
+
 
 
     </div>

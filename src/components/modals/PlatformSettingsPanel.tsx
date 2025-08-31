@@ -12,6 +12,33 @@ interface PlatformSettingsPanelProps {
   onRemoveCustomPlatform: (id: string) => void
 }
 
+// 플랫폼별 설정을 위한 헬퍼 함수
+const getPlatformConfig = (platform: Platform) => {
+  if (platform.id === 'baemin') {
+    return { 
+      icon: '/baemin-logo.svg', 
+      borderColor: '#00C851', 
+      bgColor: '#00C851',
+      showLogo: true 
+    }
+  } else if (platform.id === 'coupang') {
+    return { 
+      icon: '/coupang-logo.svg', 
+      borderColor: '#E4002B', 
+      bgColor: '#E4002B',
+      showLogo: true 
+    }
+  } else {
+    // 커스텀 플랫폼은 색상 네모로 표시
+    return { 
+      icon: '', 
+      borderColor: platform.color || '#9c88ff', 
+      bgColor: platform.bgColor || '#9c88ff',
+      showLogo: false 
+    }
+  }
+}
+
 export default function PlatformSettingsPanel({
   isOpen,
   onClose,
@@ -112,33 +139,57 @@ export default function PlatformSettingsPanel({
                 ACTIVE PLATFORMS
               </h4>
               <div className="space-y-2">
-                {platforms.filter(p => p.isActive).map((platform) => (
-                  <div key={platform.id} className="bg-[#0a0a23]/80 border-2 border-[#00d4ff]/30 p-2 sm:p-3 relative"
-                       style={{borderRadius: '4px'}}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-[#00d4ff] border border-white" style={{borderRadius: '2px'}}></div>
-                        <span className="text-white text-xs sm:text-sm font-mono">{platform.name}</span>
-                        <span className="text-[#00d4ff] text-xs bg-[#0a0a23]/90 px-1 sm:px-2 py-0.5 border border-[#00d4ff]/30" 
-                              style={{borderRadius: '2px'}}>
-                          {platform.type === 'default' ? '기본' : '커스텀'}
-                        </span>
+                {platforms.filter(p => p.isActive).map((platform) => {
+                  const config = getPlatformConfig(platform)
+                  return (
+                    <div key={platform.id} className="bg-[#0a0a23]/80 border-2 border-[#00d4ff]/30 p-2 sm:p-3 relative"
+                         style={{borderRadius: '4px'}}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 overflow-hidden`}
+                               style={{
+                                 backgroundColor: `${config.bgColor}20`,
+                                 borderColor: `${config.borderColor}60`
+                               }}>
+                            {config.showLogo ? (
+                              <img 
+                                src={config.icon} 
+                                alt={platform.name}
+                                className="w-5 h-5 object-contain"
+                                style={{ imageRendering: 'pixelated' }}
+                              />
+                            ) : (
+                              <div 
+                                className="w-4 h-4"
+                                style={{
+                                  backgroundColor: config.bgColor,
+                                  borderRadius: '2px'
+                                }}
+                              />
+                            )}
+                          </div>
+                          <span className="text-white text-xs sm:text-sm font-mono">{platform.name}</span>
+                          <span className="text-[#00d4ff] text-xs bg-[#0a0a23]/90 px-1 sm:px-2 py-0.5 border border-[#00d4ff]/30" 
+                                style={{borderRadius: '2px'}}>
+                            {platform.type === 'default' ? '기본' : '커스텀'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => onTogglePlatform(platform.id)}
+                          className="bg-[#ff6b6b]/20 border border-[#ff6b6b]/50 text-[#ff6b6b] px-2 sm:px-3 py-1 text-xs font-mono hover:border-[#ff6b6b] transition-all duration-200"
+                          style={{borderRadius: '2px'}}
+                        >
+                          비활성
+                        </button>
                       </div>
-                      <button
-                        onClick={() => onTogglePlatform(platform.id)}
-                        className="bg-[#ff6b6b]/20 border border-[#ff6b6b]/50 text-[#ff6b6b] px-2 sm:px-3 py-1 text-xs font-mono hover:border-[#ff6b6b] transition-all duration-200"
-                        style={{borderRadius: '2px'}}
-                      >
-                        비활성
-                      </button>
+                      {/* 모서리 픽셀 도트 */}
+                      <div className="absolute top-1 left-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
+                      <div className="absolute top-1 right-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
+                      <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
+                      <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
                     </div>
-                    {/* 모서리 픽셀 도트 */}
-                    <div className="absolute top-1 left-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
-                    <div className="absolute top-1 right-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
-                    <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
-                    <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -152,44 +203,68 @@ export default function PlatformSettingsPanel({
                 INACTIVE PLATFORMS
               </h4>
               <div className="space-y-2">
-                {platforms.filter(p => !p.isActive).map((platform) => (
-                  <div key={platform.id} className="bg-[#0a0a23]/80 border-2 border-[#9c88ff]/30 p-2 sm:p-3 relative"
-                       style={{borderRadius: '4px'}}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-[#9c88ff] border border-white" style={{borderRadius: '2px'}}></div>
-                        <span className="text-white text-xs sm:text-sm font-mono">{platform.name}</span>
-                        <span className="text-[#9c88ff] text-xs bg-[#0a0a23]/90 px-1 sm:px-2 py-0.5 border border-[#9c88ff]/30" 
-                              style={{borderRadius: '2px'}}>
-                          {platform.type === 'default' ? '기본' : '커스텀'}
-                        </span>
-                      </div>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => onTogglePlatform(platform.id)}
-                          className="bg-[#00ff88]/20 border border-[#00ff88]/50 text-[#00ff88] px-2 sm:px-3 py-1 text-xs font-mono hover:border-[#00ff88] transition-all duration-200"
-                          style={{borderRadius: '2px'}}
-                        >
-                          활성
-                        </button>
-                        {platform.type === 'custom' && (
+                {platforms.filter(p => !p.isActive).map((platform) => {
+                  const config = getPlatformConfig(platform)
+                  return (
+                    <div key={platform.id} className="bg-[#0a0a23]/80 border-2 border-[#9c88ff]/30 p-2 sm:p-3 relative"
+                         style={{borderRadius: '4px'}}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 overflow-hidden`}
+                               style={{
+                                 backgroundColor: `${config.bgColor}20`,
+                                 borderColor: `${config.borderColor}60`
+                               }}>
+                            {config.showLogo ? (
+                              <img 
+                                src={config.icon} 
+                                alt={platform.name}
+                                className="w-5 h-5 object-contain"
+                                style={{ imageRendering: 'pixelated' }}
+                              />
+                            ) : (
+                              <div 
+                                className="w-4 h-4"
+                                style={{
+                                  backgroundColor: config.bgColor,
+                                  borderRadius: '2px'
+                                }}
+                              />
+                            )}
+                          </div>
+                          <span className="text-white text-xs sm:text-sm font-mono">{platform.name}</span>
+                          <span className="text-[#9c88ff] text-xs bg-[#0a0a23]/90 px-1 sm:px-2 py-0.5 border border-[#9c88ff]/30" 
+                                style={{borderRadius: '2px'}}>
+                            {platform.type === 'default' ? '기본' : '커스텀'}
+                          </span>
+                        </div>
+                        <div className="flex gap-1">
                           <button
-                            onClick={() => onRemoveCustomPlatform(platform.id)}
-                            className="bg-[#ff6b6b]/20 border border-[#ff6b6b]/50 text-[#ff6b6b] px-2 sm:px-3 py-1 text-xs font-mono hover:border-[#ff6b6b] transition-all duration-200"
+                            onClick={() => onTogglePlatform(platform.id)}
+                            className="bg-[#00ff88]/20 border border-[#00ff88]/50 text-[#00ff88] px-2 sm:px-3 py-1 text-xs font-mono hover:border-[#00ff88] transition-all duration-200"
                             style={{borderRadius: '2px'}}
                           >
-                            삭제
+                            활성
                           </button>
-                        )}
+                          {platform.type === 'custom' && (
+                            <button
+                              onClick={() => onRemoveCustomPlatform(platform.id)}
+                              className="bg-[#ff6b6b]/20 border border-[#ff6b6b]/50 text-[#ff6b6b] px-2 sm:px-3 py-1 text-xs font-mono hover:border-[#ff6b6b] transition-all duration-200"
+                              style={{borderRadius: '2px'}}
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </div>
                       </div>
+                      {/* 모서리 픽셀 도트 */}
+                      <div className="absolute top-1 left-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
+                      <div className="absolute top-1 right-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
+                      <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
+                      <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
                     </div>
-                    {/* 모서리 픽셀 도트 */}
-                    <div className="absolute top-1 left-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
-                    <div className="absolute top-1 right-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
-                    <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
-                    <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#9c88ff]" style={{borderRadius: '1px'}}></div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>

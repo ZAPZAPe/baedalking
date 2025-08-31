@@ -1,5 +1,6 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
+import { Platform } from '@/hooks/useAppState'
 
 interface UserProfile {
   id: string
@@ -18,6 +19,7 @@ interface UserProfileModalProps {
   isOpen: boolean
   onClose: () => void
   user: UserProfile | null
+  platforms: Platform[]
   title?: string // 모달 제목 (기본값: "USER PROFILE")
 }
 
@@ -25,11 +27,46 @@ export default function UserProfileModal({
   isOpen,
   onClose,
   user,
+  platforms,
   title = "USER PROFILE"
 }: UserProfileModalProps) {
   const router = useRouter()
   
   if (!isOpen || !user) return null
+
+  // 플랫폼별 설정을 위한 헬퍼 함수
+  const getPlatformConfig = (platformId: string) => {
+    if (platformId === 'baemin') {
+      return { 
+        name: '배민',
+        color: '#00C851',
+        bgColor: '#00C851'
+      }
+    } else if (platformId === 'coupang') {
+      return { 
+        name: '쿠팡',
+        color: '#E4002B',
+        bgColor: '#E4002B'
+      }
+    } else {
+      // 커스텀 플랫폼은 platforms 배열에서 찾기
+      const customPlatform = platforms.find(p => p.id === platformId)
+      if (customPlatform) {
+        return { 
+          name: customPlatform.name,
+          color: customPlatform.color,
+          bgColor: customPlatform.color
+        }
+      } else {
+        // 플랫폼을 찾을 수 없는 경우 기본값
+        return { 
+          name: platformId,
+          color: '#9c88ff',
+          bgColor: '#9c88ff'
+        }
+      }
+    }
+  }
 
   return (
     <>
@@ -206,21 +243,23 @@ export default function UserProfileModal({
                 <div className="text-center">
                   <div className="flex flex-wrap justify-center gap-2">
                     {user.platforms && user.platforms.length > 0 ? (
-                      user.platforms.map((platform: string, index: number) => (
-                        <div 
-                          key={index}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold border ${
-                            platform === 'baemin' 
-                              ? 'bg-[#00ff88]/20 text-[#00ff88] border-[#00ff88]/50' 
-                              : platform === 'coupang' 
-                              ? 'bg-[#ff6b6b]/20 text-[#ff6b6b] border-[#ff6b6b]/50'
-                              : 'bg-[#9c88ff]/20 text-[#9c88ff] border-[#9c88ff]/50'
-                          }`}
-                          style={{borderRadius: '4px'}}
-                        >
-                          {platform === 'baemin' ? '배민' : platform === 'coupang' ? '쿠팡' : platform}
-                        </div>
-                      ))
+                      user.platforms.map((platform: string, index: number) => {
+                        const platformConfig = getPlatformConfig(platform)
+                        return (
+                          <div 
+                            key={index}
+                            className="px-3 py-1 rounded-lg text-xs font-mono font-bold border"
+                            style={{
+                              backgroundColor: `${platformConfig.bgColor}20`,
+                              color: platformConfig.color,
+                              borderColor: `${platformConfig.bgColor}50`,
+                              borderRadius: '4px'
+                            }}
+                          >
+                            {platformConfig.name}
+                          </div>
+                        )
+                      })
                     ) : (
                       <div className="text-gray-400 text-xs font-mono">
                         등록된 플랫폼 없음

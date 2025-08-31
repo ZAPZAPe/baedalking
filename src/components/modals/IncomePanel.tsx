@@ -126,13 +126,13 @@ export default function IncomePanel({
           </div>
 
           {/* 플랫폼별 상세 현황 - 카드 형식으로 통일 */}
-          <div className="space-y-2 sm:space-y-3 relative">
-            <h4 className="text-[#00d4ff] text-center font-bold text-xs sm:text-sm font-mono tracking-wide mb-3" 
+          <div className="space-y-2 relative">
+            <h4 className="text-[#00d4ff] text-center font-bold text-xs sm:text-sm font-mono tracking-wide mb-2" 
                 style={{textShadow: '0 0 6px rgba(0, 212, 255, 0.5)'}}>
               PLATFORM STATUS
             </h4>
             
-            <div className="space-y-3">
+            <div className="space-y-2">
               {platforms.filter(p => p.isActive).map((platform) => {
                 const platformIncome = getTotalIncomeByPlatform(platform.id)
                 const platformRecords = incomeRecords.filter(record => record.platform === platform.id)
@@ -140,12 +140,34 @@ export default function IncomePanel({
                 const platformAmount = platformRecords.reduce((sum, record) => sum + (record.total_amount || 0), 0)
                 const platformMissionAmount = platformRecords.reduce((sum, record) => sum + (record.mission_amount || 0), 0)
                 
-                const platformConfig = {
-                  'baemin': { icon: '/baemin-logo.svg', borderColor: '#00d4ff', bgColor: '#00d4ff' },
-                  'coupang': { icon: '/coupang-logo.svg', borderColor: '#ff6b6b', bgColor: '#ff6b6b' }
+                // 플랫폼별 설정을 위한 헬퍼 함수
+                const getPlatformConfig = (platform: any) => {
+                  if (platform.id === 'baemin') {
+                    return { 
+                      icon: '/baemin-logo.svg', 
+                      borderColor: '#00C851', 
+                      bgColor: '#00C851',
+                      showLogo: true 
+                    }
+                  } else if (platform.id === 'coupang') {
+                    return { 
+                      icon: '/coupang-logo.svg', 
+                      borderColor: '#E4002B', 
+                      bgColor: '#E4002B',
+                      showLogo: true 
+                    }
+                  } else {
+                    // 커스텀 플랫폼은 색상 네모로 표시
+                    return { 
+                      icon: '', 
+                      borderColor: platform.color, 
+                      bgColor: platform.bgColor,
+                      showLogo: false 
+                    }
+                  }
                 }
-                const config = platformConfig[platform.id as keyof typeof platformConfig] || 
-                              { icon: '/globe.svg', borderColor: '#9c88ff', bgColor: '#9c88ff' }
+                
+                const config = getPlatformConfig(platform)
                 
                 return (
                   <div 
@@ -157,25 +179,34 @@ export default function IncomePanel({
                       imageRendering: 'pixelated'
                     }}
                   >
-                    <div className="p-4">
+                    <div className="p-2">
                       {/* 플랫폼 헤더 */}
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center border-2 overflow-hidden`}
                                style={{
                                  backgroundColor: `${config.bgColor}20`,
                                  borderColor: `${config.borderColor}60`
                                }}>
-                            <img 
-                              src={config.icon} 
-                              alt={platform.name}
-                              className="w-6 h-6 object-contain"
-                              style={{ imageRendering: 'pixelated' }}
-                            />
+                            {config.showLogo ? (
+                              <img 
+                                src={config.icon} 
+                                alt={platform.name}
+                                className="w-6 h-6 object-contain"
+                                style={{ imageRendering: 'pixelated' }}
+                              />
+                            ) : (
+                              <div 
+                                className="w-5 h-5"
+                                style={{
+                                  backgroundColor: config.bgColor,
+                                  borderRadius: '2px'
+                                }}
+                              />
+                            )}
                           </div>
                           <div>
                             <div className="text-white font-bold text-sm font-mono">{platform.name}</div>
-                            <div className="text-xs text-gray-400 font-mono tracking-wider">DELIVERY PLATFORM</div>
                           </div>
                         </div>
                         <div className={`px-3 py-1 rounded-lg border font-bold text-sm font-mono`}
@@ -190,20 +221,20 @@ export default function IncomePanel({
 
                       {/* 상세 정보 그리드 */}
                       {platformCount > 0 ? (
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-1">
                           {/* 배달 금액 */}
-                          <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
+                          <div className="bg-[#1a202c]/50 p-1 rounded-lg text-center border"
                                style={{borderColor: `${config.borderColor}30`}}>
-                            <div className="text-white text-xs font-mono font-bold mb-1">배달금액</div>
+                            <div className="text-white text-xs font-mono font-bold mb-0.5">배달금액</div>
                             <div className="text-sm font-bold font-mono text-white">
                               ₩{platformAmount.toLocaleString()}
                             </div>
                           </div>
 
                           {/* 미션비 */}
-                          <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
+                          <div className="bg-[#1a202c]/50 p-1 rounded-lg text-center border"
                                style={{borderColor: `${config.borderColor}30`}}>
-                            <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
+                            <div className="text-white text-xs font-mono font-bold mb-0.5">미션비</div>
                             <div className="text-sm font-bold font-mono"
                                  style={{color: config.borderColor}}>
                               ₩{platformMissionAmount.toLocaleString()}
@@ -211,9 +242,9 @@ export default function IncomePanel({
                           </div>
 
                           {/* 건당 평균 */}
-                          <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
+                          <div className="bg-[#1a202c]/50 p-1 rounded-lg text-center border"
                                style={{borderColor: `${config.borderColor}30`}}>
-                            <div className="text-white text-xs font-mono font-bold mb-1">건당평균</div>
+                            <div className="text-white text-xs font-mono font-bold mb-0.5">건당평균</div>
                             <div className="text-sm font-bold font-mono text-[#ffd93d]">
                               ₩{Math.round(platformIncome / platformCount).toLocaleString()}
                             </div>
@@ -228,7 +259,7 @@ export default function IncomePanel({
                       )}
 
                       {/* 총 수입 하단 */}
-                      <div className="mt-3 pt-3 border-t flex items-center justify-between"
+                      <div className="mt-2 pt-2 border-t flex items-center justify-between"
                            style={{borderColor: `${config.borderColor}30`}}>
                         <div className="text-white text-sm font-mono font-bold">총 수입</div>
                         <div className="text-lg font-bold font-mono text-[#ffd93d]">

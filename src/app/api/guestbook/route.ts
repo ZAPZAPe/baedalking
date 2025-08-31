@@ -9,6 +9,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '5')
+    const offset = (page - 1) * limit
 
     if (!userId) {
       return NextResponse.json(
@@ -44,6 +47,21 @@ export async function GET(request: NextRequest) {
       actualUserId = user.id
     }
 
+    // 전체 메시지 수 조회
+    const { count: totalCount, error: countError } = await supabase
+      .from('guestbook')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', actualUserId)
+
+    if (countError) {
+      console.error('방명록 개수 조회 오류:', countError)
+      return NextResponse.json(
+        { error: '방명록을 불러오는데 실패했습니다.' },
+        { status: 500 }
+      )
+    }
+
+    // 페이지네이션된 메시지 조회
     const { data: messages, error } = await supabase
       .from('guestbook')
       .select(`
@@ -59,7 +77,7 @@ export async function GET(request: NextRequest) {
       `)
       .eq('user_id', actualUserId)
       .order('created_at', { ascending: false })
-      .limit(50)
+      .range(offset, offset + limit - 1)
 
     if (error) {
       console.error('방명록 조회 오류:', error)
@@ -69,9 +87,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('✅ 방명록 조회 완료:', messages?.length || 0, '개')
+    console.log('✅ 방명록 조회 완료:', messages?.length || 0, '개 (총', totalCount, '개)')
     
-    return NextResponse.json({ messages })
+    return NextResponse.json({ 
+      messages, 
+      total: totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil((totalCount || 0) / limit)
+    })
 
   } catch (error) {
     console.error('방명록 API 오류:', error)

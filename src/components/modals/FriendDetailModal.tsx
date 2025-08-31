@@ -189,14 +189,14 @@ export default function FriendDetailModal({
                   // 미니홈피 방문 로직
                   console.log('FriendDetailModal Visit 버튼 클릭:', friend.id)
                   try {
-                    router.push(`/minihome/${friend.minihomeId || friend.id}`)
+                    router.push(`/garage/${friend.minihomeId || friend.id}`)
                     console.log('FriendDetailModal 라우터 푸시 완료')
                     onClose() // 모달 닫기
                   } catch (error) {
                     console.error('FriendDetailModal 라우터 푸시 에러:', error)
                     // 폴백: window.location.href 사용
                     console.log('FriendDetailModal 폴백 방법 사용: window.location.href')
-                    window.location.href = `/minihome/${friend.minihomeId || friend.id}`
+                    window.location.href = `/garage/${friend.minihomeId || friend.id}`
                     onClose() // 모달 닫기
                   }
                 }}

@@ -3,15 +3,15 @@
 interface CustomizePanelProps {
   showCustomizePanel: boolean
   setShowCustomizePanel: (show: boolean) => void
-  totalPoints: number
-  usePoints: (amount: number, item: string) => boolean
+  totalBoxes: number
+  useBoxes: (amount: number, item: string) => boolean
 }
 
 export default function CustomizePanel({
   showCustomizePanel,
   setShowCustomizePanel,
-  totalPoints,
-  usePoints
+      totalBoxes,
+  useBoxes
 }: CustomizePanelProps) {
   if (!showCustomizePanel) return null
 
@@ -70,9 +70,9 @@ export default function CustomizePanel({
               <div className="flex items-center gap-2">
                 <span className="text-[#ffd93d] font-bold">💎{item.price}</span>
                 <button 
-                  onClick={() => usePoints(item.price, item.name)}
+                  onClick={() => useBoxes(item.price, item.name)}
                   className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                    totalPoints >= item.price 
+                                          totalBoxes >= item.price 
                       ? 'bg-[#e94560] hover:bg-[#ff6b6b] text-white' 
                       : 'bg-gray-500 text-gray-300 cursor-not-allowed'
                   }`}

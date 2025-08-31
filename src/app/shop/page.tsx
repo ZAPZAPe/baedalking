@@ -32,7 +32,7 @@ export default function ShopPage() {
   
   const [items, setItems] = useState<ShopItem[]>([])
   const [userItems, setUserItems] = useState<UserItem[]>([])
-  const [userPoints, setUserPoints] = useState(0)
+  const [userBoxes, setUserBoxes] = useState(0)
   const [selectedCategory, setSelectedCategory] = useState<'character' | 'garage'>('character')
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null)
   const [showPreview, setShowPreview] = useState(false)
@@ -68,19 +68,19 @@ export default function ShopPage() {
     }
   }
 
-  // 사용자 포인트 불러오기
-  const fetchUserPoints = async () => {
+  // 사용자 박스 불러오기
+  const fetchUserBoxes = async () => {
     if (!user?.id) return
 
     try {
-      const response = await fetch(`/api/points?userId=${user.id}`)
+      const response = await fetch(`/api/boxes?userId=${user.id}`)
       const data = await response.json()
       
       if (response.ok) {
-        setUserPoints(data.totalPoints || 0)
+        setUserBoxes(data.totalBoxes || 0)
       }
     } catch (error) {
-      console.error('포인트 로딩 오류:', error)
+      console.error('박스 로딩 오류:', error)
     }
   }
 
@@ -88,8 +88,8 @@ export default function ShopPage() {
   const purchaseItem = async (item: ShopItem) => {
     if (!user?.id) return
     
-    if (userPoints < item.price) {
-      alert('포인트가 부족합니다!')
+    if (userBoxes < item.price) {
+      alert('박스가 부족합니다!')
       return
     }
 
@@ -111,7 +111,7 @@ export default function ShopPage() {
       if (response.ok) {
         alert(`${item.name}을(를) 구매했습니다!`)
         await fetchUserItems()
-        await fetchUserPoints()
+        await fetchUserBoxes()
         setSelectedItem(null)
         setShowPreview(false)
       } else {
@@ -162,7 +162,7 @@ export default function ShopPage() {
       await Promise.all([
         fetchShopItems(),
         fetchUserItems(),
-        fetchUserPoints()
+        fetchUserBoxes()
       ])
       setIsLoading(false)
     }
@@ -218,20 +218,20 @@ export default function ShopPage() {
             </PixelButton>
           </div>
 
-          {/* 포인트 표시 */}
+          {/* 박스 표시 */}
           <PixelCard variant="primary" className="mb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-[#ffd93d] rounded-full flex items-center justify-center">
-                  <span className="text-black font-bold text-lg">P</span>
+                  <span className="text-black font-bold text-lg">📦</span>
                 </div>
                 <div>
-                  <div className="text-[#ffd93d] font-bold text-lg font-mono">보유 포인트</div>
+                  <div className="text-[#ffd93d] font-bold text-lg font-mono">보유 박스</div>
                   <div className="text-white text-sm font-mono">아이템 구매에 사용하세요</div>
                 </div>
               </div>
               <div className="text-[#ffd93d] font-bold text-2xl font-mono">
-                {userPoints.toLocaleString()}P
+                {userBoxes.toLocaleString()}📦
               </div>
             </div>
           </PixelCard>

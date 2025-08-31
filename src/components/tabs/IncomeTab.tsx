@@ -403,12 +403,45 @@ export default function IncomeTab({
                       <div className="space-y-3">
                         <h4 className="text-white font-bold text-sm sm:text-base font-mono tracking-wide text-center">PLATFORM DETAILS</h4>
                         {dayRecords.map((record, index) => {
-                          const platformConfig = {
-                            'baemin': { name: '배민', icon: '/baemin-logo.svg', color: '#00d4ff' },
-                            'coupang': { name: '쿠팡', icon: '/coupang-logo.svg', color: '#ff6b6b' }
+                          // 플랫폼별 설정을 위한 헬퍼 함수
+                          const getPlatformConfig = (platformId: string) => {
+                            if (platformId === 'baemin') {
+                              return { 
+                                name: '배민',
+                                icon: '/baemin-logo.svg', 
+                                color: '#00C851',
+                                showLogo: true 
+                              }
+                            } else if (platformId === 'coupang') {
+                              return { 
+                                name: '쿠팡',
+                                icon: '/coupang-logo.svg', 
+                                color: '#E4002B',
+                                showLogo: true 
+                              }
+                            } else {
+                              // 커스텀 플랫폼은 platforms 배열에서 찾기
+                              const customPlatform = platforms.find(p => p.id === platformId)
+                              if (customPlatform) {
+                                return { 
+                                  name: customPlatform.name,
+                                  icon: '', 
+                                  color: customPlatform.color,
+                                  showLogo: false 
+                                }
+                              } else {
+                                // 플랫폼을 찾을 수 없는 경우 기본값
+                                return { 
+                                  name: platformId,
+                                  icon: '', 
+                                  color: '#9c88ff',
+                                  showLogo: false 
+                                }
+                              }
+                            }
                           }
-                          const config = platformConfig[record.platform as keyof typeof platformConfig] || 
-                                        { name: record.platform, icon: '⚪', color: '#9c88ff' }
+                          
+                          const config = getPlatformConfig(record.platform)
                           
                           return (
                             <div 
@@ -429,16 +462,25 @@ export default function IncomeTab({
                                            backgroundColor: `${config.color}20`,
                                            borderColor: `${config.color}60`
                                          }}>
-                                      <img 
-                                        src={config.icon} 
-                                        alt={config.name}
-                                        className="w-6 h-6 object-contain"
-                                        style={{ imageRendering: 'pixelated' }}
-                                      />
+                                      {config.showLogo ? (
+                                        <img 
+                                          src={config.icon} 
+                                          alt={config.name}
+                                          className="w-6 h-6 object-contain"
+                                          style={{ imageRendering: 'pixelated' }}
+                                        />
+                                      ) : (
+                                        <div 
+                                          className="w-5 h-5"
+                                          style={{
+                                            backgroundColor: config.color,
+                                            borderRadius: '2px'
+                                          }}
+                                        />
+                                      )}
                                     </div>
                                     <div>
                                       <div className="text-white font-bold text-sm font-mono">{config.name}</div>
-                                      <div className="text-xs text-gray-400 font-mono tracking-wider">DELIVERY RECORD</div>
                                     </div>
                                   </div>
                                   <div className="px-3 py-1 rounded-lg border font-bold text-sm font-mono"
@@ -452,11 +494,11 @@ export default function IncomeTab({
                                 </div>
 
                                 {/* 상세 정보 그리드 */}
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-3 gap-2">
                                   {/* 건수 */}
-                                  <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
+                                  <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                                        style={{borderColor: `${config.color}30`}}>
-                                    <div className="text-xs text-gray-400 font-mono mb-1">건수</div>
+                                    <div className="text-xs text-gray-400 font-mono mb-0.5">건수</div>
                                     <div className="text-sm font-bold font-mono"
                                          style={{color: config.color}}>
                                       {record.count}건
@@ -464,18 +506,18 @@ export default function IncomeTab({
                                   </div>
 
                                   {/* 배달 금액 */}
-                                  <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
+                                  <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                                        style={{borderColor: `${config.color}30`}}>
-                                    <div className="text-white text-xs font-mono font-bold mb-1">배달금액</div>
+                                    <div className="text-white text-xs font-mono font-bold mb-0.5">배달금액</div>
                                     <div className="text-sm font-bold font-mono text-white">
                                       ₩{record.amount.toLocaleString()}
                                     </div>
                                   </div>
 
                                   {/* 미션비 */}
-                                  <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
+                                  <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                                        style={{borderColor: `${config.color}30`}}>
-                                    <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
+                                    <div className="text-white text-xs font-mono font-bold mb-0.5">미션비</div>
                                     <div className="text-sm font-bold font-mono"
                                          style={{color: config.color}}>
                                       ₩{record.missionAmount.toLocaleString()}
@@ -502,7 +544,7 @@ export default function IncomeTab({
                     )}
 
                     {/* 버튼들 - CHARACTER EDIT 스타일로 통일 */}
-                    <div className="flex gap-2 sm:gap-3 pt-4">
+                    <div className="flex gap-2 sm:gap-3 pt-2">
                       <button
                         onClick={() => {
                           setShowDetailModal(false)

@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
           date,
           screenshot_url: screenshotUrl || '',
           screenshot_text: screenshotText || '',
-          points_awarded: Math.floor(totalAmount / 1000) // 1000원당 1포인트
+          boxes_awarded: Math.floor(totalAmount / 1000) // 1000원당 1박스
         }
       ])
       .select()
@@ -158,28 +158,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 포인트 지급
-    if (newEarning.points_awarded > 0) {
-      const { error: pointsError } = await supabase
-        .from('points')
+    // 박스 지급
+    if (newEarning.boxes_awarded > 0) {
+      const { error: boxesError } = await supabase
+        .from('boxes')
         .insert([
           {
             user_id: userId,
-            amount: newEarning.points_awarded,
+            amount: newEarning.boxes_awarded,
             type: 'earn'
           }
         ])
 
-      if (pointsError) {
-        console.error('포인트 지급 오류:', pointsError)
-        // 포인트 지급 실패해도 수익 등록은 성공으로 처리
+      if (boxesError) {
+        console.error('박스 지급 오류:', boxesError)
+        // 박스 지급 실패해도 수익 등록은 성공으로 처리
       }
     }
 
     return NextResponse.json({
       message: '수익이 등록되었습니다!',
       earning: newEarning,
-      pointsAwarded: newEarning.points_awarded
+      boxesAwarded: newEarning.boxes_awarded
     })
 
   } catch (error) {

@@ -2,6 +2,7 @@ import React from 'react'
 import PixelModal from '@/components/ui/PixelModal'
 import PixelButton from '@/components/ui/PixelButton'
 import PixelCard from '@/components/ui/PixelCard'
+import { Platform } from '@/hooks/useAppState'
 
 interface RankingDetailModalProps {
   isOpen: boolean
@@ -19,6 +20,7 @@ interface RankingDetailModalProps {
     region: string
     platforms: string[]
   }>
+  platforms: Platform[]
   onShowUserDetail: (user: any) => void
 }
 
@@ -29,6 +31,7 @@ export default function RankingDetailModal({
   userIncome,
   totalUsers,
   topRankers,
+  platforms,
   onShowUserDetail
 }: RankingDetailModalProps) {
   if (!isOpen) return null
@@ -38,6 +41,40 @@ export default function RankingDetailModal({
     if (rank === 2) return '#c0c0c0' // 은색
     if (rank === 3) return '#cd7f32' // 동색
     return '#9c88ff' // 보라색
+  }
+
+  // 플랫폼별 설정을 위한 헬퍼 함수
+  const getPlatformConfig = (platformId: string) => {
+    if (platformId === 'baemin') {
+      return { 
+        name: '배민',
+        color: '#00C851',
+        bgColor: '#00C851'
+      }
+    } else if (platformId === 'coupang') {
+      return { 
+        name: '쿠팡',
+        color: '#E4002B',
+        bgColor: '#E4002B'
+      }
+    } else {
+      // 커스텀 플랫폼은 platforms 배열에서 찾기
+      const customPlatform = platforms.find(p => p.id === platformId)
+      if (customPlatform) {
+        return { 
+          name: customPlatform.name,
+          color: customPlatform.color,
+          bgColor: customPlatform.color
+        }
+      } else {
+        // 플랫폼을 찾을 수 없는 경우 기본값
+        return { 
+          name: platformId,
+          color: '#9c88ff',
+          bgColor: '#9c88ff'
+        }
+      }
+    }
   }
 
   // 내 위아래 2명씩 포함해서 총 5명의 랭킹 생성 (데이터가 없을 때만 사용)
@@ -98,23 +135,21 @@ export default function RankingDetailModal({
     return contextRankers
   }
 
-  const contextRankers = generateContextRanking()
-  const displayRankers = topRankers.length > 0 ? topRankers : contextRankers
+  const displayRankers = topRankers.length > 0 ? topRankers : generateContextRanking()
 
   return (
     <PixelModal
       isOpen={isOpen}
       onClose={onClose}
       title="RANKING DETAIL"
-      maxWidth="lg"
     >
-      <div className="space-y-6">
-        {/* 내 순위 정보 */}
-        <PixelCard title="MY RANKING" variant="primary">
+      <div className="space-y-4">
+        {/* 내 랭킹 정보 */}
+        <PixelCard title="내 랭킹" variant="primary">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-[#1a202c]/50 p-3 rounded-lg text-center border"
                  style={{borderColor: '#ffd93d30', borderRadius: '4px'}}>
-              <div className="text-white text-xs font-mono font-bold mb-1">내 순위</div>
+              <div className="text-white text-xs font-mono font-bold mb-1">순위</div>
               <div className="text-lg font-bold font-mono text-[#ffd93d]">
                 {userRank}위
               </div>
@@ -138,7 +173,7 @@ export default function RankingDetailModal({
                 <div 
                   key={ranker.id}
                   className={`bg-[#1a202c]/50 p-2 rounded-lg border cursor-pointer hover:bg-[#1a202c]/70 transition-all ${
-                    ranker.id === 'me' ? 'border-[#00ff88] border-2' : ''
+                    ranker.id === 'me' ? 'border-[#00ff88] border-2 bg-[#00ff88]/10' : ''
                   }`}
                   style={{
                     borderColor: ranker.id === 'me' ? '#00ff88' : `${getRankColor(ranker.rank)}30`, 
@@ -154,22 +189,27 @@ export default function RankingDetailModal({
                           {ranker.nickname}
                         </div>
                         <div className="text-gray-400 text-xs font-mono">
-                          {ranker.region.split(' ').slice(0, 2).join(' ')} • 
-                          <span className="inline-flex gap-1 ml-1">
-                            {ranker.platforms.map((p, index) => (
-                              <span 
-                                key={index}
-                                className={`px-1.5 py-0.5 rounded text-xs font-mono font-bold border ${
-                                  p === 'baemin' 
-                                    ? 'bg-[#00ff88]/20 text-[#00ff88] border-[#00ff88]/50' 
-                                    : p === 'coupang'
-                                    ? 'bg-[#ffd93d]/20 text-[#ffd93d] border-[#ffd93d]/50'
-                                    : 'bg-[#9c88ff]/20 text-[#9c88ff] border-[#9c88ff]/50'
-                                }`}
-                              >
-                                {p === 'baemin' ? '배민' : p === 'coupang' ? '쿠팡' : p}
-                              </span>
-                            ))}
+                          <span className="inline-flex gap-1">
+                            {/* platforms 배열이 있으면 사용, 없으면 platform 필드 사용 */}
+                            {(ranker.platforms && ranker.platforms.length > 0 
+                              ? ranker.platforms 
+                              : [ranker.platform]
+                            ).map((p, index) => {
+                              const platformConfig = getPlatformConfig(p)
+                              return (
+                                <span 
+                                  key={index}
+                                  className="px-1.5 py-0.5 rounded text-xs font-mono font-bold border"
+                                  style={{
+                                    backgroundColor: `${platformConfig.bgColor}20`,
+                                    color: platformConfig.color,
+                                    borderColor: `${platformConfig.bgColor}50`
+                                  }}
+                                >
+                                  {platformConfig.name}
+                                </span>
+                              )
+                            })}
                           </span>
                         </div>
                       </div>

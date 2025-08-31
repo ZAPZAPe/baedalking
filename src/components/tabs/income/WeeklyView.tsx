@@ -50,6 +50,12 @@ export default function WeeklyView({
     startOfWeek.setDate(today.getDate() - daysToSubtract)
   }
   
+  // currentDate 변수 추가 (선택된 주의 시작일 기준으로 비교)
+  const currentDate = selectedWeek ? selectedWeek : 
+                     startOfWeek.getFullYear() + '-' + 
+                     String(startOfWeek.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(startOfWeek.getDate()).padStart(2, '0')
+  
   // weekData 배열 초기화
   const weekData: any[] = []
   
@@ -300,8 +306,67 @@ export default function WeeklyView({
             )}
             
             {/* 지난주 대비 증감률 */}
-            <div className="mt-1 text-xs font-mono flex items-center justify-center gap-1 text-[#ff6b6b]">
-              지난주 대비 데이터 준비 중
+            <div className="mt-1 text-xs font-mono flex items-center justify-center gap-1">
+              {(() => {
+                // 지난주 데이터 계산 (현재 주의 시작일 기준으로 계산)
+                const currentWeekStart = new Date(startOfWeek)
+                const lastWeekStart = new Date(currentWeekStart)
+                lastWeekStart.setDate(currentWeekStart.getDate() - 7) // 현재 주 시작일에서 7일 전
+                const lastWeekEnd = new Date(currentWeekStart) // 현재 주 시작일
+                
+                const lastWeekRecords = allRecords.filter(r => {
+                  const recordDate = new Date(r.date)
+                  return recordDate >= lastWeekStart && recordDate < lastWeekEnd
+                })
+                
+                const lastWeekTotal = lastWeekRecords.reduce((sum, r) => sum + (r.amount || 0) + (r.missionAmount || 0), 0)
+                const lastWeekCount = lastWeekRecords.reduce((sum, r) => sum + r.count, 0)
+                const lastWeekAverage = lastWeekCount > 0 ? lastWeekTotal / lastWeekCount : 0
+                
+                const currentWeekAverage = weekCount > 0 ? weekTotal / weekCount : 0
+                
+                // 디버깅용 로그
+                console.log('🔍 주간 비교 데이터:', {
+                  selectedWeek,
+                  currentWeekStart: startOfWeek.toISOString().split('T')[0],
+                  lastWeekStart: lastWeekStart.toISOString().split('T')[0],
+                  lastWeekEnd: lastWeekEnd.toISOString().split('T')[0],
+                  lastWeekRecords: lastWeekRecords.length,
+                  lastWeekTotal,
+                  lastWeekCount,
+                  currentWeekTotal: weekTotal,
+                  currentWeekCount: weekCount
+                })
+                
+                let message = ''
+                let color = 'text-gray-400'
+                
+                if (weekTotal === 0) {
+                  message = '이번 주의 수입을 기록해보세요! 📝'
+                  color = 'text-[#9c88ff]'
+                } else if (lastWeekTotal > 0) {
+                  const change = currentWeekAverage - lastWeekAverage
+                  if (change > 0) {
+                    message = `지난주보다 ${(change / 10000).toFixed(1)}만원 더 벌었습니다! 🚀`
+                    color = 'text-[#00ff88]'
+                  } else if (change < 0) {
+                    message = `지난주보다 ${Math.abs(change / 10000).toFixed(1)}만원 적게 벌었습니다`
+                    color = 'text-[#ff6b6b]'
+                  } else {
+                    message = '지난주와 동일한 수입입니다'
+                    color = 'text-[#00d4ff]'
+                  }
+                } else {
+                  message = '지난주에 데이터가 없습니다'
+                  color = 'text-[#9c88ff]'
+                }
+                
+                return (
+                  <div className={`${color}`}>
+                    {message}
+                  </div>
+                )
+              })()}
             </div>
             
             {/* 목표 달성률 */}
@@ -490,7 +555,7 @@ export default function WeeklyView({
           {/* 차트 영역 */}
           <div className="relative">
             {/* 꺾은선형 차트 */}
-            <div className="relative h-24 bg-[#1a202c]/50 rounded px-4 py-2" 
+            <div className="relative h-32 bg-[#1a202c]/50 rounded px-4 py-2" 
                  style={{borderRadius: '4px'}}>
               
               {/* 차트 선과 점들 */}
@@ -506,8 +571,13 @@ export default function WeeklyView({
                 {/* 일간 목표 기준선 */}
                 {(() => {
                   const maxValue = Math.max(...weekData.map(d => d.total))
+                  const minValue = Math.min(...weekData.map(d => d.total))
+                  const range = maxValue - minValue
+                  const padding = range * 0.1 // 10% 여백
+                  const adjustedMaxValue = maxValue + padding
+                  
                   if (maxValue > 0 && dailyGoal > 0) {
-                    const goalY = 100 - ((dailyGoal / maxValue) * 80)
+                    const goalY = 100 - ((dailyGoal / adjustedMaxValue) * 80)
                     return (
                       <g>
                         {/* 목표 기준선 */}
@@ -524,7 +594,7 @@ export default function WeeklyView({
                         {/* 목표 라벨 */}
                         <text
                           x="100%"
-                          y={`${Math.max(goalY - 3, 8)}%`}
+                          y={`${Math.max(goalY - 3, 12)}%`}
                           textAnchor="end"
                           fontSize="9"
                           fill="#ffd93d"
@@ -543,8 +613,13 @@ export default function WeeklyView({
                 {/* 꺾은선 그리기 */}
                 {weekData.map((day, index) => {
                   const maxValue = Math.max(...weekData.map(d => d.total))
+                  const minValue = Math.min(...weekData.map(d => d.total))
+                  const range = maxValue - minValue
+                  const padding = range * 0.1 // 10% 여백
+                  const adjustedMaxValue = maxValue + padding
+                  
                   const x = (index / (weekData.length - 1)) * 100
-                  const y = maxValue > 0 ? 100 - ((day.total / maxValue) * 80) : 75
+                  const y = adjustedMaxValue > 0 ? 100 - ((day.total / adjustedMaxValue) * 80) : 75
                   
                   return (
                     <g key={index}>
@@ -553,7 +628,7 @@ export default function WeeklyView({
                         (() => {
                           const nextDay = weekData[index + 1]
                           const nextX = ((index + 1) / (weekData.length - 1)) * 100
-                          const nextY = maxValue > 0 ? 100 - ((nextDay.total / maxValue) * 80) : 75
+                          const nextY = adjustedMaxValue > 0 ? 100 - ((nextDay.total / adjustedMaxValue) * 80) : 75
                           
                           return (
                             <line
@@ -584,7 +659,7 @@ export default function WeeklyView({
                       {day.total > 0 && (
                         <text
                           x={`${x}%`}
-                          y={`${Math.max(y - 8, 10)}%`}
+                          y={`${Math.max(y - 8, 15)}%`}
                           textAnchor="middle"
                           fontSize="10"
                           fill="#e5e7eb"
@@ -627,24 +702,15 @@ export default function WeeklyView({
       </div>
 
       {/* 저장 버튼 */}
-      <button
+      <button 
         onClick={captureWeeklyView}
-        className="w-full bg-gradient-to-r from-[#1a202c] to-[#2d3748] border-2 border-[#ff6b6b]/50 hover:border-[#ff6b6b] text-white font-mono py-3 px-4 transition-all duration-200 relative"
-        style={{
-          borderRadius: '4px',
-          fontFamily: 'monospace',
-          imageRendering: 'pixelated'
-        }}
+        className="w-full bg-gradient-to-r from-[#9c88ff]/20 to-[#ffd93d]/20 border-2 border-[#9c88ff]/50 hover:border-[#9c88ff] p-2 rounded text-center hover:from-[#9c88ff]/30 hover:to-[#ffd93d]/30 transition-all duration-300 shadow-lg" 
+        style={{borderRadius: '8px'}}
       >
-        <div className="flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-base font-bold">📸 주간 수익 캡처 저장</p>
-          </div>
+        <div className="flex flex-col items-center justify-center">
+          <div className="text-[#9c88ff] text-sm font-bold font-mono">📸 주간 수익 캡처 저장</div>
+          <div className="text-gray-300 text-xs font-mono">이번 주의 수익 현황을 이미지로 저장</div>
         </div>
-        <div className="absolute top-1 left-1 w-1 h-1 bg-[#ff6b6b]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute top-1 right-1 w-1 h-1 bg-[#ff6b6b]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ff6b6b]/60" style={{borderRadius: '1px'}}></div>
-        <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ff6b6b]/60" style={{borderRadius: '1px'}}></div>
       </button>
     </div>
   )

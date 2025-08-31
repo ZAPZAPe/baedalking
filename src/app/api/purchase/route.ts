@@ -16,26 +16,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 사용자 포인트 확인
-    const { data: earnPoints } = await supabase
-      .from('points')
+    // 사용자 박스 확인
+    const { data: earnBoxes } = await supabase
+      .from('boxes')
       .select('amount')
       .eq('user_id', userId)
       .eq('type', 'earn')
 
-    const { data: spendPoints } = await supabase
-      .from('points')
+    const { data: spendBoxes } = await supabase
+      .from('boxes')
       .select('amount')
       .eq('user_id', userId)
       .eq('type', 'spend')
 
-    const totalEarn = earnPoints?.reduce((sum, point) => sum + point.amount, 0) || 0
-    const totalSpend = spendPoints?.reduce((sum, point) => sum + Math.abs(point.amount), 0) || 0
-    const currentPoints = totalEarn - totalSpend
+    const totalEarn = earnBoxes?.reduce((sum, box) => sum + box.amount, 0) || 0
+    const totalSpend = spendBoxes?.reduce((sum, box) => sum + Math.abs(box.amount), 0) || 0
+    const currentBoxes = totalEarn - totalSpend
 
-    if (currentPoints < price) {
+    if (currentBoxes < price) {
       return NextResponse.json(
-        { error: '포인트가 부족합니다.' },
+        { error: '박스가 부족합니다.' },
         { status: 400 }
       )
     }
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 트랜잭션 시작: 아이템 추가 + 포인트 차감
+    // 트랜잭션 시작: 아이템 추가 + 박스 차감
     const { data: newUserItem, error: itemError } = await supabase
       .from('user_items')
       .insert([
@@ -76,9 +76,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 포인트 차감
-    const { error: pointError } = await supabase
-      .from('points')
+    // 박스 차감
+    const { error: boxError } = await supabase
+      .from('boxes')
       .insert([
         {
           user_id: userId,
@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
         }
       ])
 
-    if (pointError) {
-      console.error('포인트 차감 오류:', pointError)
+    if (boxError) {
+      console.error('박스 차감 오류:', boxError)
       // 아이템 추가를 롤백
       await supabase
         .from('user_items')
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
         .eq('id', newUserItem.id)
       
       return NextResponse.json(
-        { error: '포인트 차감에 실패했습니다.' },
+        { error: '박스 차감에 실패했습니다.' },
         { status: 500 }
       )
     }
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: '아이템을 성공적으로 구매했습니다!',
       userItem: newUserItem,
-      remainingPoints: currentPoints - price
+      remainingBoxes: currentBoxes - price
     })
 
   } catch (error) {

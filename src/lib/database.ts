@@ -178,55 +178,55 @@ export async function updateEarnings(earningsId: string, updates: EarningsUpdate
   }
 }
 
-// ===== 포인트 관련 함수 =====
+// ===== 박스 관련 함수 =====
 
-export async function addPoints(userId: string, amount: number, type: 'earn' | 'spend'): Promise<Points | null> {
+export async function addBoxes(userId: string, amount: number, type: 'earn' | 'spend'): Promise<Boxes | null> {
   try {
-    const pointsData: PointsInsert = {
+    const boxesData: BoxesInsert = {
       user_id: userId,
       amount: amount,
       type: type
     }
 
     const { data, error } = await supabase
-      .from('points')
-      .insert(pointsData)
+      .from('boxes')
+      .insert(boxesData)
       .select()
       .single()
 
     if (error) {
-      console.error('포인트 추가 오류:', error)
+      console.error('박스 추가 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('포인트 추가 예외:', error)
+    console.error('박스 추가 예외:', error)
     return null
   }
 }
 
-export async function getUserPoints(userId: string): Promise<number> {
+export async function getUserBoxes(userId: string): Promise<number> {
   try {
     const { data, error } = await supabase
-      .from('points')
+      .from('boxes')
       .select('amount, type')
       .eq('user_id', userId)
 
     if (error) {
-      console.error('사용자 포인트 조회 오류:', error)
+      console.error('사용자 박스 조회 오류:', error)
       return 0
     }
 
     if (!data) return 0
 
-    const totalPoints = data.reduce((total, point) => {
-      return point.type === 'earn' ? total + point.amount : total - point.amount
+    const totalBoxes = data.reduce((total, box) => {
+      return box.type === 'earn' ? total + box.amount : total - box.amount
     }, 0)
 
-    return Math.max(0, totalPoints)
+    return Math.max(0, totalBoxes)
   } catch (error) {
-    console.error('사용자 포인트 조회 예외:', error)
+    console.error('사용자 박스 조회 예외:', error)
     return 0
   }
 }
@@ -288,10 +288,10 @@ export async function purchaseItem(userId: string, itemId: string): Promise<User
       return null
     }
 
-    // 사용자 포인트 확인
-    const userPoints = await getUserPoints(userId)
-    if (userPoints < item.price) {
-      console.error('포인트 부족')
+    // 사용자 박스 확인
+    const userBoxes = await getUserBoxes(userId)
+    if (userBoxes < item.price) {
+      console.error('박스 부족')
       return null
     }
 
@@ -311,8 +311,8 @@ export async function purchaseItem(userId: string, itemId: string): Promise<User
       return null
     }
 
-    // 포인트 차감
-    await addPoints(userId, item.price, 'spend')
+    // 박스 차감
+    await addBoxes(userId, item.price, 'spend')
 
     return userItem
   } catch (error) {

@@ -11,8 +11,9 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || 'monthly' // daily, weekly, monthly
     const limit = parseInt(searchParams.get('limit') || '10')
 
-    // 기간별 날짜 계산
-    const now = new Date()
+    // 기간별 날짜 계산 (한국 시간 기준)
+    const koreaTime = new Date().getTime() + (9 * 60 * 60 * 1000) // UTC + 9시간
+    const now = new Date(koreaTime)
     let startDate: string
 
     switch (period) {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
         break
       case 'weekly':
         const weekStart = new Date(now)
-        weekStart.setDate(now.getDate() - now.getDay())
+        weekStart.setDate(now.getDate() - now.getDay()) // 일요일부터 시작
         startDate = weekStart.toISOString().split('T')[0]
         break
       case 'monthly':
@@ -29,6 +30,8 @@ export async function GET(request: NextRequest) {
         startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
         break
     }
+
+    console.log(`📅 랭킹 계산: ${period} 기간, 시작일: ${startDate} (KST)`)
 
     // 사용자별 수익 합계 계산 (수익 비공개 사용자 제외)
     const { data: earnings, error } = await supabase

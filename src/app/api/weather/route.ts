@@ -104,6 +104,152 @@ const getCoordinatesFromRegion = (region: string): { lat: string, lon: string, c
   }
 }
 
+// 위경도를 기상청 격자 좌표로 변환
+const getGridCoordinates = (lat: string, lon: string) => {
+  const latNum = parseFloat(lat)
+  const lonNum = parseFloat(lon)
+  
+  // 기상청 격자 좌표 계산 (Lambert projection)
+  const RE = 6371.00877 // 지구 반지름
+  const GRID = 5.0 // 격자 간격
+  const SLAT1 = 30.0 // 표준위도 1
+  const SLAT2 = 60.0 // 표준위도 2
+  const OLON = 126.0 // 기준점 경도
+  const OLAT = 38.0 // 기준점 위도
+  const XO = 43 // 기준점 X좌표
+  const YO = 136 // 기준점 Y좌표
+  
+  const DEGRAD = Math.PI / 180.0
+  const re = RE / GRID
+  const slat1 = SLAT1 * DEGRAD
+  const slat2 = SLAT2 * DEGRAD
+  const olon = OLON * DEGRAD
+  const olat = OLAT * DEGRAD
+  
+  let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5)
+  sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn)
+  let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5)
+  sf = Math.pow(sf, sn) * Math.cos(slat1) / sn
+  let ro = Math.tan(Math.PI * 0.25 + olat * 0.5)
+  ro = re * sf / Math.pow(ro, sn)
+  
+  let rs = {}
+  let theta = lonNum * DEGRAD - olon
+  if (theta > Math.PI) theta -= 2.0 * Math.PI
+  if (theta < -Math.PI) theta += 2.0 * Math.PI
+  theta *= sn
+  rs = re * sf / Math.pow(Math.tan(Math.PI * 0.25 + latNum * DEGRAD * 0.5), sn)
+  
+  const x = Math.floor(rs * Math.sin(theta) + XO + 0.5)
+  const y = Math.floor(ro - rs * Math.cos(theta) + YO + 0.5)
+  
+  return { x, y }
+}
+
+// 기상청 초단기예보 API 호출
+const getKMAWeather = async (lat: string, lon: string, city: string) => {
+  try {
+    const grid = getGridCoordinates(lat, lon)
+    const now = new Date()
+    
+    // 기상청 API는 현재 날짜의 이전 시간 데이터를 요청해야 함
+    // 실제 운영 환경에서는 현재 날짜 사용 (2024년)
+    const currentDate = new Date()
+    const year = currentDate.getFullYear()
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0')
+    const day = currentDate.getDate().toString().padStart(2, '0')
+    let baseDate = `${year}${month}${day}`
+    let baseTime = ''
+    
+    // 현재 시간이 00시면 전날 23시 데이터 사용
+    if (currentDate.getHours() === 0) {
+      const yesterday = new Date(currentDate)
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayYear = yesterday.getFullYear()
+      const yesterdayMonth = (yesterday.getMonth() + 1).toString().padStart(2, '0')
+      const yesterdayDay = yesterday.getDate().toString().padStart(2, '0')
+      baseDate = `${yesterdayYear}${yesterdayMonth}${yesterdayDay}`
+      baseTime = '2300'
+    } else {
+      // 현재 시간에서 1시간 전 데이터 사용
+      const hour = currentDate.getHours() - 1
+      baseTime = hour.toString().padStart(2, '0') + '00'
+    }
+    
+    // 기상청 초단기예보 API URL
+    const url = `http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst`
+    const params = new URLSearchParams({
+      serviceKey: process.env.KMA_API_KEY || 'test',
+      pageNo: '1',
+      numOfRows: '10',
+      dataType: 'JSON',
+      base_date: baseDate,
+      base_time: baseTime,
+      nx: grid.x.toString(),
+      ny: grid.y.toString()
+    })
+    
+    console.log('🌤️ 기상청 API 호출:', { url, params: params.toString() })
+    
+    const response = await fetch(`${url}?${params}`)
+    const data = await response.json()
+    
+    if (data.response?.header?.resultCode === '00') {
+      const items = data.response.body.items.item
+      
+      // 데이터 파싱
+      let temperature = 20
+      let humidity = 60
+      let windSpeed = 3
+      let precipitation = 0
+      let skyCondition = '맑음'
+      
+      items.forEach((item: any) => {
+        switch (item.category) {
+          case 'T1H': // 기온
+            temperature = parseFloat(item.obsrValue)
+            break
+          case 'RN1': // 1시간 강수량
+            precipitation = parseFloat(item.obsrValue)
+            break
+          case 'REH': // 습도
+            humidity = parseFloat(item.obsrValue)
+            break
+          case 'WSD': // 풍속
+            windSpeed = parseFloat(item.obsrValue)
+            break
+        }
+      })
+      
+      // 하늘상태 결정
+      if (precipitation > 0) {
+        skyCondition = '비'
+      } else if (humidity > 80) {
+        skyCondition = '흐림'
+      } else {
+        skyCondition = '맑음'
+      }
+      
+      return {
+        temperature: Math.round(temperature),
+        condition: skyCondition === '맑음' ? 'sunny' : skyCondition === '흐림' ? 'cloudy' : 'rainy',
+        description: skyCondition,
+        humidity: Math.round(humidity),
+        windSpeed: Math.round(windSpeed),
+        precipitation: precipitation,
+        location: city,
+        source: 'kma',
+        success: true
+      }
+    } else {
+      throw new Error(`기상청 API 오류: ${data.response?.header?.resultMsg || '알 수 없는 오류'}`)
+    }
+  } catch (error) {
+    console.error('❌ 기상청 API 호출 실패:', error)
+    throw error
+  }
+}
+
 // 날씨 정보 조회
 export async function GET(request: NextRequest) {
   try {
@@ -127,86 +273,9 @@ export async function GET(request: NextRequest) {
 
     console.log('🌤️ 날씨 API 요청:', { region, lat, lon, city })
 
-    // 🌤️ 실제 날씨 정보 가져오기 (한국 기상청 스타일 데이터)
-    // 실제 배포 시에는 OpenWeatherMap 등의 API 연결
-    
-    // 지역별 실제 날씨 패턴 기반 데이터
-    const getRealisticWeather = (region: string, lat: string, lon: string) => {
-      const currentHour = new Date().getHours()
-      const currentMonth = new Date().getMonth() + 1
-      
-      // 시간대별 온도 변화
-      let baseTemp = 20
-      if (currentHour >= 6 && currentHour < 12) baseTemp = 18 // 아침
-      else if (currentHour >= 12 && currentHour < 18) baseTemp = 25 // 낮
-      else if (currentHour >= 18 && currentHour < 22) baseTemp = 22 // 저녁
-      else baseTemp = 16 // 밤
-      
-      // 계절별 조정
-      if (currentMonth >= 12 || currentMonth <= 2) baseTemp -= 10 // 겨울
-      else if (currentMonth >= 3 && currentMonth <= 5) baseTemp += 0 // 봄
-      else if (currentMonth >= 6 && currentMonth <= 8) baseTemp += 8 // 여름
-      else baseTemp += 2 // 가을
-      
-      // 지역별 조정
-      if (region.includes('부산') || region.includes('울산')) baseTemp += 2 // 남쪽
-      else if (region.includes('강원') || region.includes('대구')) baseTemp -= 1 // 내륙
-      
-      // 날씨 상태 결정
-      const weatherTypes = ['clear', 'clouds', 'clouds', 'rain'] // 맑음이 더 자주
-      const randomWeather = weatherTypes[Math.floor(Math.random() * weatherTypes.length)]
-      
-      const conditions = {
-        'clear': { condition: 'sunny', desc: '맑음' },
-        'clouds': { condition: 'cloudy', desc: '흐림' },
-        'rain': { condition: 'rainy', desc: '비' }
-      }
-      
-      const selected = conditions[randomWeather as keyof typeof conditions]
-      
-      return {
-        main: { 
-          temp: baseTemp + Math.floor(Math.random() * 6) - 3,
-          humidity: 50 + Math.floor(Math.random() * 40) // 50-90% 습도
-        },
-        weather: [{ main: randomWeather, description: selected.desc }],
-        wind: { speed: Math.floor(Math.random() * 10) + 1 }, // 1-10 m/s 풍속
-        name: city
-      }
-    }
-    
-    const data = getRealisticWeather(region, lat, lon)
-
-    // 날씨 상태 매핑
-    const getCondition = (weatherMain: string): string => {
-      switch (weatherMain.toLowerCase()) {
-        case 'clear':
-          return 'sunny'
-        case 'clouds':
-          return 'cloudy'
-        case 'rain':
-        case 'drizzle':
-          return 'rainy'
-        case 'snow':
-          return 'snowy'
-        case 'thunderstorm':
-          return 'stormy'
-        default:
-          return 'cloudy'
-      }
-    }
-
-    return NextResponse.json({
-      temperature: Math.round(data.main.temp),
-      condition: getCondition(data.weather[0].main),
-      description: data.weather[0].description,
-      location: data.name || city,
-      humidity: data.main.humidity,
-      windSpeed: data.wind.speed,
-      source: 'realistic',
-      requestedRegion: region,
-      success: true
-    })
+    // 기상청 API 호출
+    const weatherData = await getKMAWeather(lat, lon, city)
+    return NextResponse.json(weatherData)
 
   } catch (error) {
     console.error('❌ 날씨 API 오류:', error)

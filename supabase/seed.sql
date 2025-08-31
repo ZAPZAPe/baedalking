@@ -13,7 +13,7 @@ INSERT INTO users (kakao_id, email, nickname, region, avatar_config, garage_conf
 ('kakao_010', 'user10@baedalking.com', '배달여왕', '서울 용산구', '{"emotion": "base", "background": "background2.png"}', '{"vehicle": "scooter", "decor": "garage2"}', NOW());
 
 -- 가상 수입 기록 생성 (배달킹1호)
-INSERT INTO earnings (user_id, delivery_count, delivery_amount, mission_amount, date, screenshot_url, verified, points_awarded, screenshot_text, verified_score, platform, created_at) VALUES
+INSERT INTO earnings (user_id, delivery_count, delivery_amount, mission_amount, date, screenshot_url, verified, boxes_awarded, screenshot_text, verified_score, platform, created_at) VALUES
 ((SELECT id FROM users WHERE nickname = '배달킹1호'), 3, 45000, 5000, CURRENT_DATE - INTERVAL '1 day', '/fake/screenshot1.jpg', true, 450, '배민 배달 완료 45000원', 95.5, 'baemin', NOW() - INTERVAL '1 day'),
 ((SELECT id FROM users WHERE nickname = '배달킹1호'), 2, 38000, 3000, CURRENT_DATE - INTERVAL '2 days', '/fake/screenshot2.jpg', true, 380, '쿠팡 배달 완료 38000원', 92.0, 'coupang', NOW() - INTERVAL '2 days'),
 ((SELECT id FROM users WHERE nickname = '배달킹1호'), 4, 52000, 4000, CURRENT_DATE - INTERVAL '3 days', '/fake/screenshot3.jpg', true, 520, '배민 배달 완료 52000원', 98.0, 'baemin', NOW() - INTERVAL '3 days'),
@@ -21,7 +21,7 @@ INSERT INTO earnings (user_id, delivery_count, delivery_amount, mission_amount, 
 ((SELECT id FROM users WHERE nickname = '배달킹1호'), 4, 48000, 3000, CURRENT_DATE - INTERVAL '5 days', '/fake/screenshot5.jpg', true, 480, '배민 배달 완료 48000원', 96.0, 'baemin', NOW() - INTERVAL '5 days');
 
 -- 가상 수입 기록 생성 (쿠팡마스터)
-INSERT INTO earnings (user_id, delivery_count, delivery_amount, mission_amount, date, screenshot_url, verified, points_awarded, screenshot_text, verified_score, platform, created_at) VALUES
+INSERT INTO earnings (user_id, delivery_count, delivery_amount, mission_amount, date, screenshot_url, verified, boxes_awarded, screenshot_text, verified_score, platform, created_at) VALUES
 ((SELECT id FROM users WHERE nickname = '쿠팡마스터'), 4, 55000, 4000, CURRENT_DATE - INTERVAL '1 day', '/fake/screenshot6.jpg', true, 550, '쿠팡 배달 완료 55000원', 97.5, 'coupang', NOW() - INTERVAL '1 day'),
 ((SELECT id FROM users WHERE nickname = '쿠팡마스터'), 3, 42000, 3000, CURRENT_DATE - INTERVAL '2 days', '/fake/screenshot7.jpg', true, 420, '쿠팡 배달 완료 42000원', 91.0, 'coupang', NOW() - INTERVAL '2 days'),
 ((SELECT id FROM users WHERE nickname = '쿠팡마스터'), 5, 58000, 5000, CURRENT_DATE - INTERVAL '3 days', '/fake/screenshot8.jpg', true, 580, '쿠팡 배달 완료 58000원', 99.0, 'coupang', NOW() - INTERVAL '3 days'),
@@ -29,15 +29,15 @@ INSERT INTO earnings (user_id, delivery_count, delivery_amount, mission_amount, 
 ((SELECT id FROM users WHERE nickname = '쿠팡마스터'), 4, 51000, 3000, CURRENT_DATE - INTERVAL '5 days', '/fake/screenshot10.jpg', true, 510, '쿠팡 배달 완료 51000원', 95.0, 'coupang', NOW() - INTERVAL '5 days');
 
 -- 가상 수입 기록 생성 (배민여신)
-INSERT INTO earnings (user_id, delivery_count, delivery_amount, mission_amount, date, screenshot_url, verified, points_awarded, screenshot_text, verified_score, platform, created_at) VALUES
+INSERT INTO earnings (user_id, delivery_count, delivery_amount, mission_amount, date, screenshot_url, verified, boxes_awarded, screenshot_text, verified_score, platform, created_at) VALUES
 ((SELECT id FROM users WHERE nickname = '배민여신'), 4, 48000, 3000, CURRENT_DATE - INTERVAL '1 day', '/fake/screenshot11.jpg', true, 480, '배민 배달 완료 48000원', 96.5, 'baemin', NOW() - INTERVAL '1 day'),
 ((SELECT id FROM users WHERE nickname = '배민여신'), 5, 52000, 4000, CURRENT_DATE - INTERVAL '2 days', '/fake/screenshot12.jpg', true, 520, '배민 배달 완료 52000원', 98.0, 'baemin', NOW() - INTERVAL '2 days'),
 ((SELECT id FROM users WHERE nickname = '배민여신'), 3, 45000, 2000, CURRENT_DATE - INTERVAL '3 days', '/fake/screenshot13.jpg', true, 450, '배민 배달 완료 45000원', 94.5, 'baemin', NOW() - INTERVAL '3 days'),
 ((SELECT id FROM users WHERE nickname = '배민여신'), 4, 49000, 3000, CURRENT_DATE - INTERVAL '4 days', '/fake/screenshot14.jpg', true, 490, '배민 배달 완료 49000원', 97.0, 'baemin', NOW() - INTERVAL '4 days'),
 ((SELECT id FROM users WHERE nickname = '배민여신'), 5, 54000, 4000, CURRENT_DATE - INTERVAL '5 days', '/fake/screenshot15.jpg', true, 540, '배민 배달 완료 54000원', 99.5, 'baemin', NOW() - INTERVAL '5 days');
 
--- 가상 포인트 데이터 생성
-INSERT INTO points (user_id, amount, type, reason, created_at) VALUES
+-- 가상 박스 데이터 생성
+INSERT INTO boxes (user_id, amount, type, reason, created_at) VALUES
 ((SELECT id FROM users WHERE nickname = '배달킹1호'), 450, 'earn', '배달 완료', NOW() - INTERVAL '1 day'),
 ((SELECT id FROM users WHERE nickname = '배달킹1호'), 380, 'earn', '배달 완료', NOW() - INTERVAL '2 days'),
 ((SELECT id FROM users WHERE nickname = '배달킹1호'), 520, 'earn', '배달 완료', NOW() - INTERVAL '3 days'),

@@ -124,31 +124,87 @@ export default function IncomeInputPanel({
                 PLATFORM SELECT
               </h4>
               <div className="grid grid-cols-3 gap-2">
-                {platforms.filter(p => p.isActive).map((platform) => (
-                  <button
-                    key={platform.id}
-                    onClick={() => setSelectedPlatform(platform.id)}
-                    className={`p-2 border-2 transition-all duration-200 relative ${
-                      selectedPlatform === platform.id
-                        ? 'bg-[#00ff88]/20 border-[#00ff88] scale-105 shadow-lg'
-                        : 'bg-[#0a0a23]/40 border-[#00ff88]/30 hover:border-[#00ff88]/60 hover:scale-102'
-                    }`}
-                    style={{borderRadius: '4px'}}
-                  >
-                    <div className="text-center">
-                      <div className="text-white text-xs font-mono font-bold">{platform.name}</div>
-                    </div>
-                    {/* 선택된 버튼 픽셀 도트 */}
-                    {selectedPlatform === platform.id && (
-                      <>
-                        <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
-                        <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
-                        <div className="absolute bottom-0.5 left-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
-                        <div className="absolute bottom-0.5 right-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
-                      </>
-                    )}
-                  </button>
-                ))}
+                {platforms.filter(p => p.isActive).map((platform) => {
+                                     // 플랫폼별 설정을 위한 헬퍼 함수
+                   const getPlatformConfig = (platform: any) => {
+                     if (platform.id === 'baemin') {
+                       return { 
+                         icon: '/baemin-logo.svg', 
+                         borderColor: '#00C851', 
+                         bgColor: '#00C851',
+                         showLogo: true 
+                       }
+                     } else if (platform.id === 'coupang') {
+                       return { 
+                         icon: '/coupang-logo.svg', 
+                         borderColor: '#E4002B', 
+                         bgColor: '#E4002B',
+                         showLogo: true 
+                       }
+                     } else {
+                       // 커스텀 플랫폼은 색상 네모로 표시
+                       return { 
+                         icon: '', 
+                         borderColor: platform.color, 
+                         bgColor: platform.bgColor,
+                         showLogo: false 
+                       }
+                     }
+                   }
+                  
+                  const config = getPlatformConfig(platform)
+                  
+                  return (
+                    <button
+                      key={platform.id}
+                      onClick={() => setSelectedPlatform(platform.id)}
+                      className={`p-2 border-2 transition-all duration-200 relative ${
+                        selectedPlatform === platform.id
+                          ? 'bg-[#00ff88]/20 border-[#00ff88] scale-105 shadow-lg'
+                          : 'bg-[#0a0a23]/40 border-[#00ff88]/30 hover:border-[#00ff88]/60 hover:scale-102'
+                      }`}
+                      style={{borderRadius: '4px'}}
+                    >
+                      <div className="text-center">
+                        {/* 플랫폼 아이콘/로고 */}
+                        <div className="flex justify-center mb-1">
+                          <div className={`w-4 h-4 rounded flex items-center justify-center border overflow-hidden`}
+                               style={{
+                                 backgroundColor: `${config.bgColor}20`,
+                                 borderColor: `${config.borderColor}60`
+                               }}>
+                            {config.showLogo ? (
+                              <img 
+                                src={config.icon} 
+                                alt={platform.name}
+                                className="w-3 h-3 object-contain"
+                                style={{ imageRendering: 'pixelated' }}
+                              />
+                            ) : (
+                              <div 
+                                className="w-2.5 h-2.5"
+                                style={{
+                                  backgroundColor: config.bgColor,
+                                  borderRadius: '1px'
+                                }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-white text-xs font-mono font-bold">{platform.name}</div>
+                      </div>
+                      {/* 선택된 버튼 픽셀 도트 */}
+                      {selectedPlatform === platform.id && (
+                        <>
+                          <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                          <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                          <div className="absolute bottom-0.5 left-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                          <div className="absolute bottom-0.5 right-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                        </>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
               {/* 모서리 픽셀 도트 */}
               <div className="absolute top-1 left-1 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
@@ -195,35 +251,35 @@ export default function IncomeInputPanel({
               {/* 1행: 건수, 배달금액, 미션비 */}
               <div className="grid grid-cols-3 gap-2 mb-2">
                 <div>
-                  <label className="text-[#ffd93d] text-xs font-mono mb-1 block">건수</label>
+                  <label className="text-[#ffd93d] text-xs font-mono mb-1 block text-center">건수</label>
                   <input
                     type="number"
                     value={incomeCount}
                     onChange={(e) => setIncomeCount(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-[#0a0a23]/80 border-2 border-[#ffd93d]/30 px-2 py-1.5 text-white placeholder:text-gray-400 focus:border-[#ffd93d] transition-all duration-200 text-xs font-mono"
+                    className="w-full bg-[#0a0a23]/80 border-2 border-[#ffd93d]/30 px-2 py-1.5 text-white placeholder:text-gray-400 focus:border-[#ffd93d] transition-all duration-200 text-xs font-mono text-center"
                     style={{borderRadius: '4px'}}
                   />
                 </div>
                 <div>
-                  <label className="text-[#ffd93d] text-xs font-mono mb-1 block">배달금액</label>
+                  <label className="text-[#ffd93d] text-xs font-mono mb-1 block text-center">배달금액</label>
                   <input
                     type="number"
                     value={incomeAmount}
                     onChange={(e) => setIncomeAmount(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-[#0a0a23]/80 border-2 border-[#ffd93d]/30 px-2 py-1.5 text-white placeholder:text-gray-400 focus:border-[#ffd93d] transition-all duration-200 text-xs font-mono"
+                    className="w-full bg-[#0a0a23]/80 border-2 border-[#ffd93d]/30 px-2 py-1.5 text-white placeholder:text-gray-400 focus:border-[#ffd93d] transition-all duration-200 text-xs font-mono text-center"
                     style={{borderRadius: '4px'}}
                   />
                 </div>
                 <div>
-                  <label className="text-[#ffd93d] text-xs font-mono mb-1 block">미션비</label>
+                  <label className="text-[#ffd93d] text-xs font-mono mb-1 block text-center">미션비</label>
                   <input
                     type="number"
                     value={missionAmount}
                     onChange={(e) => setMissionAmount(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-[#0a0a23]/80 border-2 border-[#ffd93d]/30 px-2 py-1.5 text-white placeholder:text-gray-400 focus:border-[#ffd93d] transition-all duration-200 text-xs font-mono"
+                    className="w-full bg-[#0a0a23]/80 border-2 border-[#ffd93d]/30 px-2 py-1.5 text-white placeholder:text-gray-400 focus:border-[#ffd93d] transition-all duration-200 text-xs font-mono text-center"
                     style={{borderRadius: '4px'}}
                   />
                 </div>

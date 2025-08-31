@@ -8,6 +8,7 @@ interface IncomeEditModalProps {
   records: any[]
   platforms: Platform[]
   onSave: (date: string, updatedRecords: any[]) => void
+  onDeleteRecord?: (recordId: string) => void
 }
 
 export default function IncomeEditModal({
@@ -16,7 +17,8 @@ export default function IncomeEditModal({
   selectedDate,
   records,
   platforms,
-  onSave
+  onSave,
+  onDeleteRecord
 }: IncomeEditModalProps) {
   const [editedRecords, setEditedRecords] = useState<any[]>([])
 
@@ -31,6 +33,17 @@ export default function IncomeEditModal({
     const updatedRecords = [...editedRecords]
     updatedRecords[index] = { ...updatedRecords[index], [field]: value }
     setEditedRecords(updatedRecords)
+  }
+
+  const handleDeleteRecord = (index: number) => {
+    if (confirm('이 수입 기록을 삭제하시겠습니까?')) {
+      const recordToDelete = editedRecords[index]
+      if (onDeleteRecord && recordToDelete.id) {
+        onDeleteRecord(recordToDelete.id)
+      }
+      const updatedRecords = editedRecords.filter((_, i) => i !== index)
+      setEditedRecords(updatedRecords)
+    }
   }
 
   const handleSave = () => {
@@ -122,24 +135,93 @@ export default function IncomeEditModal({
               </h5>
               
               {editedRecords.map((record, index) => {
-                const config = platforms.find(p => p.id === record.platform) || platforms[0]
+                // 플랫폼별 설정을 위한 헬퍼 함수
+                const getPlatformConfig = (platformId: string) => {
+                  if (platformId === 'baemin') {
+                    return { 
+                      name: '배민',
+                      icon: '/baemin-logo.svg', 
+                      color: '#00C851',
+                      showLogo: true 
+                    }
+                  } else if (platformId === 'coupang') {
+                    return { 
+                      name: '쿠팡',
+                      icon: '/coupang-logo.svg', 
+                      color: '#E4002B',
+                      showLogo: true 
+                    }
+                  } else {
+                    // 커스텀 플랫폼은 platforms 배열에서 찾기
+                    const customPlatform = platforms.find(p => p.id === platformId)
+                    if (customPlatform) {
+                      return { 
+                        name: customPlatform.name,
+                        icon: '', 
+                        color: customPlatform.color,
+                        showLogo: false 
+                      }
+                    } else {
+                      // 플랫폼을 찾을 수 없는 경우 기본값
+                      return { 
+                        name: platformId,
+                        icon: '', 
+                        color: '#9c88ff',
+                        showLogo: false 
+                      }
+                    }
+                  }
+                }
+                
+                const config = getPlatformConfig(record.platform)
+                
                 return (
                   <div key={index} className="bg-[#1a202c]/60 border-2 border-[#00ff88]/30 p-3 relative"
                        style={{borderRadius: '4px'}}>
-                    <div className="flex items-center gap-3 mb-3">
-                      {config.id === 'baemin' ? (
-                        <div className="w-6 h-6 bg-[#00C850] rounded-full flex items-center justify-center text-white text-xs font-bold">
-                          배
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 overflow-hidden`}
+                             style={{
+                               backgroundColor: `${config.color}20`,
+                               borderColor: `${config.color}60`
+                             }}>
+                          {config.showLogo ? (
+                            <img 
+                              src={config.icon} 
+                              alt={config.name}
+                              className="w-4 h-4 object-contain"
+                              style={{ imageRendering: 'pixelated' }}
+                            />
+                          ) : (
+                            <div 
+                              className="w-3 h-3"
+                              style={{
+                                backgroundColor: config.color,
+                                borderRadius: '1px'
+                              }}
+                            />
+                          )}
                         </div>
-                      ) : config.id === 'coupang' ? (
-                        <div className="w-6 h-6 bg-[#FF6B00] rounded-full flex items-center justify-center text-white text-xs font-bold">
-                          쿠
-                        </div>
-                      ) : (
-                        <div className="w-3 h-3 rounded-full"
-                             style={{backgroundColor: config.color}}></div>
-                      )}
-                      <div className="text-white font-bold text-sm font-mono">{config.name}</div>
+                        <div className="text-white font-bold text-sm font-mono">{config.name}</div>
+                      </div>
+                      
+                      {/* 삭제 버튼 - 쓰레기통 아이콘 */}
+                      <button
+                        onClick={() => handleDeleteRecord(index)}
+                        className="w-8 h-8 bg-gradient-to-br from-[#ff6b6b]/20 to-[#ff4757]/20 border border-[#ff6b6b]/50 hover:border-[#ff6b6b] text-[#ff6b6b] hover:text-[#ff4757] transition-all duration-200 hover:scale-110 flex items-center justify-center"
+                        style={{borderRadius: '4px'}}
+                        title="삭제"
+                      >
+                        <svg 
+                          width="16" 
+                          height="16" 
+                          viewBox="0 0 24 24" 
+                          fill="currentColor"
+                          style={{ imageRendering: 'pixelated' }}
+                        >
+                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                      </button>
                     </div>
                     
                     <div className="grid grid-cols-3 gap-3">

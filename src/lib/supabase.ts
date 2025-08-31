@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-// 환경 변수 문제로 인해 직접 하드코딩
-const supabaseUrl = 'https://dumdqkfzwhdegfbonfhd.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1bWRxa2Z6d2hkZWdmYm9uZmhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NzczODgsImV4cCI6MjA3MjA1MzM4OH0.7KUvjleLOyMpAs6cB8iiFgORUEJAelg2kVf1rvk8-E8'
+// 로컬 개발 환경 사용
+const supabaseUrl = 'http://127.0.0.1:54321'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
 // 환경 변수 확인
 console.log('🔍 Supabase 설정:')
@@ -75,7 +75,7 @@ export interface Database {
           date: string
           screenshot_url: string
           verified: boolean
-          points_awarded: number
+          boxes_awarded: number
           screenshot_text: string
           verified_score: number
           created_at: string
@@ -90,7 +90,7 @@ export interface Database {
           date: string
           screenshot_url?: string
           verified?: boolean
-          points_awarded?: number
+          boxes_awarded?: number
           screenshot_text?: string
           verified_score?: number
           created_at?: string
@@ -105,13 +105,13 @@ export interface Database {
           date?: string
           screenshot_url?: string
           verified?: boolean
-          points_awarded?: number
+          boxes_awarded?: number
           screenshot_text?: string
           verified_score?: number
           created_at?: string
         }
       }
-      points: {
+      boxes: {
         Row: {
           id: string
           user_id: string
