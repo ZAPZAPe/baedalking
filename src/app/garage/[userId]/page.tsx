@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 
 import GuestbookPreview from '@/components/garage/GuestbookPreview'
 import UserProfileModal from '@/components/modals/UserProfileModal'
@@ -73,7 +74,7 @@ export default function MinihompyPage() {
       const { data: todayVisits } = await supabase
         .from('visits')
         .select('id')
-        .eq('visitor_id', currentUser?.id)
+        .eq('visitor_id', user?.id)
         .eq('visited_user_id', userId)
         .gte('created_at', `${today}T00:00:00`)
         .lt('created_at', `${today}T23:59:59`)
