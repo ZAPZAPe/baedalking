@@ -133,12 +133,12 @@ const getGridCoordinates = (lat: string, lon: string) => {
   let ro = Math.tan(Math.PI * 0.25 + olat * 0.5)
   ro = re * sf / Math.pow(ro, sn)
   
-  let rs = {}
-  let theta = lonNum * DEGRAD - olon
-  if (theta > Math.PI) theta -= 2.0 * Math.PI
-  if (theta < -Math.PI) theta += 2.0 * Math.PI
-  theta *= sn
-  rs = re * sf / Math.pow(Math.tan(Math.PI * 0.25 + latNum * DEGRAD * 0.5), sn)
+        let rs: number = 0
+      let theta = lonNum * DEGRAD - olon
+      if (theta > Math.PI) theta -= 2.0 * Math.PI
+      if (theta < -Math.PI) theta += 2.0 * Math.PI
+      theta *= sn
+      rs = re * sf / Math.pow(Math.tan(Math.PI * 0.25 + latNum * DEGRAD * 0.5), sn)
   
   const x = Math.floor(rs * Math.sin(theta) + XO + 0.5)
   const y = Math.floor(ro - rs * Math.cos(theta) + YO + 0.5)
