@@ -18,6 +18,15 @@ export interface User {
   created_at?: string
   updated_at?: string
   is_income_private?: boolean
+  platforms?: {
+    baemin: boolean
+    coupang: boolean
+  }
+  goals?: {
+    daily: number
+    weekly: number
+    monthly: number
+  }
 }
 
 export interface UserProfile {
