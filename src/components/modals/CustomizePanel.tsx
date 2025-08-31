@@ -76,9 +76,9 @@ export default function CustomizePanel({
                       ? 'bg-[#e94560] hover:bg-[#ff6b6b] text-white' 
                       : 'bg-gray-500 text-gray-300 cursor-not-allowed'
                   }`}
-                  disabled={totalPoints < item.price}
+                  disabled={totalBoxes < item.price}
                 >
-                  {totalPoints >= item.price ? '구매' : '포인트 부족'}
+                  {totalBoxes >= item.price ? '구매' : '박스 부족'}
                 </button>
               </div>
             </div>
@@ -86,7 +86,7 @@ export default function CustomizePanel({
         </div>
 
         <div className="mt-4 text-center">
-          <p className="text-gray-300 text-sm">현재 포인트: <span className="text-[#ffd93d] font-bold">💎{totalPoints.toLocaleString()}</span></p>
+          <p className="text-gray-300 text-sm">현재 박스: <span className="text-[#ffd93d] font-bold">📦{totalBoxes.toLocaleString()}</span></p>
         </div>
       </div>
     </div>

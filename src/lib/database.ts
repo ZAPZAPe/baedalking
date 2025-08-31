@@ -9,8 +9,8 @@ type Earnings = Database['public']['Tables']['earnings']['Row']
 type EarningsInsert = Database['public']['Tables']['earnings']['Insert']
 type EarningsUpdate = Database['public']['Tables']['earnings']['Update']
 
-type Points = Database['public']['Tables']['points']['Row']
-type PointsInsert = Database['public']['Tables']['points']['Insert']
+type Boxes = Database['public']['Tables']['boxes']['Row']
+type BoxesInsert = Database['public']['Tables']['boxes']['Insert']
 
 type Items = Database['public']['Tables']['items']['Row']
 type UserItems = Database['public']['Tables']['user_items']['Row']

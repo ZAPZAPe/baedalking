@@ -362,7 +362,7 @@ export default function ShopPage() {
                 {selectedItem.description || '멋진 아이템입니다!'}
               </p>
               <div className="text-[#ffd93d] text-lg font-bold font-mono">
-                {selectedItem.price.toLocaleString()} 포인트
+                {selectedItem.price.toLocaleString()} 박스
               </div>
             </div>
 
@@ -386,7 +386,7 @@ export default function ShopPage() {
                 <PixelButton
                   onClick={() => purchaseItem(selectedItem)}
                   variant="primary"
-                  disabled={userPoints < selectedItem.price}
+                  disabled={userBoxes < selectedItem.price}
                 >
                   구매하기
                 </PixelButton>
@@ -402,9 +402,9 @@ export default function ShopPage() {
               </PixelButton>
             </div>
 
-            {userPoints < selectedItem.price && !isOwned(selectedItem.id) && (
+            {userBoxes < selectedItem.price && !isOwned(selectedItem.id) && (
               <div className="text-[#ff6b6b] text-sm font-mono">
-                포인트가 부족합니다. ({(selectedItem.price - userPoints).toLocaleString()}P 부족)
+                박스가 부족합니다. ({(selectedItem.price - userBoxes).toLocaleString()}개 부족)
               </div>
             )}
           </div>

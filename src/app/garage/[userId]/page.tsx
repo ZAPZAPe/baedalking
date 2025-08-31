@@ -20,8 +20,8 @@ export default function MinihompyPage() {
   const { user } = useAuth()
   const userId = params.userId as string
   
-  // useAppState에서 garageIntro 가져오기
-  const { garageIntro } = useAppState()
+  // useAppState에서 garageIntro와 platforms 가져오기
+  const { garageIntro, platforms } = useAppState()
 
   const [targetUser, setTargetUser] = useState<UserProfile | null>(null)
   const [visitCount, setVisitCount] = useState({ total: 0, today: 0 })
@@ -378,6 +378,7 @@ export default function MinihompyPage() {
         <UserProfileModal
           isOpen={showUserProfile}
           user={selectedUserProfile}
+          platforms={platforms}
           onClose={() => {
             setShowUserProfile(false)
             setSelectedUserProfile(null)

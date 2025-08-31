@@ -26,7 +26,10 @@ export interface User {
   garage_config: any
   status_message?: string
   is_income_private: boolean
-  platforms: Platform[]
+  platforms: {
+    baemin: boolean
+    coupang: boolean
+  }
   goals: {
     daily: number
     weekly: number
@@ -34,6 +37,8 @@ export interface User {
   }
   total_visitors: number
   daily_visitors: number
+  created_at?: string
+  updated_at?: string
 }
 
 // 모달 타입 정의
@@ -149,8 +154,8 @@ export interface AppState {
   setFriends: (friends: { id: number; name: string; level: number; totalIncome: number; isOnline: boolean; avatar: string }[]) => void
   friendRequests: { id: number | string; name: string; level: number; message: string; friendId?: string }[]
   setFriendRequests: (requests: { id: number | string; name: string; level: number; message: string; friendId?: string }[]) => void
-  socialFeed: { id: number; userId: number; userName: string; action: string; points: number; timestamp: string }[]
-  setSocialFeed: (feed: { id: number; userId: number; userName: string; action: string; points: number; timestamp: string }[]) => void
+  socialFeed: { id: number; userId: number; userName: string; action: string; boxes: number; timestamp: string }[]
+  setSocialFeed: (feed: { id: number; userId: number; userName: string; action: string; boxes: number; timestamp: string }[]) => void
   
   // 목표 설정
   dailyGoal: number
@@ -397,7 +402,28 @@ export function useAppState(): AppState {
       
       // 사용자별 설정 로드
       if (user.platforms) {
-        setPlatforms(user.platforms)
+        // user.platforms를 Platform[] 타입으로 변환
+        const convertedPlatforms: Platform[] = [
+          {
+            id: 'baemin',
+            name: '배민',
+            icon: '🍽️',
+            color: '#00C851',
+            bgColor: '#00C851',
+            isActive: user.platforms.baemin,
+            type: 'default'
+          },
+          {
+            id: 'coupang',
+            name: '쿠팡',
+            icon: '📦',
+            color: '#E4002B',
+            bgColor: '#E4002B',
+            isActive: user.platforms.coupang,
+            type: 'default'
+          }
+        ]
+        setPlatforms(convertedPlatforms)
       }
       if (user.goals) {
         setDailyGoal(user.goals.daily)

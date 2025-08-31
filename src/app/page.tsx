@@ -203,8 +203,11 @@ export default function Home() {
 
   // 🔥 useAuth 사용자 정보를 useAppState에 동기화
   useEffect(() => {
-    if (user && user !== appUser) {
+    if (user && appUser && user !== appUser) {
       console.log('🔄 사용자 정보 동기화:', user)
+      setAppUser(user)
+    } else if (user && !appUser) {
+      console.log('🔄 사용자 정보 초기 설정:', user)
       setAppUser(user)
     }
   }, [user, appUser, setAppUser])

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { useAppState } from '@/hooks/useAppState'
 import UserProfileModal from '@/components/modals/UserProfileModal'
 
 interface GuestbookMessage {
@@ -26,6 +27,7 @@ export default function GuestbookModal({
   onClose
 }: GuestbookModalProps) {
   const { user } = useAuth()
+  const { platforms } = useAppState()
   const [messages, setMessages] = useState<GuestbookMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [isPrivate, setIsPrivate] = useState(false)
@@ -446,6 +448,7 @@ export default function GuestbookModal({
         <UserProfileModal
           isOpen={showUserProfile}
           user={selectedUserProfile}
+          platforms={platforms}
           onClose={() => {
             setShowUserProfile(false)
             setSelectedUserProfile(null)
