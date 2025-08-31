@@ -14,7 +14,10 @@ interface User {
   garage_config: any // JSONB 타입으로 차고 설정 저장
   status_message?: string
   is_income_private: boolean
-  platforms: any[]
+  platforms: {
+    baemin: boolean
+    coupang: boolean
+  }
   goals: {
     daily: number
     weekly: number
