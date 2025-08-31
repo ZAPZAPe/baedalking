@@ -125,7 +125,7 @@ function PlatformStep({
   platforms: { baemin: boolean; coupang: boolean }
   setPlatforms: (value: { baemin: boolean; coupang: boolean }) => void
   isIncomePrivate: boolean
-  setIsIncomePrivate: (value: boolean) => Promise<void>
+  setIsIncomePrivate: (value: boolean) => void
 }) {
   return (
     <div className="space-y-4">
@@ -154,7 +154,7 @@ function PlatformStep({
         <label className="block text-sm font-medium text-gray-200 mb-2">수익 공개 설정</label>
         <select
           value={isIncomePrivate ? 'private' : 'public'}
-          onChange={async (e) => await setIsIncomePrivate(e.target.value === 'private')}
+          onChange={(e) => setIsIncomePrivate(e.target.value === 'private')}
           className="w-full bg-[#1a1a2e] border border-[#00ff88]/30 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#00ff88]"
         >
           <option value="public">전체 공개</option>
