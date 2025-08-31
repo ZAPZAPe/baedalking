@@ -542,15 +542,28 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
             
             {/* 그래프 컨테이너 - 기준선 포함 */}
             <div className="relative">
-                             {/* 하루 목표 기준선 */}
-               <div className="absolute left-0 right-0 border-t-2 border-dashed border-[#ffd93d]/60" 
-                    style={{ top: `${Math.max(4, (dailyGoal / 10000) / Math.max(...['일', '월', '화', '수', '목', '금', '토'].map((_, i) => {
-                      const d = monthData.filter(d => d.isCurrentMonth && d.dayOfWeek === i);
-                      const total = d.reduce((sum, d) => sum + d.total, 0);
-                      const count = d.filter(d => d.total > 0).length;
-                      return count > 0 ? total / count : 0;
-                    }), dailyGoal / 10000) * 60)}px` }}>
-               </div>
+              {/* 하루 목표 기준선 */}
+              {(() => {
+                // 최대 평균 수익 계산
+                const maxAverage = Math.max(...['일', '월', '화', '수', '목', '금', '토'].map((_, i) => {
+                  const d = monthData.filter(d => d.isCurrentMonth && d.dayOfWeek === i);
+                  const total = d.reduce((sum, d) => sum + d.total, 0);
+                  const count = d.filter(d => d.total > 0).length;
+                  return count > 0 ? total / count : 0;
+                }));
+                
+                // 목표 기준선 위치 계산 (60px 높이 기준)
+                const goalPosition = maxAverage > 0 ? Math.max(4, 60 - (dailyGoal / maxAverage) * 60) : 56;
+                
+                return (
+                  <div className="absolute left-0 right-0 border-t-2 border-dashed border-[#ffd93d]/60" 
+                       style={{ top: `${goalPosition}px` }}>
+                    <div className="absolute -top-6 right-0 text-[10px] text-[#ffd93d] font-mono">
+                      목표: {(dailyGoal / 10000).toFixed(1)}만원
+                    </div>
+                  </div>
+                );
+              })()}
               
               {/* 요일별 막대 그래프 */}
               <div className="flex items-end justify-between h-20 gap-1">
