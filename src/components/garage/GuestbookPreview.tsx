@@ -48,13 +48,13 @@ export default function GuestbookPreview({
 
     setIsLoading(true)
     try {
-      console.log('🔍 방명록 데이터 로딩 시작:', { userId, page })
+  
       
       const response = await fetch(`/api/guestbook?userId=${userId}&page=${page}&limit=${messagesPerPage}`)
       const data = await response.json()
 
       if (response.ok) {
-        console.log('✅ 방명록 데이터 로드 성공:', data.messages?.length || 0, '개')
+
         setRecentMessages(data.messages || [])
         setTotalMessages(data.total || 0)
         setTotalPages(Math.ceil((data.total || 0) / messagesPerPage))
@@ -84,7 +84,7 @@ export default function GuestbookPreview({
 
     setIsSubmitting(true)
     try {
-      console.log('📝 방명록 작성 시작:', { userId, visitorId: user.id, messageLength: newMessage.length, isPrivate })
+  
       
       const response = await fetch('/api/guestbook', {
         method: 'POST',
@@ -102,7 +102,7 @@ export default function GuestbookPreview({
       const data = await response.json()
 
       if (response.ok) {
-        console.log('✅ 방명록 작성 완료:', data.message)
+
         setNewMessage('')
         setIsPrivate(false)
         setShowWriteForm(false)
@@ -136,7 +136,7 @@ export default function GuestbookPreview({
     if (!confirm(confirmMessage)) return
     
     try {
-      console.log('🗑️ 방명록 삭제 시작:', { messageId, userId: user.id })
+  
       
       const response = await fetch('/api/guestbook', {
         method: 'DELETE',
@@ -152,7 +152,7 @@ export default function GuestbookPreview({
       const data = await response.json()
       
       if (response.ok) {
-        console.log('✅ 방명록 삭제 완료:', data.message)
+
         fetchRecentMessages() // 목록 새로고침
       } else {
         console.error('❌ 방명록 삭제 실패:', data.error)
@@ -189,8 +189,7 @@ export default function GuestbookPreview({
         isPrivate: editPrivate,
         userId: user.id
       }
-      console.log('📝 방명록 수정 시작:', { messageId, contentLength: editContent.length, isPrivate: editPrivate })
-      console.log('📝 수정 요청 데이터:', requestData)
+      
       
       const response = await fetch('/api/guestbook', {
         method: 'PUT',
@@ -203,7 +202,7 @@ export default function GuestbookPreview({
       const data = await response.json()
       
       if (response.ok) {
-        console.log('✅ 방명록 수정 완료:', data.message)
+
         handleCancelEdit()
         fetchRecentMessages() // 목록 새로고침
       } else {
@@ -219,9 +218,7 @@ export default function GuestbookPreview({
 
   // 사용자 프로필 클릭 핸들러
   const handleUserProfileClick = (visitorId: string, nickname: string) => {
-    console.log('🔍 닉네임 클릭됨:', { visitorId, nickname, onShowUserProfile })
     if (onShowUserProfile) {
-      console.log('🚀 프로필 모달 열기 시도')
       onShowUserProfile(visitorId, nickname)
     } else {
       console.error('❌ onShowUserProfile 함수가 없습니다!')

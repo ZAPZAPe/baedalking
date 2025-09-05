@@ -31,7 +31,7 @@ export default function KakaoAd({
         document.head.removeChild(scriptRef.current)
         scriptRef.current = null
       } catch (error) {
-        console.log('📝 기존 스크립트가 이미 제거됨')
+        // 스크립트가 이미 제거됨
       }
     }
 
@@ -57,12 +57,10 @@ export default function KakaoAd({
     
     // 스크립트 로드 완료 후 광고 초기화
     script.onload = () => {
-      console.log('✅ 카카오 광고 스크립트 로드 완료')
       // 광고 초기화를 위한 약간의 지연
       setTimeout(() => {
         if (window.kakao && window.kakao.ad) {
           window.kakao.ad.init()
-          console.log('✅ 카카오 광고 초기화 완료')
         }
       }, 100)
     }
@@ -82,7 +80,7 @@ export default function KakaoAd({
           document.head.removeChild(scriptRef.current)
           scriptRef.current = null
         } catch (error) {
-          console.log('📝 정리 시 스크립트가 이미 제거됨')
+          // 정리 시 스크립트가 이미 제거됨
         }
       }
       isInitialized.current = false

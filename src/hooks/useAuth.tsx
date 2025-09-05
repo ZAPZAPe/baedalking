@@ -3,31 +3,7 @@
 import { useState, useEffect, createContext, useContext } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js'
-
-interface User {
-  id: string
-  kakao_id: string
-  email: string
-  nickname: string
-  region: string
-  avatar_config: any // JSONB 타입으로 프로필 이미지 URL 등 저장
-  garage_config: any // JSONB 타입으로 차고 설정 저장
-  status_message?: string
-  is_income_private: boolean
-  platforms: {
-    baemin: boolean
-    coupang: boolean
-  }
-  goals: {
-    daily: number
-    weekly: number
-    monthly: number
-  }
-  total_visitors: number
-  daily_visitors: number
-  created_at: string
-  updated_at: string
-}
+import { User } from '@/types'
 
 interface AuthContextType {
   user: User | null
@@ -60,21 +36,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // 제대로 된 사용자 세션 확인
     const initializeAuth = async () => {
-      console.log('🔄 Auth 초기화 시작')
-      
       try {
         // 1. 먼저 기존 Supabase 세션 확인
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.user) {
-          console.log('✅ 기존 Supabase 세션 발견:', session.user.id)
           await loadUserFromSupabase(session.user)
           setSession(session)
         } else {
-          console.log('❌ 기존 Supabase 세션 없음')
-          
           // 2. Supabase에서 사용자 세션 확인 (더 엄격한 검증)
-          console.log('📱 Supabase 사용자 세션 확인 중...')
           
           // 카카오 ID로 사용자 확인 (더 정확한 방법)
           if (typeof window !== 'undefined') {
@@ -92,7 +62,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     .single()
                   
                   if (existingUser && !userError) {
-                    console.log('✅ 카카오 ID로 사용자 복원:', existingUser.nickname)
                     setUser(existingUser)
                     
                     // Mock 세션 생성
@@ -114,23 +83,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                       }
                     })
                   } else {
-                    console.log('❌ 카카오 ID로 사용자를 찾을 수 없음')
                     setUser(null)
                   }
                 } else {
-                  console.log('❌ 카카오 ID 정보 없음')
                   setUser(null)
                 }
               } catch (error) {
-                console.error('❌ 카카오 사용자 데이터 파싱 오류:', error)
                 setUser(null)
               }
             } else {
-              console.log('❌ 로컬 카카오 사용자 데이터 없음')
               setUser(null)
             }
           } else {
-            console.log('❌ 브라우저 환경이 아님')
             setUser(null)
           }
         }
@@ -201,11 +165,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('users')
         .select('*')
         .eq('kakao_id', userData.kakao_id)
-        .single()
+        .maybeSingle() // single() 대신 maybeSingle() 사용으로 404 에러 방지
 
       let finalUser: User
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         console.error('❌ 사용자 조회 오류:', checkError)
         return false
       }
@@ -234,16 +198,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('✅ 최종 사용자 정보:', finalUser)
       setUser(finalUser)
 
+      // localStorage에 사용자 정보 저장 (페이지 새로고침 시 복원용)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kakaoUser', JSON.stringify(finalUser))
+        console.log('💾 사용자 정보를 localStorage에 저장했습니다')
+      }
+
       // 4. Supabase에 로그인 시간 업데이트
-      await supabase
-        .from('users')
-        .update({ 
-          last_login: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', finalUser.id)
-      
-      console.log('💾 Supabase에 로그인 시간 업데이트됨')
+      try {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ 
+            last_login: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', finalUser.id)
+        
+        if (updateError) {
+          console.error('❌ 로그인 시간 업데이트 실패:', updateError)
+        } else {
+          console.log('💾 Supabase에 로그인 시간 업데이트됨')
+        }
+      } catch (updateError) {
+        console.error('❌ 로그인 시간 업데이트 중 오류:', updateError)
+      }
 
       // 5. 세션 상태 설정
       setSession({
@@ -258,9 +236,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           user_metadata: { kakao_id: finalUser.kakao_id },
           app_metadata: {},
           aud: 'authenticated',
-          created_at: finalUser.created_at,
+          created_at: finalUser.created_at || new Date().toISOString(),
           role: 'authenticated',
-          updated_at: finalUser.updated_at
+          updated_at: finalUser.updated_at || new Date().toISOString()
         }
       })
 
@@ -277,20 +255,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Supabase에서 로그아웃 처리
       if (user) {
-        await supabase
-          .from('users')
-          .update({ 
-            last_login: null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id)
-        
-        console.log('💾 Supabase에서 로그아웃 처리됨')
+        try {
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ 
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+          
+          if (updateError) {
+            console.error('❌ 로그아웃 시간 업데이트 실패:', updateError)
+          } else {
+            console.log('💾 Supabase에서 로그아웃 처리됨')
+          }
+        } catch (updateError) {
+          console.error('❌ 로그아웃 시간 업데이트 중 오류:', updateError)
+        }
       }
       
       // 상태 초기화
       setUser(null)
       setSession(null)
+      
+      // localStorage 정리
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('kakaoUser')
+        console.log('🗑️ localStorage에서 사용자 정보 제거됨')
+      }
       
       console.log('✅ 로그아웃 완료 - 모든 세션 데이터 정리됨')
     } catch (error) {

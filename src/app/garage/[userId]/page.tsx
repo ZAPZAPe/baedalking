@@ -1,15 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
 import GuestbookPreview from '@/components/garage/GuestbookPreview'
-import UserProfileModal from '@/components/modals/UserProfileModal'
+import { UserProfileModal } from '@/components/features/friends'
+import DecorationViewer from '@/components/decoration/DecorationViewer'
+import DecorationRenderer from '@/components/decoration/DecorationRenderer'
 import { UserProfile } from '@/types'
 import { useAppState } from '@/hooks/useAppState'
 import KakaoAd from '@/components/ui/KakaoAd'
+import PixelButton from '@/components/ui/PixelButton'
+import { ModalManager } from '@/components/core'
 
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
@@ -17,11 +21,22 @@ export const dynamic = 'force-dynamic'
 export default function MinihompyPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const userId = params.userId as string
+  const mode = searchParams.get('mode') // 'decoration' 모드 체크
   
-  // useAppState에서 garageIntro와 platforms 가져오기
-  const { garageIntro, platforms } = useAppState()
+  // useAppState에서 필요한 상태들 가져오기
+  const { 
+    garageIntro, 
+    platforms, 
+    totalBoxes,
+    activeModal,
+    openModal,
+    closeModal,
+    selectedShopItem,
+    setSelectedShopItem
+  } = useAppState()
 
   const [targetUser, setTargetUser] = useState<UserProfile | null>(null)
   const [visitCount, setVisitCount] = useState({ total: 0, today: 0 })
@@ -42,12 +57,8 @@ export default function MinihompyPage() {
       if (response.ok && data.user) {
         setTargetUser(data.user)
         
-        // 해당 사용자의 지역 날씨 정보 불러오기
-        if (data.user.region) {
-          await fetchWeather(data.user.region)
-        }
+        // 날씨 정보는 제거됨
       } else {
-        console.error('사용자 프로필 로딩 실패:', data.error)
         setTargetUser(null)
         return
       }
@@ -59,7 +70,7 @@ export default function MinihompyPage() {
       
       await fetchVisitCount()
     } catch (error) {
-      console.error('사용자 정보 로딩 오류:', error)
+      // 사용자 정보 로딩 오류 처리
     } finally {
       setIsLoading(false)
     }
@@ -81,11 +92,8 @@ export default function MinihompyPage() {
         .limit(1)
       
       if (todayVisits && todayVisits.length > 0) {
-        console.log('🔄 오늘 이미 방문 기록됨 (Supabase 기반):', userId)
         return
       }
-      
-      console.log('📝 새로운 방문 기록 시도:', { visitedUserId: userId, visitorId: user?.id })
       
       const response = await fetch('/api/visits', {
         method: 'POST',
@@ -101,71 +109,50 @@ export default function MinihompyPage() {
       const data = await response.json()
       
       if (response.ok) {
-        console.log('✅ 방문 기록 완료:', data.message)
+        // 방문 기록 완료
       } else {
-        console.log('ℹ️ 방문 기록 응답:', data.message)
+        // 방문 기록 응답 처리
       }
     } catch (error) {
-      console.error('❌ 방문 기록 오류:', error)
+      // 방문 기록 오류 처리
     }
   }
 
   // 방문자 수 조회
   const fetchVisitCount = async () => {
     try {
-      console.log('🔍 방문자 수 조회 시작:', userId)
-      
       const response = await fetch(`/api/visits?userId=${userId}`)
       const data = await response.json()
       
       if (response.ok) {
-        console.log('✅ 방문자 수 조회 완료:', { total: data.totalVisits, today: data.todayVisits })
         setVisitCount({
           total: data.totalVisits || 0,
           today: data.todayVisits || 0
         })
       } else {
-        console.error('❌ 방문자 수 조회 실패:', data.error)
+        // 방문자 수 조회 실패 처리
       }
     } catch (error) {
-      console.error('❌ 방문자 수 조회 API 오류:', error)
+      // 방문자 수 조회 API 오류 처리
     }
   }
 
-  // 날씨 정보 불러오기
-  const fetchWeather = async (region: string) => {
-    try {
-      const response = await fetch(`/api/weather?region=${encodeURIComponent(region)}`)
-      const data = await response.json()
-      if (response.ok && data.weather) {
-        setCurrentWeather({
-          temp: data.weather.temp,
-          condition: data.weather.condition
-        })
-      }
-    } catch (error) {
-      console.error('날씨 정보 조회 오류:', error)
-    }
-  }
+  // 날씨 정보는 제거됨 - 기본값 사용
 
   // 사용자 프로필 모달 열기
   const handleShowUserProfile = async (visitorId: string, nickname: string) => {
-    console.log('📱 프로필 모달 요청 받음:', { visitorId, nickname })
     try {
-      console.log('🔄 사용자 정보 API 호출 중...')
       const response = await fetch(`/api/users/${visitorId}`)
       const data = await response.json()
       
       if (response.ok && data.user) {
-        console.log('✅ 사용자 정보 로드 성공:', data.user)
         setSelectedUserProfile(data.user)
         setShowUserProfile(true)
-        console.log('🎉 프로필 모달 상태 업데이트 완료')
       } else {
-        console.error('❌ 사용자 프로필 로딩 실패:', data.error)
+        // 사용자 프로필 로딩 실패 처리
       }
     } catch (error) {
-      console.error('❌ 사용자 프로필 로딩 오류:', error)
+      // 사용자 프로필 로딩 오류 처리
     }
   }
 
@@ -185,7 +172,6 @@ export default function MinihompyPage() {
     if (userId) {
       // 가상 사용자인지 확인 (ID가 'top-ranker-'로 시작하는 경우)
       if (userId.startsWith('top-ranker-')) {
-        console.error('사용자 프로필 로딩 실패: 가상 사용자입니다.')
         setTargetUser(null)
         setIsLoading(false)
         return
@@ -208,13 +194,25 @@ export default function MinihompyPage() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a2e] to-[#16213e] text-white text-center p-4">
         <h1 className="text-2xl font-bold mb-4">사용자를 찾을 수 없습니다</h1>
         <p className="text-gray-300 mb-6">요청하신 차고가 존재하지 않습니다.</p>
-        <button 
+        <PixelButton 
           onClick={() => router.push('/')}
-          className="bg-[#00ff88] hover:bg-[#00cc6a] text-black px-6 py-3 rounded-lg transition-colors font-bold"
+          variant="success"
+          size="lg"
         >
           홈으로 돌아가기
-        </button>
+        </PixelButton>
       </div>
+    )
+  }
+
+  // 3D 꾸미기 모드인 경우
+  if (mode === 'decoration') {
+    return (
+      <DecorationRenderer
+        userId={userId}
+        isOwner={user?.id === userId}
+        onNavigateBack={() => router.push('/')}
+      />
     )
   }
 
@@ -223,27 +221,31 @@ export default function MinihompyPage() {
       {/* 헤더 */}
       <header className="bg-black/30 backdrop-blur-lg border-b border-[#00ff88]/20 p-4">
         <div className="flex items-center justify-between max-w-md mx-auto">
-          <button 
+          <PixelButton 
             onClick={() => router.push('/')}
-            className="text-gray-300 hover:text-white transition-all duration-300 flex items-center justify-center border-2 border-gray-600 hover:border-[#00ff88] rounded-lg w-10 h-10 bg-black/20 hover:bg-[#00ff88]/10"
+            variant="secondary"
+            size="sm"
+            className="w-10 h-10 p-0 flex items-center justify-center"
           >
             🏠
-          </button>
-          <h1 className="text-lg font-bold text-[#00ff88]">{targetUser.nickname}의 차고</h1>
-          <div className="w-12"> {/* 스페이서 */}</div>
+          </PixelButton>
+          <h1 className="text-lg font-bold text-[#00ff88]">{targetUser.nickname}의 미니차고</h1>
+          <div className="h-10 px-3 flex items-center justify-center text-xs bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#ffd93d]/40"
+            style={{borderRadius: '6px'}}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[#ffd93d]">📦</span>
+              <span className="text-[#ffd93d] text-[10px] leading-none font-bold" style={{textShadow: '0 0 6px rgba(255, 217, 61, 0.5)'}}>{totalBoxes.toLocaleString()}</span>
+            </div>
+          </div>
         </div>
       </header>
 
       {/* 메인 컨텐츠 */}
-              <main className="max-w-md mx-auto p-4 space-y-4">
-          
-
-
-        {/* 꾸미기 공간 카드 - 메인페이지와 동일 */}
+      <main className="max-w-md mx-auto p-4 space-y-4">
+        {/* Today 방문자수 카드 - 최상단으로 이동 */}
         <div className="bg-gradient-to-br from-[#1a4a2e]/90 to-[#1a1a2e]/90 backdrop-blur-lg rounded-2xl p-3 border border-[#00ff88]/20 shadow-2xl">
-          
-          {/* 방문자수 카드 - 맨 위 */}
-          <div className="bg-[#1a202c] border-2 border-[#00ff88]/30 p-3 text-center relative mb-3" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-[#00ff88]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
             <div className="flex items-center justify-center space-x-6">
               <div className="flex items-center space-x-2">
                 <span className="text-gray-300 text-xs font-mono">Total</span>
@@ -260,96 +262,45 @@ export default function MinihompyPage() {
             <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
             <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
           </div>
-          
-          {/* 꾸미기 공간 - 모바일 최적화 */}
-          <div className="relative bg-gradient-to-b from-[#2d3748] to-[#1a202c] rounded-xl p-4 mb-3 min-h-[320px] border border-[#00ff88]/30 shadow-inner">
-            
-            {/* 배경 이미지 */}
-            <div className="absolute inset-0 w-full h-full z-10">
-              <img 
-                src={`/assets/background/${targetUser.avatar_config?.background || 'background'}.png`}
-                alt="배경"
-                className="absolute inset-0 w-full h-full object-cover rounded-lg opacity-85"
-                style={{ imageRendering: 'pixelated' }}
-              />
-            </div>
-            
-            {/* 스쿠터 */}
-            <div className="absolute bottom-[0%] left-[5%] w-[200px] h-[150px] z-20">
-              <img 
-                src="/assets/vehicle/scooter.png" 
-                alt="스쿠터" 
-                className="w-full h-full object-contain drop-shadow-lg"
-                style={{ imageRendering: 'pixelated' }}
-              />
-            </div>
-            
-            {/* 캐릭터 */}
-            <div className="absolute bottom-[5%] right-[8%] w-[140px] h-[140px] z-30">
-              <img 
-                src={`/assets/character/character-${targetUser.avatar_config?.emotion || 'base'}.png`}
-                alt="캐릭터"
-                className="w-full h-full object-contain drop-shadow-lg"
-                style={{ imageRendering: 'pixelated' }}
-              />
+        </div>
 
-              {/* 말풍선 */}
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white border-2 border-gray-800 min-w-[45px] max-w-[90px] z-40" 
-                   style={{
-                     borderRadius: '0px',
-                     imageRendering: 'pixelated',
-                     boxShadow: '4px 4px 0px rgba(0,0,0,0.3)'
-                   }}>
-                <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border-r-2 border-b-2 border-gray-800 rotate-45"></div>
-                <p className="text-[9px] text-gray-800 font-bold text-center leading-tight break-words overflow-hidden px-2 py-1" 
-                   style={{
-                     display: '-webkit-box',
-                     WebkitLineClamp: 2,
-                     WebkitBoxOrient: 'vertical',
-                     wordBreak: 'keep-all',
-                     fontFamily: 'monospace'
-                   }}>
-                  {targetUser.avatar_config?.speechText || '안녕하세요!'}
-                </p>
-              </div>
+        {/* 꾸미기 공간 카드 */}
+        <div className="bg-gradient-to-br from-[#1a4a2e]/90 to-[#1a1a2e]/90 backdrop-blur-lg rounded-2xl p-2 sm:p-3 lg:p-4 border border-[#00ff88]/20 shadow-2xl">
+          {/* 꾸미기 시스템 캔버스 - 홈화면과 동일한 방식 */}
+          <div className="relative bg-gradient-to-b from-[#2d3748] to-[#1a202c] rounded-xl p-3 sm:p-4 lg:p-5 mb-2 sm:mb-3 lg:mb-4 border border-[#00ff88]/30 shadow-inner">
+            <div className="w-full aspect-[4/3] bg-gray-900 rounded-lg overflow-hidden relative">
+              <DecorationRenderer userId={userId} isOwner={user?.id === userId} viewOnly={true} />
             </div>
             
-            {/* 나무 푯말 - 우측 상단 (컴팩트 버전) */}
-            <div className="absolute top-2 right-2 z-50">
-              <div className="relative">
-                {/* 로프 */}
-                <div className="absolute -top-2 left-1 w-0.5 h-2 bg-gradient-to-b from-[#8B4513] to-[#A0522D] rounded-full opacity-80"></div>
-                <div className="absolute -top-2 right-1 w-0.5 h-2 bg-gradient-to-b from-[#8B4513] to-[#A0522D] rounded-full opacity-80"></div>
-                
-                {/* 나무 푯말 */}
-                <div className="bg-gradient-to-b from-[#DEB887]/85 via-[#D2B48C]/85 to-[#CD853F]/85 backdrop-blur-sm rounded p-1.5 border border-[#8B4513]/70 shadow-lg relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="h-full w-full bg-gradient-to-r from-transparent via-[#8B4513]/30 to-transparent transform rotate-12"></div>
-                  </div>
-                  
-                  <div className="flex flex-col items-center justify-center relative z-10">
-                    <div className="text-[#8B4513] text-[7px] font-bold leading-none mb-0.5">Weather</div>
-                    <div className="flex items-center justify-center space-x-0.5">
-                      <span className="text-sm">{getWeatherIcon(currentWeather.condition)}</span>
-                      <span className="text-[#654321] text-[8px] font-bold">{currentWeather.temp}°</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* 꾸미기 공간 테두리 효과 */}
+            <div className="absolute inset-0 rounded-xl border-2 border-[#00ff88]/20 pointer-events-none"></div>
             
+            {/* 코너 장식 */}
+            <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-[#00ff88]/60 rounded-tl-lg"></div>
+            <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-[#00ff88]/60 rounded-tr-lg"></div>
+            <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-[#00ff88]/60 rounded-bl-lg"></div>
+            <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-[#00ff88]/60 rounded-br-lg"></div>
           </div>
-          
-          {/* GARAGE INTRO - 메인페이지와 동일 */}
-          <div className="bg-gradient-to-r from-[#2d3748]/80 via-[#4a5568]/80 to-[#2d3748]/80 backdrop-blur-sm rounded-xl p-3 border border-[#00ff88]/20">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-[#00ff88] font-bold text-sm">GARAGE INTRO</span>
+
+          {/* 가라지 소개 */}
+          <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 border border-[#00ff88]/20">
+            <div className="text-center">
+              <p className="text-white text-sm font-medium leading-relaxed">{garageIntro}</p>
             </div>
-            <p className="text-gray-300 text-xs leading-relaxed text-center">
-              {garageIntro || `안녕하세요! ${targetUser.nickname}의 배달 차고입니다. 오늘도 안전하고 빠른 배달로 최선을 다하겠습니다!`}
-            </p>
           </div>
         </div>
+
+        {/* 편집하기 버튼 */}
+        <button 
+          onClick={() => router.push(`/garage/${userId}?mode=decoration`)}
+          className="w-full bg-gradient-to-r from-[#00ff88]/20 to-[#00d4ff]/20 border-2 border-[#00ff88]/50 hover:border-[#00ff88] p-3 rounded text-center hover:from-[#00ff88]/30 hover:to-[#00d4ff]/30 transition-all duration-300 shadow-lg" 
+          style={{borderRadius: '8px'}}
+        >
+          <div className="flex flex-col items-center justify-center">
+            <div className="text-[#00ff88] text-sm font-bold font-mono">🎨 미니차고 꾸미기</div>
+            <div className="text-gray-300 text-xs font-mono">상점, 인벤토리, 미니차고 꾸미기</div>
+          </div>
+        </button>
 
         {/* 카카오 광고 */}
         <KakaoAd 
@@ -369,8 +320,6 @@ export default function MinihompyPage() {
             onShowUserProfile={handleShowUserProfile}
           />
         </div>
-
-
       </main>
 
       {/* 사용자 프로필 모달 */}
@@ -385,6 +334,84 @@ export default function MinihompyPage() {
           }}
         />
       )}
+
+      {/* 모달 관리자 */}
+      <ModalManager
+        user={user!}
+        activeModal={activeModal}
+        closeModal={closeModal}
+        openModal={openModal}
+        errorMessage=""
+        // 수입 관련 상태 (기본값)
+        showIncomeInputPanel={false}
+        setShowIncomeInputPanel={() => {}}
+        incomeCount=""
+        setIncomeCount={() => {}}
+        incomeAmount=""
+        setIncomeAmount={() => {}}
+        missionAmount=""
+        setMissionAmount={() => {}}
+        selectedPlatform="baemin"
+        setSelectedPlatform={() => {}}
+        incomeDate={new Date().toISOString().split('T')[0]}
+        setIncomeDate={() => {}}
+        onSubmit={() => {}}
+        platforms={platforms}
+        // 수입 패널 상태 (기본값)
+        showIncomePanel={false}
+        setShowIncomePanel={() => {}}
+        incomeRecords={[]}
+        totalIncome={0}
+        // 캐릭터 편집 상태 (기본값)
+        showHeaderCharacterPanel={false}
+        setShowHeaderCharacterPanel={() => {}}
+        currentEmotion="happy"
+        setCurrentEmotion={() => {}}
+        garageIntro={garageIntro}
+        setGarageIntro={() => {}}
+        // 아이템 선택 상태 (기본값)
+        showCharacterItemPanel={false}
+        setShowCharacterItemPanel={() => {}}
+        currentCharacterItem="basic"
+        setCurrentCharacterItem={() => {}}
+        showVehicleItemPanel={false}
+        setShowVehicleItemPanel={() => {}}
+        currentVehicle="scooter"
+        setCurrentVehicle={() => {}}
+        showBackgroundItemPanel={false}
+        setShowBackgroundItemPanel={() => {}}
+        currentBackground="background"
+        setCurrentBackground={() => {}}
+        totalBoxes={totalBoxes}
+        setTotalBoxes={() => {}}
+        // 목표 설정 상태 (기본값)
+        dailyGoal={50000}
+        weeklyGoal={350000}
+        monthlyGoal={1500000}
+        updateGoals={() => {}}
+        // 플랫폼 설정 상태 (기본값)
+        togglePlatform={() => {}}
+        addCustomPlatform={() => {}}
+        removeCustomPlatform={() => {}}
+        // 친구 관련 상태 (기본값)
+        friendRequests={[]}
+        setFriendRequests={() => {}}
+        // 기타 상태 (기본값)
+        todayIncome={0}
+        onDeleteIncomeRecord={() => {}}
+        // 수입 상세 모달 상태 (기본값)
+        selectedDate={null}
+        selectedRecords={[]}
+        setSelectedRecords={() => {}}
+        onEditIncomeRecord={() => {}}
+        // 상점 아이템 모달 상태
+        selectedShopItem={selectedShopItem}
+        setSelectedShopItem={setSelectedShopItem}
+        userMoney={totalBoxes}
+        userInventory={[]}
+        placedItems={[]}
+        onPurchase={() => {}}
+      />
     </div>
   )
 }

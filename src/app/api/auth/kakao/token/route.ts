@@ -43,10 +43,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json()
+      const errorData = await tokenResponse.text()
       console.error('카카오 토큰 응답 오류:', errorData)
       return NextResponse.json(
-        { error: '카카오 토큰 획득에 실패했습니다.' },
+        { error: `카카오 토큰 획득에 실패했습니다. 상세: ${errorData}` },
         { status: 400 }
       )
     }

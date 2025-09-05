@@ -198,11 +198,19 @@ export default function SetupPage() {
         .from('users')
         .select('id')
         .eq('nickname', nickname)
-        .single()
+        .maybeSingle() // single() 대신 maybeSingle() 사용
 
+      if (error) {
+        console.error('닉네임 중복 체크 오류:', error)
+        setIsNicknameAvailable(null)
+        return
+      }
+
+      // 데이터가 없으면 사용 가능, 있으면 중복
       setIsNicknameAvailable(!data)
     } catch (error) {
       console.error('닉네임 중복 체크 오류:', error)
+      setIsNicknameAvailable(null)
     }
   }
 
@@ -217,26 +225,28 @@ export default function SetupPage() {
       }
 
       // 사용자 정보 업데이트
-      const { error: updateError } = await supabase
+      const { data: updatedData, error: updateError } = await supabase
         .from('users')
         .update({
           nickname,
           region: detailedRegion ? `${region} ${detailedRegion}` : region,
           is_income_private: isIncomePrivate,
-          platforms: {
-            baemin: platforms.baemin,
-            coupang: platforms.coupang
-          },
+          platforms: [
+            { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', isActive: platforms.baemin, type: 'default' },
+            { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', isActive: platforms.coupang, type: 'default' }
+          ],
           goals: {
-            daily: 0,
-            weekly: 0,
-            monthly: 0
+            daily: 50000,
+            weekly: 350000,
+            monthly: 1500000
           },
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
+        .select()
 
       if (updateError) {
+        console.error('사용자 정보 업데이트 오류:', updateError)
         throw updateError
       }
 
@@ -251,9 +261,9 @@ export default function SetupPage() {
           coupang: platforms.coupang
         },
         goals: {
-          daily: 0,
-          weekly: 0,
-          monthly: 0
+          daily: 50000,
+          weekly: 350000,
+          monthly: 1500000
         }
       }
       

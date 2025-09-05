@@ -2,44 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { IncomeRecord } from '@/types'
-
-export interface Platform {
-  id: string
-  name: string
-  icon: string
-  color: string
-  bgColor: string
-  isActive: boolean
-  type: 'default' | 'custom'
-}
-
-// IncomeRecord 타입은 @/types에서 가져옴
-
-export interface User {
-  id: string
-  kakao_id: string
-  email: string
-  nickname: string
-  region: string
-  avatar_config: any
-  garage_config: any
-  status_message?: string
-  is_income_private: boolean
-  platforms: {
-    baemin: boolean
-    coupang: boolean
-  }
-  goals: {
-    daily: number
-    weekly: number
-    monthly: number
-  }
-  total_visitors: number
-  daily_visitors: number
-  created_at?: string
-  updated_at?: string
-}
+import { IncomeRecord, User, Platform } from '@/types'
 
 // 모달 타입 정의
 export type ModalType = 
@@ -65,6 +28,8 @@ export type ModalType =
   | 'userProfile'
   | 'guestbook'
   | 'deleteAccount'
+  | 'error'
+  | 'shopItemDetail'
 
 export interface AppState {
   // 사용자 정보
@@ -80,8 +45,6 @@ export interface AppState {
   // UI 상태들 (기존과 동일 - 하위 호환성 유지)
   currentEmotion: string
   setCurrentEmotion: (emotion: string) => void
-  speechText: string
-  setSpeechText: (text: string) => void
   showCustomizePanel: boolean
   setShowCustomizePanel: (show: boolean) => void
   showIncomePanel: boolean
@@ -104,6 +67,10 @@ export interface AppState {
   setCurrentBackground: (background: string) => void
   activeTab: string
   setActiveTab: (tab: string) => void
+  
+  // 상점 아이템 모달 상태
+  selectedShopItem: any | null
+  setSelectedShopItem: (item: any | null) => void
   
   // 수입 입력 상태
   incomeCount: string
@@ -142,6 +109,11 @@ export interface AppState {
   garageIntro: string
   setGarageIntro: (intro: string) => void
   
+  // 에러 상태
+  errorMessage: string
+  setErrorMessage: (message: string) => void
+  showErrorModal: (message: string) => void
+  
   // 플랫폼 관리
   platforms: Platform[]
   setPlatforms: (platforms: Platform[]) => void
@@ -161,12 +133,12 @@ export interface AppState {
   dailyGoal: number
   weeklyGoal: number
   monthlyGoal: number
-  updateGoals: (daily: number, weekly: number, monthly: number) => Promise<boolean>
+  updateGoals: (goals: { daily: number; weekly: number; monthly: number }) => void
   
   // 유틸리티 함수들
   getWeatherIcon: (condition: string) => string
   addBoxes: (amount: number, reason?: string) => void
-  useBoxes: (amount: number, item?: string) => boolean
+  useBoxes: (amount: number, item?: string) => Promise<boolean>
   canAfford: (price: number) => boolean
 }
 
@@ -179,7 +151,6 @@ export function useAppState(): AppState {
   
   // 기본 UI 상태들 (기존과 동일 - 하위 호환성 유지)
   const [currentEmotion, setCurrentEmotion] = useState('happy')
-  const [speechText, setSpeechText] = useState('안녕하세요!')
   const [showCustomizePanel, setShowCustomizePanel] = useState(false)
   const [showIncomePanel, setShowIncomePanel] = useState(false)
   const [showIncomeInputPanel, setShowIncomeInputPanel] = useState(false)
@@ -191,6 +162,9 @@ export function useAppState(): AppState {
   const [currentVehicle, setCurrentVehicle] = useState('scooter')
   const [currentBackground, setCurrentBackground] = useState('background')
   const [activeTab, setActiveTab] = useState('home')
+  
+  // 상점 아이템 모달 상태
+  const [selectedShopItem, setSelectedShopItem] = useState<any | null>(null)
   
   // 수입 입력 상태
   const [incomeCount, setIncomeCount] = useState('')
@@ -209,6 +183,9 @@ export function useAppState(): AppState {
   const [totalVisitors, setTotalVisitors] = useState(247)
   const [isClient, setIsClient] = useState(false)
   const [garageIntro, setGarageIntro] = useState('열심히 달리는 배달킹입니다! 🛵💨')
+  
+  // 에러 상태
+  const [errorMessage, setErrorMessage] = useState('')
   
   // 플랫폼 상태 (사용자별로 관리)
   const [platforms, setPlatforms] = useState<Platform[]>([
@@ -267,7 +244,7 @@ export function useAppState(): AppState {
     }
   }
 
-  // 🔥 핵심 변경: Supabase에 수입 기록 저장 (중복 방지)
+  // 🔥 핵심 변경: Supabase 함수를 사용한 수입 기록 저장
   const saveIncomeRecord = async (record: Omit<IncomeRecord, 'id' | 'created_at' | 'total_amount'>): Promise<boolean> => {
     if (!user?.id) {
       console.error('사용자 정보가 없습니다.')
@@ -275,79 +252,38 @@ export function useAppState(): AppState {
     }
     
     try {
-      // 1. 먼저 같은 날짜 + 같은 플랫폼 데이터가 있는지 확인
-      const { data: existingData, error: checkError } = await supabase
-        .from('earnings')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('platform', record.platform)
-        .eq('date', record.date)
-        .maybeSingle()
-      
-      if (checkError) {
-        console.error('기존 데이터 확인 오류:', checkError)
-        return false
-      }
-      
-      let data, error
-      
-      if (existingData) {
-        // 2. 기존 데이터가 있으면 업데이트
-        console.log('🔄 기존 수입 기록 업데이트:', existingData.id)
-        const updateResult = await supabase
-          .from('earnings')
-          .update({
-            delivery_count: record.delivery_count,
-            delivery_amount: record.delivery_amount,
-            mission_amount: record.mission_amount,
-          })
-          .eq('id', existingData.id)
-          .select()
-          .single()
-        
-        data = updateResult.data
-        error = updateResult.error
-      } else {
-        // 3. 기존 데이터가 없으면 새로 생성
-        console.log('✨ 새 수입 기록 생성')
-        const insertResult = await supabase
-          .from('earnings')
-          .insert({
-            user_id: user.id,
-            platform: record.platform,
-            delivery_count: record.delivery_count,
-            delivery_amount: record.delivery_amount,
-            mission_amount: record.mission_amount,
-            date: record.date
-          })
-          .select()
-          .single()
-        
-        data = insertResult.data
-        error = insertResult.error
-      }
+      // Supabase 함수를 사용하여 수입 기록 저장 및 박스 지급
+      const { data, error } = await supabase.rpc('save_earning_with_boxes', {
+        p_user_id: user.id,
+        p_platform: record.platform,
+        p_delivery_count: record.delivery_count,
+        p_delivery_amount: record.delivery_amount,
+        p_mission_amount: record.mission_amount,
+        p_date: record.date
+      })
       
       if (error) {
         console.error('수입 기록 저장 오류:', error)
         return false
       }
       
-      console.log('✅ 수입 기록 저장 완료:', data)
-      
-      // 수입 기록 다시 로드 (강제로 여러 번 실행)
-      await loadIncomeRecords()
-      
-      // 0.5초 후 한 번 더 로드 (네트워크 지연 대비)
-      setTimeout(async () => {
+      if (data?.success) {
+        console.log('✅ 수입 기록 저장 완료:', data)
+        
+        // 수입 기록 다시 로드
         await loadIncomeRecords()
-        console.log('🔄 추가 데이터 로드 완료')
-      }, 500)
-      
-      // 박스 추가
-      const earnedBoxes = (record.delivery_count * 5) + Math.floor((record.delivery_amount + record.mission_amount) * 0.01)
-      addBoxes(earnedBoxes, '수입 기록 등록')
-      
-      return true
+        
+        // 박스 잔액 업데이트
+        const newBoxes = data.boxes_earned || 0
+        if (newBoxes > 0) {
+          setTotalBoxes(prev => prev + newBoxes)
+        }
+        
+        return true
+      } else {
+        console.error('수입 기록 저장 실패:', data?.error)
+        return false
+      }
       
     } catch (error) {
       console.error('수입 기록 저장 실패:', error)
@@ -399,6 +335,7 @@ export function useAppState(): AppState {
   useEffect(() => {
     if (user?.id) {
       loadIncomeRecords()
+      loadUserBoxes()
       
       // 사용자별 설정 로드
       if (user.platforms) {
@@ -432,6 +369,28 @@ export function useAppState(): AppState {
       }
     }
   }, [user?.id])
+
+  // 🔥 사용자 박스 잔액 로드 함수
+  const loadUserBoxes = async () => {
+    if (!user?.id) return
+    
+    try {
+      const { data, error } = await supabase.rpc('get_user_boxes', {
+        p_user_id: user.id
+      })
+      
+      if (error) {
+        console.error('박스 잔액 로드 오류:', error)
+        return
+      }
+      
+      setTotalBoxes(data || 0)
+      console.log('✅ 박스 잔액 로드 완료:', data)
+      
+    } catch (error) {
+      console.error('박스 잔액 로드 실패:', error)
+    }
+  }
 
   // 플랫폼 관리 함수들
   const togglePlatform = async (platformId: string) => {
@@ -534,7 +493,7 @@ export function useAppState(): AppState {
   }
 
   // 목표 설정
-  const updateGoals = async (daily: number, weekly: number, monthly: number) => {
+  const updateGoals = async (goals: { daily: number; weekly: number; monthly: number }) => {
     if (!user?.id) {
       console.error('사용자 ID가 없어서 목표를 저장할 수 없습니다.')
       return false
@@ -545,11 +504,8 @@ export function useAppState(): AppState {
       const { error } = await supabase
         .from('users')
         .update({
-          goals: {
-            daily,
-            weekly,
-            monthly
-          }
+          goals: goals,
+          updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
 
@@ -559,14 +515,14 @@ export function useAppState(): AppState {
       }
 
       // 로컬 상태 업데이트
-      setDailyGoal(daily)
-      setWeeklyGoal(weekly)
-      setMonthlyGoal(monthly)
+      setDailyGoal(goals.daily)
+      setWeeklyGoal(goals.weekly)
+      setMonthlyGoal(goals.monthly)
 
       // 사용자 정보도 업데이트
       setUser(prev => prev ? {
         ...prev,
-        goals: { daily, weekly, monthly }
+        goals: goals
       } : null)
 
       console.log('✅ 목표 설정이 서버에 저장되었습니다!')
@@ -589,18 +545,73 @@ export function useAppState(): AppState {
     }
   }
 
-  const addBoxes = (amount: number, reason = '') => {
-    setTotalBoxes(prev => prev + amount)
-    console.log(`📦 +${amount} 박스 획득! ${reason}`)
+  // 🔥 박스 시스템을 Supabase 함수로 통일
+  const addBoxes = async (amount: number, reason = '') => {
+    if (!user?.id) return
+    
+    try {
+      const { error } = await supabase
+        .from('box_transactions')
+        .insert({
+          user_id: user.id,
+          amount: amount,
+          type: 'earn',
+          reason: reason
+        })
+      
+      if (error) {
+        console.error('박스 추가 오류:', error)
+        return
+      }
+      
+      setTotalBoxes(prev => prev + amount)
+      console.log(`📦 +${amount} 박스 획득! ${reason}`)
+      
+    } catch (error) {
+      console.error('박스 추가 실패:', error)
+    }
   }
 
-  const useBoxes = (amount: number, item = '') => {
-    if (totalBoxes >= amount) {
+  const useBoxes = async (amount: number, item = '') => {
+    if (!user?.id) return false
+    
+    try {
+      // 현재 박스 잔액 확인
+      const { data: currentBoxes, error: boxesError } = await supabase.rpc('get_user_boxes', {
+        p_user_id: user.id
+      })
+      
+      if (boxesError) {
+        console.error('박스 잔액 확인 오류:', boxesError)
+        return false
+      }
+      
+      if (currentBoxes < amount) {
+        console.log(`📦 박스가 부족합니다! (필요: ${amount}, 보유: ${currentBoxes})`)
+        return false
+      }
+      
+      // 박스 사용 기록
+      const { error } = await supabase
+        .from('box_transactions')
+        .insert({
+          user_id: user.id,
+          amount: amount,
+          type: 'spend',
+          reason: `아이템 구매: ${item}`
+        })
+      
+      if (error) {
+        console.error('박스 사용 오류:', error)
+        return false
+      }
+      
       setTotalBoxes(prev => prev - amount)
       console.log(`📦 -${amount} 박스 사용! ${item}`)
       return true
-    } else {
-      console.log(`📦 박스가 부족합니다! (필요: ${amount}, 보유: ${totalBoxes})`)
+      
+    } catch (error) {
+      console.error('박스 사용 실패:', error)
       return false
     }
   }
@@ -609,7 +620,9 @@ export function useAppState(): AppState {
 
   // 🆕 중앙화된 모달 관리 함수들
   const openModal = (modal: ModalType) => {
-    // 기존 모달이 열려있으면 자동으로 닫고 새 모달 열기
+    console.log(`🔄 openModal 호출됨: ${activeModal} → ${modal}`)
+    
+    // 같은 모달을 다시 열려고 할 때도 강제로 업데이트
     setActiveModal(modal)
     
     // 하위 호환성을 위해 기존 상태들도 업데이트
@@ -621,7 +634,7 @@ export function useAppState(): AppState {
     setShowVehicleItemPanel(modal === 'vehicleItem')
     setShowBackgroundItemPanel(modal === 'backgroundItem')
     
-    console.log(`🔄 모달 전환: ${activeModal} → ${modal}`)
+    console.log(`🔄 모달 전환 완료: ${activeModal} → ${modal}`)
   }
 
   const closeModal = () => {
@@ -696,6 +709,12 @@ export function useAppState(): AppState {
     }
   }
 
+  // 에러 모달 표시 함수
+  const showErrorModal = (message: string) => {
+    setErrorMessage(message)
+    openModal('error')
+  }
+
   return {
     // 사용자 정보
     user, setUser,
@@ -706,7 +725,6 @@ export function useAppState(): AppState {
     
     // UI 상태들 (enhanced 함수들로 대체)
     currentEmotion, setCurrentEmotion,
-    speechText, setSpeechText,
     showCustomizePanel, setShowCustomizePanel: enhancedSetShowCustomizePanel,
     showIncomePanel, setShowIncomePanel: enhancedSetShowIncomePanel,
     showIncomeInputPanel, setShowIncomeInputPanel: enhancedSetShowIncomeInputPanel,
@@ -718,6 +736,9 @@ export function useAppState(): AppState {
     currentVehicle, setCurrentVehicle,
     currentBackground, setCurrentBackground,
     activeTab, setActiveTab,
+    
+    // 상점 아이템 모달 상태
+    selectedShopItem, setSelectedShopItem,
     
     // 수입 입력
     incomeCount, setIncomeCount,
@@ -743,6 +764,9 @@ export function useAppState(): AppState {
     totalVisitors, setTotalVisitors,
     isClient, setIsClient,
     garageIntro, setGarageIntro,
+    
+    // 에러 상태
+    errorMessage, setErrorMessage, showErrorModal,
     
     // 플랫폼
     platforms, setPlatforms,

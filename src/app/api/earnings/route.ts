@@ -131,56 +131,39 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 새로운 수익 기록 생성
-    const { data: newEarning, error: insertError } = await supabase
-      .from('earnings')
-      .insert([
-        {
-          user_id: userId,
-          platform: platform,
-          delivery_count: delivery_count || 0,
-          delivery_amount: delivery_amount || 0,
-          mission_amount: mission_amount || 0,
-          date,
-          screenshot_url: screenshotUrl || '',
-          screenshot_text: screenshotText || '',
-          boxes_awarded: Math.floor(totalAmount / 1000) // 1000원당 1박스
-        }
-      ])
-      .select()
-      .single()
+    // Supabase 함수를 사용하여 수입 기록 저장 및 박스 지급
+    const { data: result, error: insertError } = await supabase.rpc('save_earning_with_boxes', {
+      p_user_id: userId,
+      p_platform: platform,
+      p_delivery_count: delivery_count || 0,
+      p_delivery_amount: delivery_amount || 0,
+      p_mission_amount: mission_amount || 0,
+      p_date: date
+    })
 
     if (insertError) {
-      console.error('수익 등록 오류:', insertError)
+      console.error('수입 등록 오류:', insertError)
       return NextResponse.json(
-        { error: '수익 등록에 실패했습니다.' },
+        { error: '수입 등록에 실패했습니다.' },
         { status: 500 }
       )
     }
 
-    // 박스 지급
-    if (newEarning.boxes_awarded > 0) {
-      const { error: boxesError } = await supabase
-        .from('boxes')
-        .insert([
-          {
-            user_id: userId,
-            amount: newEarning.boxes_awarded,
-            type: 'earn'
-          }
-        ])
-
-      if (boxesError) {
-        console.error('박스 지급 오류:', boxesError)
-        // 박스 지급 실패해도 수익 등록은 성공으로 처리
-      }
+    if (result?.success) {
+      return NextResponse.json({
+        message: '수입이 등록되었습니다!',
+        earning: {
+          id: result.earning_id,
+          total_amount: result.total_amount
+        },
+        boxesAwarded: result.boxes_earned
+      })
+    } else {
+      return NextResponse.json(
+        { error: result?.error || '수입 등록에 실패했습니다.' },
+        { status: 500 }
+      )
     }
-
-    return NextResponse.json({
-      message: '수익이 등록되었습니다!',
-      earning: newEarning,
-      boxesAwarded: newEarning.boxes_awarded
-    })
 
   } catch (error) {
     console.error('수익 등록 API 오류:', error)

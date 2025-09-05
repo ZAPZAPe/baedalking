@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     // 페이지네이션된 메시지 조회
     const { data: messages, error } = await supabase
-      .from('guestbook')
+      .from('guestbook_entries')
       .select(`
         id,
         message,
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: newMessage, error } = await supabase
-      .from('guestbook')
+      .from('guestbook_entries')
       .insert([
         {
           user_id: userId,
@@ -205,7 +205,7 @@ export async function PUT(request: NextRequest) {
     // 먼저 메시지 정보 조회 (권한 확인용)
     console.log('🔍 메시지 조회 시작:', messageId)
     const { data: existingMessage, error: fetchError } = await supabase
-      .from('guestbook')
+      .from('guestbook_entries')
       .select('visitor_id')
       .eq('id', messageId)
       .single()
@@ -231,14 +231,14 @@ export async function PUT(request: NextRequest) {
 
     // 업데이트 전에 다시 한 번 메시지 존재 확인
     const { data: preUpdateCheck, error: preUpdateError } = await supabase
-      .from('guestbook')
+      .from('guestbook_entries')
       .select('id, message, visitor_id')
       .eq('id', messageId)
       
     console.log('📝 업데이트 전 메시지 존재 확인:', { preUpdateCheck, preUpdateError })
 
     const { data: updatedMessage, error: updateError } = await supabase
-      .from('guestbook')
+      .from('guestbook_entries')
       .update({
         message: message.trim(),
         is_private: isPrivate
@@ -302,7 +302,7 @@ export async function DELETE(request: NextRequest) {
 
     // 먼저 메시지 정보 조회 (권한 확인용)
     const { data: message, error: fetchError } = await supabase
-      .from('guestbook')
+      .from('guestbook_entries')
       .select('user_id, visitor_id')
       .eq('id', messageId)
       .single()
@@ -323,7 +323,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { error: deleteError } = await supabase
-      .from('guestbook')
+      .from('guestbook_entries')
       .delete()
       .eq('id', messageId)
 

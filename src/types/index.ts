@@ -1,6 +1,60 @@
 // ============================================================================
+// 🎨 아이템 에디터 시스템 타입
+// ============================================================================
+
+export interface StoreItem {
+  id: string
+  name: string
+  category: string
+  imageUrl: string
+  anchor: { x: number; y: number }
+  layer: number
+  price: number
+  description: string
+}
+
+export interface LayerFootprint {
+  [key: string]: Array<[number, number]> // "0": [[0,0], [1,0]], "1": [[0,0]]
+}
+
+export interface EditorItemData {
+  name: string
+  category: string
+  imageFile: File | null
+  imageUrl: string
+  anchor: { x: number; y: number }
+  layer: number
+  price: number
+  description: string
+  footprints: LayerFootprint
+}
+
+export interface UserInventoryItem {
+  id: string
+  quantity: number
+}
+
+export interface UserInventory {
+  userId: string
+  items: UserInventoryItem[]
+}
+
+// PlacedItem 정의는 아래(691-695 라인)에 더 완전한 버전이 있음
+
+export interface UserPlacements {
+  userId: string
+  placements: PlacedItem[]
+}
+
+// ============================================================================
 // 🏗️ 배달킹 앱 전체 타입 정의
 // ============================================================================
+
+export interface Weather {
+  condition: string
+  temperature: number
+  icon: string
+}
 
 // ============================================================================
 // 👤 사용자 관련 타입
@@ -27,6 +81,9 @@ export interface User {
     weekly: number
     monthly: number
   }
+  total_visitors?: number
+  daily_visitors?: number
+  status_message?: string
 }
 
 export interface UserProfile {
@@ -49,7 +106,6 @@ export interface UserProfile {
 export interface IncomeRecord {
   id: string
   platform: string
-  // Supabase 필드명 (백엔드 호환)
   delivery_count: number
   delivery_amount: number
   mission_amount: number
@@ -57,10 +113,6 @@ export interface IncomeRecord {
   date: string
   created_at: string
   user_id?: string
-  // DailyView에서 사용하는 필드명 (프론트엔드 호환)
-  count?: number
-  amount?: number
-  missionAmount?: number
 }
 
 export interface DailyIncomeData {
@@ -549,13 +601,8 @@ export interface TermsOfServiceModalProps {
 }
 
 // ============================================================================
-// 🌤️ 날씨 및 환경 관련 타입
+// 🌤️ 날씨 및 환경 관련 타입 (제거됨)
 // ============================================================================
-
-export interface Weather {
-  temp: number
-  condition: string
-}
 
 // ============================================================================
 // 📱 앱 상태 관련 타입
@@ -584,16 +631,187 @@ export type InputVariant = 'default' | 'success' | 'warning' | 'danger'
 export type CardVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
 
 // ============================================================================
+// 🏠 꾸미기 시스템 관련 타입 (Decoration System)
+// ============================================================================
+
+// 기본 좌표 타입
+export interface Position2D {
+  x: number
+  y: number
+}
+
+export interface Position3D extends Position2D {
+  z: number
+}
+
+// 3D 그리드 셀 타입
+export interface GridCell3D {
+  x: number
+  y: number
+  z: number
+  occupied: boolean
+}
+
+// 아이템 관련 타입
+export interface ItemAnchor {
+  x: number
+  y: number
+}
+
+export interface DecorationItem {
+  id: string
+  name: string
+  imageUrl: string
+  anchor: ItemAnchor
+  price?: number
+  description?: string
+  category?: string
+  isAdminOnly?: boolean
+  createdAt?: Date
+  gridData?: {
+    cells: GridCell3D[]
+    width: number
+    height: number
+    depth: number
+    centerX: number
+    centerY: number
+    totalCells: number
+    // 🔧 에디터에서 저장된 정확한 위치 정보
+    imageOffsetX?: number  // 이미지 앵커 X 오프셋
+    imageOffsetY?: number  // 이미지 앵커 Y 오프셋
+    pixelScale?: number    // 픽셀 스케일 (향후 확장용)
+  }
+}
+
+export interface InventoryItem {
+  id: string
+  itemId: string
+  quantity: number
+  purchasedAt?: Date
+  item?: DecorationItem
+}
+
+export interface PlacedItem {
+  id: string
+  itemId: string
+  gridPosition: Position3D
+  placedAt?: Date
+  updatedAt?: Date
+  item?: DecorationItem
+}
+
+// 사용자 꾸미기 데이터 타입
+export interface UserGarageData {
+  userId: string
+  placedItems: PlacedItem[]
+  floorTileConfig: FloorTileConfig
+  lastUpdated?: Date
+}
+
+// 바닥 타일 설정 타입
+export interface FloorTileConfig {
+  type: 'default' | 'custom'
+  imageUrl?: string
+  pattern: 'checkerboard' | 'solid' | 'custom'
+  lightColor?: number
+  darkColor?: number
+  opacity?: number
+  scale?: number
+}
+
+// 그리드 설정 타입
+export interface GridConfig {
+  rows: number
+  cols: number
+  tileWidth: number
+  tileHeight: number
+  maxHeight: number
+  floorTile?: FloorTileConfig
+}
+
+// 편집기 관련 타입
+export interface EditorState {
+  selectedTool: 'select' | 'place' | 'delete'
+  selectedItem: DecorationItem | null
+  hoveredGrid: Position3D | null
+  previewMode: boolean
+}
+
+// 렌더 상태 타입
+export interface RenderState {
+  currentMode: 'view' | 'edit' | 'shop' | 'inventory'
+  selectedItem: DecorationItem | null
+  hoveredGrid: Position3D | null
+  showGrid: boolean
+}
+
+// 캐릭터 시스템 타입
+export interface CharacterParts {
+  hair: string // 헤어 PNG 파일명
+  top: string // 상의 PNG 파일명
+  bottom: string // 하의 PNG 파일명
+  emotion: string // 감정 이모티콘 파일명
+}
+
+export interface CharacterData {
+  userId: string
+  parts: CharacterParts
+  position: Position2D // 캐릭터 위치
+}
+
+// PixiJS 관련 타입
+export interface PixiContainers {
+  main: any // PIXI.Container
+  grid: any // PIXI.Container
+  items: any // PIXI.Container
+  character: any // PIXI.Container - 캐릭터 컨테이너
+  preview: any // PIXI.Container
+  ui: any // PIXI.Container
+}
+
+// 이벤트 타입
+export interface GridInteractionEvent {
+  gridPosition: Position3D
+  worldPosition: Position2D
+  item?: PlacedItem
+}
+
+export interface ItemInteractionEvent {
+  item: PlacedItem
+  action: 'select' | 'move' | 'delete'
+  gridPosition: Position3D
+}
+
+// 컴포넌트 Props 타입들
+export interface DecorationSpaceProps {
+  userId: string
+  isOwner: boolean
+  className?: string
+}
+
+export type DecorationMode = 'view' | 'edit' | 'shop' | 'inventory'
+
+// ============================================================================
 // 🎯 앱 전역 상태 타입
 // ============================================================================
 
 export interface AppState {
+  // 사용자 정보
+  user: User | null
+  setUser: (user: User | null) => void
+  
+  // 모달 관리
+  activeModal: string | null
+  openModal: (modalName: string) => void
+  closeModal: () => void
+  
   // 기본 상태들
   currentEmotion: string
   setCurrentEmotion: (emotion: string) => void
   speechText: string
   setSpeechText: (text: string) => void
 
+  // 패널 상태들
   showCustomizePanel: boolean
   setShowCustomizePanel: (show: boolean) => void
   showIncomePanel: boolean
@@ -608,14 +826,20 @@ export interface AppState {
   setShowVehicleItemPanel: (show: boolean) => void
   showBackgroundItemPanel: boolean
   setShowBackgroundItemPanel: (show: boolean) => void
+  
+  // 아이템 상태들
   currentCharacterItem: string
   setCurrentCharacterItem: (item: string) => void
   currentVehicle: string
   setCurrentVehicle: (vehicle: string) => void
   currentBackground: string
   setCurrentBackground: (background: string) => void
+  
+  // 탭 상태
   activeTab: string
   setActiveTab: (tab: string) => void
+  
+  // 수입 관련 상태들
   incomeCount: string
   setIncomeCount: (count: string) => void
   incomeAmount: string
@@ -624,18 +848,17 @@ export interface AppState {
   setMissionAmount: (amount: string) => void
   selectedPlatform: string
   setSelectedPlatform: (platform: string) => void
-  dailyIncomeData: { [key: string]: DailyIncomeData }
-  setDailyIncomeData: (data: { [key: string]: DailyIncomeData }) => void
   incomeRecords: IncomeRecord[]
   setIncomeRecords: (records: IncomeRecord[]) => void
+  saveIncomeRecord: (record: Partial<IncomeRecord>) => Promise<boolean>
+  loadIncomeRecords: () => Promise<void>
+  deleteIncomeRecord: (recordId: string) => Promise<boolean>
+  
+  // 게임 시스템 상태들
   totalBoxes: number
   setTotalBoxes: (boxes: number) => void
   userLevel: number
   setUserLevel: (level: number) => void
-  userNickname: string
-  setUserNickname: (nickname: string) => void
-  userLocation: string
-  setUserLocation: (location: string) => void
   currentWeather: Weather
   setCurrentWeather: (weather: Weather) => void
   todayVisitors: number
@@ -646,32 +869,9 @@ export interface AppState {
   setIsClient: (isClient: boolean) => void
   garageIntro: string
   setGarageIntro: (intro: string) => void
-  isVerified: boolean
-  setIsVerified: (isVerified: boolean) => void
-  level: number
-  setLevel: (level: number) => void
-  isIncomePrivate: boolean
-  setIsIncomePrivate: (isPrivate: boolean) => Promise<void>
   
-  // 친구/소셜 관련 상태들
-  friends: { id: number; name: string; level: number; totalIncome: number; isOnline: boolean; avatar: string }[]
-  setFriends: (friends: { id: number; name: string; level: number; totalIncome: number; isOnline: boolean; avatar: string }[]) => void
-  friendRequests: { id: number; name: string; level: number; message: string }[]
-  setFriendRequests: (requests: { id: number; name: string; level: number; message: string }[]) => void
-  socialFeed: { id: number; userId: number; userName: string; action: string; boxes: number; timestamp: string }[]
-  setSocialFeed: (feed: { id: number; userId: number; userName: string; action: string; boxes: number; timestamp: string }[]) => void
-  
-  // 계산된 값들과 함수들
-  getTotalIncomeByPlatform: (platform: string) => number
-  totalIncome: number
-  getWeatherIcon: (condition: string) => string
-  addBoxes: (amount: number, reason?: string) => void
-  useBoxes: (amount: number, item?: string) => boolean
-  canAfford: (price: number) => boolean
-
   // 플랫폼 설정 상태
   platforms: Platform[]
-  setPlatforms: (platforms: Platform[]) => void
   togglePlatform: (platformId: string) => void
   addCustomPlatform: (name: string) => void
   removeCustomPlatform: (platformId: string) => void
@@ -680,5 +880,9 @@ export interface AppState {
   dailyGoal: number
   weeklyGoal: number
   monthlyGoal: number
-  updateGoals: (daily: number, weekly: number, monthly: number) => void
+  updateGoals: (goals: { daily: number; weekly: number; monthly: number }) => void
+  
+  // 친구 관련 상태들
+  friendRequests: any[]
+  setFriendRequests: (requests: any[]) => void
 }

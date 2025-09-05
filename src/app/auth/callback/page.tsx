@@ -24,7 +24,7 @@ function AuthCallbackContent() {
       // Supabase 세션 확인으로 변경
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        console.log('이미 로그인된 사용자가 있습니다. 메인 페이지로 이동합니다.')
+  
         setStatus('success')
         setMessage('이미 로그인되어 있습니다. 메인 페이지로 이동합니다.')
         router.push('/')
@@ -49,7 +49,7 @@ function AuthCallbackContent() {
       }
 
       // 카카오 액세스 토큰 획득
-      console.log('카카오 토큰 요청 시작:', { code: code.substring(0, 10) + '...' })
+
       
       const tokenResponse = await fetch('/api/auth/kakao/token', {
         method: 'POST',
@@ -81,7 +81,7 @@ function AuthCallbackContent() {
       const kakaoUser = await userResponse.json()
 
       // 카카오 사용자 ID로 기존 사용자 확인
-      console.log('카카오 사용자 ID로 기존 사용자 조회:', kakaoUser.id.toString())
+
       
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
@@ -97,7 +97,7 @@ function AuthCallbackContent() {
 
       if (existingUser) {
         // 기존 사용자가 있는 경우 - 로그인 성공
-        console.log('기존 사용자 로그인:', existingUser)
+
         // handleKakaoLogin을 통해 Supabase Auth 세션 생성
         await handleKakaoLogin(existingUser)
         
@@ -105,7 +105,6 @@ function AuthCallbackContent() {
         setMessage('로그인 성공! 메인 페이지로 이동합니다.')
         
         // 단순하게 window.location 사용
-        console.log('기존 사용자 - 메인 페이지로 리다이렉트...')
         setTimeout(() => {
           window.location.href = '/'
         }, 1500) // 1.5초 후 이동
@@ -119,7 +118,7 @@ function AuthCallbackContent() {
         email: `${kakaoUser.id}@kakao.com`,
         nickname: kakaoUser.properties?.nickname || kakaoUser.kakao_account?.profile?.nickname || '배달킹',
         kakao_id: kakaoUser.id.toString(),
-        region: '서울',
+        region: '서울특별시', // 기본값을 더 구체적으로 설정
         avatar_config: profileImageUrl ? { profileImageUrl } : {},
         garage_config: {},
         status_message: null,
@@ -133,7 +132,7 @@ function AuthCallbackContent() {
         daily_visitors: 0
       }
 
-      console.log('새 사용자 데이터 삽입 시도:', userData)
+      
       
       const { data: newUser, error: insertError } = await supabase
         .from('users')
@@ -151,7 +150,7 @@ function AuthCallbackContent() {
         throw new Error(`사용자 생성 실패: ${insertError.message}`)
       }
 
-      console.log('새 사용자 생성:', newUser)
+      
       // handleKakaoLogin을 통해 Supabase Auth 세션 생성
       await handleKakaoLogin(newUser)
       
@@ -159,7 +158,7 @@ function AuthCallbackContent() {
       setMessage('회원가입 성공! 계정 설정 페이지로 이동합니다.')
       
       // 계정 설정 페이지로 이동
-      console.log('계정 설정 페이지로 리다이렉트...')
+      
       setTimeout(() => {
         window.location.href = '/auth/setup'
       }, 1500) // 1.5초 후 이동

@@ -13,6 +13,8 @@ export async function PUT(
     const { earningId } = await params
     const body = await request.json()
 
+    console.log('수입 기록 업데이트 요청:', { earningId, body })
+
     if (!earningId) {
       return NextResponse.json(
         { error: '수입 기록 ID가 필요합니다.' },
@@ -56,6 +58,8 @@ export async function PUT(
     updateData.updated_at = new Date().toISOString()
 
     // 데이터베이스 업데이트
+    console.log('데이터베이스 업데이트 시도:', { earningId, updateData })
+    
     const { data: updatedRecord, error: updateError } = await supabase
       .from('earnings')
       .update(updateData)
@@ -66,10 +70,12 @@ export async function PUT(
     if (updateError || !updatedRecord) {
       console.error('수입 기록 업데이트 오류:', updateError)
       return NextResponse.json(
-        { error: '수입 기록 업데이트에 실패했습니다.' },
+        { error: `수입 기록 업데이트에 실패했습니다: ${updateError?.message || '알 수 없는 오류'}` },
         { status: 500 }
       )
     }
+    
+    console.log('수입 기록 업데이트 성공:', updatedRecord)
 
     return NextResponse.json({ 
       message: '수입 기록이 성공적으로 업데이트되었습니다.',

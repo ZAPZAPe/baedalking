@@ -9,16 +9,16 @@ type Earnings = Database['public']['Tables']['earnings']['Row']
 type EarningsInsert = Database['public']['Tables']['earnings']['Insert']
 type EarningsUpdate = Database['public']['Tables']['earnings']['Update']
 
-type Boxes = Database['public']['Tables']['boxes']['Row']
-type BoxesInsert = Database['public']['Tables']['boxes']['Insert']
+type BoxTransactions = Database['public']['Tables']['box_transactions']['Row']
+type BoxTransactionsInsert = Database['public']['Tables']['box_transactions']['Insert']
 
-type Items = Database['public']['Tables']['items']['Row']
-type UserItems = Database['public']['Tables']['user_items']['Row']
-type UserItemsInsert = Database['public']['Tables']['user_items']['Insert']
+type DecorationItems = Database['public']['Tables']['decoration_items']['Row']
+type UserInventory = Database['public']['Tables']['user_inventory']['Row']
+type UserInventoryInsert = Database['public']['Tables']['user_inventory']['Insert']
 
-type Friends = Database['public']['Tables']['friends']['Row']
-type FriendsInsert = Database['public']['Tables']['friends']['Insert']
-type FriendsUpdate = Database['public']['Tables']['friends']['Update']
+type Friendships = Database['public']['Tables']['friendships']['Row']
+type FriendshipsInsert = Database['public']['Tables']['friendships']['Insert']
+type FriendshipsUpdate = Database['public']['Tables']['friendships']['Update']
 
 type Visits = Database['public']['Tables']['visits']['Row']
 type VisitsInsert = Database['public']['Tables']['visits']['Insert']
@@ -180,9 +180,9 @@ export async function updateEarnings(earningsId: string, updates: EarningsUpdate
 
 // ===== 박스 관련 함수 =====
 
-export async function addBoxes(userId: string, amount: number, type: 'earn' | 'spend'): Promise<Boxes | null> {
+export async function addBoxes(userId: string, amount: number, type: 'earn' | 'spend'): Promise<BoxTransactions | null> {
   try {
-    const boxesData: BoxesInsert = {
+    const boxesData: BoxTransactionsInsert = {
       user_id: userId,
       amount: amount,
       type: type
@@ -233,10 +233,10 @@ export async function getUserBoxes(userId: string): Promise<number> {
 
 // ===== 아이템 관련 함수 =====
 
-export async function getAvailableItems(): Promise<Items[]> {
+export async function getAvailableItems(): Promise<DecorationItems[]> {
   try {
     const { data, error } = await supabase
-      .from('items')
+      .from('decoration_items')
       .select('*')
       .order('price', { ascending: true })
 
@@ -252,10 +252,10 @@ export async function getAvailableItems(): Promise<Items[]> {
   }
 }
 
-export async function getUserItems(userId: string): Promise<UserItems[]> {
+export async function getUserItems(userId: string): Promise<UserInventory[]> {
   try {
     const { data, error } = await supabase
-      .from('user_items')
+      .from('user_inventory')
       .select(`
         *,
         items (*)
@@ -274,11 +274,11 @@ export async function getUserItems(userId: string): Promise<UserItems[]> {
   }
 }
 
-export async function purchaseItem(userId: string, itemId: string): Promise<UserItems | null> {
+export async function purchaseItem(userId: string, itemId: string): Promise<UserInventory | null> {
   try {
     // 아이템 가격 확인
     const { data: item, error: itemError } = await supabase
-      .from('items')
+      .from('decoration_items')
       .select('price')
       .eq('id', itemId)
       .single()
@@ -297,7 +297,7 @@ export async function purchaseItem(userId: string, itemId: string): Promise<User
 
     // 트랜잭션 시작
     const { data: userItem, error: purchaseError } = await supabase
-      .from('user_items')
+      .from('user_inventory')
       .insert({
         user_id: userId,
         item_id: itemId,
@@ -323,10 +323,10 @@ export async function purchaseItem(userId: string, itemId: string): Promise<User
 
 // ===== 친구 관련 함수 =====
 
-export async function sendFriendRequest(userId: string, friendId: string): Promise<Friends | null> {
+export async function sendFriendRequest(userId: string, friendId: string): Promise<Friendships | null> {
   try {
     const { data, error } = await supabase
-      .from('friends')
+      .from('friendships')
       .insert({
         user_id: userId,
         friend_id: friendId,
@@ -347,10 +347,10 @@ export async function sendFriendRequest(userId: string, friendId: string): Promi
   }
 }
 
-export async function getFriendRequests(userId: string): Promise<Friends[]> {
+export async function getFriendRequests(userId: string): Promise<Friendships[]> {
   try {
     const { data, error } = await supabase
-      .from('friends')
+      .from('friendships')
       .select(`
         *,
         users!friends_user_id_fkey (*)
@@ -370,10 +370,10 @@ export async function getFriendRequests(userId: string): Promise<Friends[]> {
   }
 }
 
-export async function acceptFriendRequest(requestId: string): Promise<Friends | null> {
+export async function acceptFriendRequest(requestId: string): Promise<Friendships | null> {
   try {
     const { data, error } = await supabase
-      .from('friends')
+      .from('friendships')
       .update({ status: 'accepted' })
       .eq('id', requestId)
       .select()
@@ -394,7 +394,7 @@ export async function acceptFriendRequest(requestId: string): Promise<Friends | 
 export async function rejectFriendRequest(requestId: string): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('friends')
+      .from('friendships')
       .delete()
       .eq('id', requestId)
 
@@ -410,10 +410,10 @@ export async function rejectFriendRequest(requestId: string): Promise<boolean> {
   }
 }
 
-export async function getUserFriends(userId: string): Promise<Friends[]> {
+export async function getUserFriends(userId: string): Promise<Friendships[]> {
   try {
     const { data, error } = await supabase
-      .from('friends')
+      .from('friendships')
       .select(`
         *,
         users!friends_friend_id_fkey (*)
@@ -478,5 +478,92 @@ export async function getUserVisits(userId: string): Promise<Visits[]> {
   } catch (error) {
     console.error('사용자 방문 기록 조회 예외:', error)
     return []
+  }
+}
+
+/**
+ * 바닥 타일 설정 관련 함수들
+ */
+
+/**
+ * 사용자의 바닥 타일 설정을 데이터베이스에서 로드
+ */
+export async function loadFloorTileSettings(userId: string): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('floor_tile_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // 설정이 없는 경우 기본값 반환
+        return {
+          type: 'default',
+          pattern: 'checkerboard',
+          lightColor: 0xD2B48C,
+          darkColor: 0xA0522D,
+          opacity: 0.8,
+          scale: 1.0
+        }
+      }
+      throw error
+    }
+
+    // 데이터베이스 형식을 프론트엔드 형식으로 변환
+    return {
+      type: data.tile_type,
+      pattern: data.pattern,
+      lightColor: data.light_color,
+      darkColor: data.dark_color,
+      opacity: data.opacity,
+      scale: data.scale,
+      imageUrl: data.custom_image_url
+    }
+  } catch (error) {
+    console.error('바닥 타일 설정 로드 실패:', error)
+    // 에러 시 기본값 반환
+    return {
+      type: 'default',
+      pattern: 'checkerboard',
+      lightColor: 0xD2B48C,
+      darkColor: 0xA0522D,
+      opacity: 0.8,
+      scale: 1.0
+    }
+  }
+}
+
+/**
+ * 사용자의 바닥 타일 설정을 데이터베이스에 저장
+ */
+export async function saveFloorTileSettings(userId: string, config: any): Promise<boolean> {
+  try {
+    // 프론트엔드 형식을 데이터베이스 형식으로 변환
+    const dbConfig = {
+      user_id: userId,
+      tile_type: config.type,
+      pattern: config.pattern,
+      light_color: config.lightColor,
+      dark_color: config.darkColor,
+      opacity: config.opacity,
+      scale: config.scale,
+      custom_image_url: config.imageUrl || null
+    }
+
+    const { error } = await supabase
+      .from('floor_tile_settings')
+      .upsert(dbConfig, { onConflict: 'user_id' })
+
+    if (error) {
+      throw error
+    }
+
+    console.log('💾 바닥 타일 설정 저장 완료:', config)
+    return true
+  } catch (error) {
+    console.error('바닥 타일 설정 저장 실패:', error)
+    return false
   }
 }

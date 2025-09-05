@@ -88,33 +88,16 @@ export default function Header({
                  style={{borderRadius: '6px'}}></div>
           </button>
           
-          {/* 우측 - 박스 디스플레이 (클릭 가능) */}
-          <button
-            onClick={() => router.push('/shop')}
-            className="bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#ffd93d]/40 hover:border-[#ffd93d]/70 px-4 py-2 relative backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg group"
+          {/* 우측 - 박스 디스플레이 (표시용) */}
+          <div
+            className="h-10 px-3 flex items-center justify-center text-xs bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#ffd93d]/40"
             style={{borderRadius: '6px'}}
           >
-            <div className="flex items-center gap-3">
-              {/* 박스 이모티콘 아이콘 */}
-              <div className="relative">
-                <span className="text-lg" style={{filter: 'drop-shadow(0 0 6px rgba(255, 217, 61, 0.5))'}}>
-                  📦
-                </span>
-              </div>
-              <span className="text-[#ffd93d] font-bold text-sm font-mono tracking-wide" 
-                    style={{textShadow: '0 0 6px rgba(255, 217, 61, 0.5)'}}>
-                {totalBoxes.toLocaleString()}
-              </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[#ffd93d]">📦</span>
+              <span className="text-[#ffd93d] text-[10px] leading-none font-bold" style={{textShadow: '0 0 6px rgba(255, 217, 61, 0.5)'}}>{totalBoxes.toLocaleString()}</span>
             </div>
-
-            {/* 박스 글로우 */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#ffd93d]/20 via-[#ffd93d]/10 to-[#ffd93d]/20 blur-sm -z-10" 
-                 style={{borderRadius: '8px'}}></div>
-            
-            {/* 호버 글로우 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#ffd93d]/0 via-[#ffd93d]/10 to-[#ffd93d]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
-                 style={{borderRadius: '6px'}}></div>
-          </button>
+          </div>
         </div>
 
         {/* 장식용 사이드 라인들 */}
