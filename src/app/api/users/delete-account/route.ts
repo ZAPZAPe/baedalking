@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     
     // 방명록 삭제 (작성자 또는 방문자)
     const { error: guestbookError } = await supabase
-      .from('guestbook')
+      .from('guestbook_entries')
       .delete()
       .or(`user_id.eq.${userId},visitor_id.eq.${userId}`)
     
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const { error: visitsError } = await supabase
       .from('visits')
       .delete()
-      .or(`user_id.eq.${userId},visited_user_id.eq.${userId}`)
+      .or(`visitor_id.eq.${userId},visited_user_id.eq.${userId}`)
     
     if (visitsError) {
       console.error('방문 기록 삭제 오류:', visitsError)
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // 친구 관계 삭제 (요청자 또는 받은 사람)
     const { error: friendsError } = await supabase
-      .from('friends')
+      .from('friendships')
       .delete()
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
     
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // 사용자 아이템 삭제
     const { error: userItemsError } = await supabase
-      .from('user_items')
+      .from('user_inventory')
       .delete()
       .eq('user_id', userId)
     
@@ -81,9 +81,9 @@ export async function POST(request: NextRequest) {
       console.log('✅ 사용자 아이템 삭제 완료')
     }
 
-    // 포인트 기록 삭제
+    // 박스 거래 기록 삭제
     const { error: pointsError } = await supabase
-      .from('points')
+      .from('box_transactions')
       .delete()
       .eq('user_id', userId)
     
@@ -103,6 +103,42 @@ export async function POST(request: NextRequest) {
       console.error('수입 기록 삭제 오류:', earningsError)
     } else {
       console.log('✅ 수입 기록 삭제 완료')
+    }
+
+    // 캐릭터 데이터 삭제
+    const { error: characterError } = await supabase
+      .from('character_data')
+      .delete()
+      .eq('user_id', userId)
+    
+    if (characterError) {
+      console.error('캐릭터 데이터 삭제 오류:', characterError)
+    } else {
+      console.log('✅ 캐릭터 데이터 삭제 완료')
+    }
+
+    // 차고 배치 아이템 삭제
+    const { error: garageError } = await supabase
+      .from('garage_placements')
+      .delete()
+      .eq('user_id', userId)
+    
+    if (garageError) {
+      console.error('차고 배치 아이템 삭제 오류:', garageError)
+    } else {
+      console.log('✅ 차고 배치 아이템 삭제 완료')
+    }
+
+    // 바닥 타일 설정 삭제
+    const { error: floorError } = await supabase
+      .from('floor_tile_settings')
+      .delete()
+      .eq('user_id', userId)
+    
+    if (floorError) {
+      console.error('바닥 타일 설정 삭제 오류:', floorError)
+    } else {
+      console.log('✅ 바닥 타일 설정 삭제 완료')
     }
 
     // 2. 마지막으로 사용자 삭제

@@ -232,8 +232,8 @@ export default function SetupPage() {
           region: detailedRegion ? `${region} ${detailedRegion}` : region,
           is_income_private: isIncomePrivate,
           platforms: [
-            { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', isActive: platforms.baemin, type: 'default' },
-            { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', isActive: platforms.coupang, type: 'default' }
+            { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', bgColor: '#00C851', isActive: platforms.baemin, type: 'default' },
+            { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', bgColor: '#E4002B', isActive: platforms.coupang, type: 'default' }
           ],
           goals: {
             daily: 50000,
@@ -256,10 +256,10 @@ export default function SetupPage() {
         nickname,
         region: detailedRegion ? `${region} ${detailedRegion}` : region,
         is_income_private: isIncomePrivate,
-        platforms: {
-          baemin: platforms.baemin,
-          coupang: platforms.coupang
-        },
+        platforms: [
+          { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', bgColor: '#00C851', isActive: platforms.baemin, type: 'default' as const },
+          { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', bgColor: '#E4002B', isActive: platforms.coupang, type: 'default' as const }
+        ],
         goals: {
           daily: 50000,
           weekly: 350000,
@@ -269,6 +269,9 @@ export default function SetupPage() {
       
       // useAuth 상태 즉시 업데이트 (새로고침 없이 반영)
       setUser(updatedUser)
+      
+      // 프로필 설정 완료 플래그 설정
+      localStorage.setItem('profileSetupCompleted', 'true')
       
       console.log('✅ 사용자 설정이 즉시 반영되었습니다:', updatedUser.nickname)
 

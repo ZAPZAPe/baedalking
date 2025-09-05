@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { memo } from 'react'
 import { DecorationItem, InventoryItem, PlacedItem } from '@/types'
 import PixelButton from '@/components/ui/PixelButton'
 
@@ -15,9 +15,18 @@ interface InventoryPanelProps {
   onPlacedItemReselect: (placedItem: PlacedItem) => void
   isVisible: boolean
   isLoading?: boolean
+  highlightedItemId?: string | null
 }
 
-export default function InventoryPanel({
+// 📍 배치된 아이템 카드 컴포넌트 Props
+interface PlacedItemCardProps {
+  placedItem: PlacedItem & { storeItem: DecorationItem }
+  storeItem: DecorationItem
+  onRemove: () => void
+  onReselect: () => void
+}
+
+const InventoryPanel = memo(function InventoryPanel({
   inventoryItems,
   storeItems,
   placedItems,
@@ -27,12 +36,15 @@ export default function InventoryPanel({
   onRemoveItem,
   onPlacedItemReselect,
   isVisible,
-  isLoading = false
+  isLoading = false,
+  highlightedItemId = null
 }: InventoryPanelProps) {
   if (!isVisible) return null
 
   // 아이템 맵 생성 (빠른 조회를 위해)
-  const storeItemMap = new Map((storeItems || []).map(item => [item.id, item]))
+  const storeItemMap = new Map((storeItems || [])
+    .filter(item => item.id) // id가 있는 아이템만 필터링
+    .map(item => [item.id, item]))
   
   console.log('🔍 InventoryPanel 렌더링:', {
     inventoryItems: inventoryItems?.length || 0,
@@ -41,6 +53,19 @@ export default function InventoryPanel({
     inventoryItemsData: inventoryItems,
     storeItemsData: storeItems
   })
+  
+  console.log('🔍 StoreItemMap 생성:', {
+    storeItemMapKeys: Array.from(storeItemMap.keys()),
+    storeItemMapSize: storeItemMap.size,
+    storeItemMapEntries: Array.from(storeItemMap.entries()).map(([key, value]) => ({ key, name: value.name }))
+  })
+  
+  console.log('🔍 StoreItemMap 상세:', Array.from(storeItemMap.entries()).map(([key, value]) => ({ 
+    key, 
+    name: value.name,
+    id: value.id,
+    hasId: !!value.id
+  })))
 
   // 배치된 아이템들의 상세 정보
   const placedItemsWithDetails = (placedItems || [])
@@ -93,6 +118,20 @@ export default function InventoryPanel({
       return hasStoreItem && hasAvailableCount
     }) // 배치 가능한 것만
     .sort((a, b) => (a.storeItem?.name || '').localeCompare(b.storeItem?.name || ''))
+
+  // 🔧 카테고리별로 아이템 분류
+  const categorizedItems = {
+    vehicle: availableItems.filter(item => item.storeItem?.sub_category === 'vehicle'),
+    interior: availableItems.filter(item => item.storeItem?.sub_category === 'interior'),
+    props: availableItems.filter(item => item.storeItem?.sub_category === 'props')
+  }
+
+  // 카테고리 정보
+  const categories = [
+    { id: 'vehicle', name: 'Vehicle', icon: '🚗', items: categorizedItems.vehicle },
+    { id: 'interior', name: '인테리어', icon: '🪑', items: categorizedItems.interior },
+    { id: 'props', name: '소품', icon: '🎨', items: categorizedItems.props }
+  ].filter(category => category.items.length > 0) // 아이템이 있는 카테고리만 표시
 
   if (isLoading) {
     return (
@@ -156,7 +195,7 @@ export default function InventoryPanel({
           <div className="overflow-x-auto scrollbar-hide">
             <div className="flex gap-2 pb-2" style={{ minWidth: 'max-content' }}>
               {placedItemsWithDetails.map((item, index) => (
-                <div key={`placed-${item.itemId}-${item.gridPosition?.x || 0}-${item.gridPosition?.y || 0}-${item.gridPosition?.z || 0}`} className="w-16 flex-shrink-0">
+                <div key={`placed-${item.itemId}-${item.position_x || 0}-${item.position_y || 0}-${item.position_z || 0}`} className="w-16 flex-shrink-0">
                   <PlacedItemCard
                     placedItem={item as any}
                     storeItem={item.storeItem!}
@@ -170,30 +209,44 @@ export default function InventoryPanel({
         </div>
       )}
 
-      {/* 📦 배치 가능한 아이템 섹션 */}
+      {/* 📦 배치 가능한 아이템 섹션 - 카테고리별 표시 */}
       {availableItems.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-white font-medium text-md flex items-center gap-2">
               📦 배치 가능한 아이템
               <span className="text-white/60 text-sm">({availableItems.length}개)</span>
             </h4>
           </div>
-          <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 pb-2" style={{ minWidth: 'max-content' }}>
-              {availableItems.map(({ id, quantity, availableCount, storeItem }, index) => (
-                <div key={`available-${id}-${index}`} className="w-16 flex-shrink-0">
-                  <AvailableItemCard
-                    inventoryItem={{ id, itemId: id, quantity: availableCount }}
-                    storeItem={storeItem!}
-                    isSelected={selectedItemId === id}
-                    onSelect={() => onItemSelect(storeItem!)}
-                    onDeselect={onItemDeselect}
-                  />
+          
+          {/* 카테고리별 아이템 표시 */}
+          {categories.map(category => (
+            <div key={category.id} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{category.icon}</span>
+                <h5 className="text-white font-medium text-sm">
+                  {category.name}
+                  <span className="text-white/60 text-xs ml-1">({category.items.length}개)</span>
+                </h5>
+              </div>
+              <div className="overflow-x-auto scrollbar-hide">
+                <div className="flex gap-2 pb-2" style={{ minWidth: 'max-content' }}>
+                  {category.items.map(({ id, quantity, availableCount, storeItem }, index) => (
+                    <div key={`${category.id}-${id}-${index}`} className="w-16 flex-shrink-0">
+                      <AvailableItemCard
+                        inventoryItem={{ id, itemId: id, quantity: availableCount }}
+                        storeItem={storeItem!}
+                        isSelected={selectedItemId === id}
+                        onSelect={() => onItemSelect(storeItem!)}
+                        onDeselect={onItemDeselect}
+                        isHighlighted={highlightedItemId === id}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       )}
 
@@ -205,16 +258,9 @@ export default function InventoryPanel({
       </div>
     </div>
   )
-}
+})
 
 // 📍 배치된 아이템 카드 컴포넌트
-interface PlacedItemCardProps {
-  placedItem: PlacedItem & { storeItem: DecorationItem }
-  storeItem: DecorationItem
-  onRemove: () => void
-  onReselect: () => void
-}
-
 function PlacedItemCard({
   placedItem,
   storeItem,
@@ -253,13 +299,14 @@ function PlacedItemCard({
   )
 }
 
-// 📦 배치 가능한 아이템 카드 컴포넌트
+// 📦 배치 가능한 아이템 카드 컴포넌트 Props
 interface AvailableItemCardProps {
   inventoryItem: InventoryItem
   storeItem: DecorationItem
   isSelected: boolean
   onSelect: () => void
   onDeselect: () => void
+  isHighlighted?: boolean
 }
 
 function AvailableItemCard({
@@ -267,7 +314,8 @@ function AvailableItemCard({
   storeItem,
   isSelected,
   onSelect,
-  onDeselect
+  onDeselect,
+  isHighlighted = false
 }: AvailableItemCardProps) {
   const handleClick = () => {
     if (isSelected) {
@@ -279,10 +327,12 @@ function AvailableItemCard({
 
   return (
     <div 
-      className={`flex flex-col bg-black/30 p-2 rounded-lg border transition-colors h-full cursor-pointer ${
-        isSelected 
-          ? 'border-green-500/50 bg-green-500/20' 
-          : 'border-white/10 hover:border-white/20'
+      className={`flex flex-col bg-black/30 p-2 rounded-lg border transition-all duration-300 h-full cursor-pointer ${
+        isHighlighted
+          ? 'border-yellow-400/70 bg-yellow-400/20 shadow-lg shadow-yellow-400/30 animate-pulse'
+          : isSelected 
+            ? 'border-green-500/50 bg-green-500/20' 
+            : 'border-white/10 hover:border-white/20'
       }`}
       onClick={handleClick}
     >
@@ -302,7 +352,12 @@ function AvailableItemCard({
         )}
       </div>
       
-
+      {/* 아이템 이름 */}
+      <div className="text-white text-xs font-medium truncate text-center">
+        {storeItem.name}
+      </div>
     </div>
   )
 }
+
+export default InventoryPanel

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { CharacterData } from '@/types'
+import DeleteAccountModal from './modals/DeleteAccountModal'
 
 interface ProfileTabProps {
   userNickname: string
-  currentEmotion: string
   userLocation: string
   emotions: Array<{
     id: string
@@ -13,7 +14,7 @@ interface ProfileTabProps {
     color: string
   }>
   isIncomePrivate: boolean
-  setIsIncomePrivate: (isPrivate: boolean) => Promise<void>
+  setIsIncomePrivate: (isPrivate: boolean) => void
   setShowPrivacyPolicy: (show: boolean) => void
   setShowTermsOfService: (show: boolean) => void
   showDeleteAccount: boolean
@@ -25,7 +26,6 @@ interface ProfileTabProps {
 
 export default function ProfileTab({
   userNickname,
-  currentEmotion,
   userLocation,
   emotions,
   isIncomePrivate,
@@ -45,7 +45,39 @@ export default function ProfileTab({
   const [tempNickname, setTempNickname] = useState(userNickname)
   const [tempLocation, setTempLocation] = useState(userLocation)
   
-
+  // 수익 비공개 상태를 로컬에서 관리 (즉시 반영)
+  const [localIsIncomePrivate, setLocalIsIncomePrivate] = useState(isIncomePrivate)
+  
+  // props 변경 시 로컬 상태 동기화
+  useEffect(() => {
+    setLocalIsIncomePrivate(isIncomePrivate)
+  }, [isIncomePrivate])
+  
+  // 캐릭터 데이터 상태
+  const [characterData, setCharacterData] = useState<CharacterData | null>(null)
+  
+  // 캐릭터 데이터 로드
+  useEffect(() => {
+    const loadCharacterData = async () => {
+      try {
+        console.log('프로필에서 캐릭터 데이터 로드 시작:', userId)
+        const response = await fetch(`/api/character?userId=${userId}`)
+        if (response.ok) {
+          const data = await response.json()
+          console.log('프로필에서 받은 캐릭터 데이터:', data)
+          setCharacterData(data)
+        } else {
+          console.error('캐릭터 데이터 응답 실패:', response.status)
+        }
+      } catch (error) {
+        console.error('캐릭터 데이터 로딩 실패:', error)
+      }
+    }
+    
+    if (userId) {
+      loadCharacterData()
+    }
+  }, [userId])
   
   // 🔍 닉네임 검증 상태
   const [nicknameValidation, setNicknameValidation] = useState<{
@@ -295,12 +327,67 @@ export default function ProfileTab({
           <div className="text-center mb-2">
             {/* 캐릭터 아바타 */}
             <div className="w-20 h-20 mx-auto mb-2 relative">
-              <img 
-                src={`/assets/character/character-${currentEmotion}.png`}
-                alt="캐릭터"
-                className="w-full h-full object-contain rounded-lg border-2 border-[#9c88ff]/50"
-                style={{ imageRendering: 'pixelated' }}
-              />
+              <div className="w-full h-full flex items-center justify-center rounded-lg border-2 border-[#9c88ff]/50 bg-gradient-to-br from-[#00d4ff]/20 to-[#9c88ff]/20">
+                {characterData ? (
+                  <div className="relative w-16 h-16">
+                    {/* 기본 캐릭터 베이스 (가장 아래 레이어) */}
+                    <img 
+                      src="/assets/character/default-character.png"
+                      alt="기본 캐릭터" 
+                      className="absolute w-full h-full object-contain"
+                      style={{ imageRendering: 'pixelated' }}
+                      onError={(e) => console.error('기본 캐릭터 이미지 로드 실패:', e)}
+                      onLoad={() => console.log('기본 캐릭터 이미지 로드 성공')}
+                    />
+                    {/* 하의 레이어 - "없음"이 아닐 때만 표시 */}
+                    {characterData.parts.bottom !== 'none.png' && (
+                      <img 
+                        src={characterData.equippedItems?.find(item => item.item.id === characterData.parts.bottom)?.item.image_url || `/assets/character/${characterData.parts.bottom}`}
+                        alt="하의" 
+                        className="absolute w-full h-full object-contain"
+                        style={{ imageRendering: 'pixelated' }}
+                        onError={(e) => console.error('하의 이미지 로드 실패:', e)}
+                      />
+                    )}
+                    {/* 상의 레이어 - "없음"이 아닐 때만 표시 */}
+                    {characterData.parts.top !== 'none.png' && (
+                      <img 
+                        src={characterData.equippedItems?.find(item => item.item.id === characterData.parts.top)?.item.image_url || `/assets/character/${characterData.parts.top}`}
+                        alt="상의" 
+                        className="absolute w-full h-full object-contain"
+                        style={{ imageRendering: 'pixelated' }}
+                        onError={(e) => console.error('상의 이미지 로드 실패:', e)}
+                      />
+                    )}
+                    {/* 헤어 레이어 (가장 위) - "없음"이 아닐 때만 표시 */}
+                    {characterData.parts.hair !== 'none.png' && (
+                      <img 
+                        src={characterData.equippedItems?.find(item => item.item.id === characterData.parts.hair)?.item.image_url || `/assets/character/${characterData.parts.hair}`}
+                        alt="헤어" 
+                        className="absolute w-full h-full object-contain"
+                        style={{ imageRendering: 'pixelated' }}
+                        onError={(e) => console.error('헤어 이미지 로드 실패:', e)}
+                      />
+                    )}
+                    
+                    {/* 감정 이모티콘 - 캐릭터 상단에 표시 */}
+                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
+                      <div className="bg-white border border-gray-300 px-1 py-0.5 rounded relative shadow-sm">
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-white"></div>
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 translate-y-px w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-gray-300"></div>
+                        <div className="text-xs">
+                          {characterData.parts.emotion === 'happy.png' ? '😊' :
+                           characterData.parts.emotion === 'angry.png' ? '😠' :
+                           characterData.parts.emotion === 'tired.png' ? '😴' :
+                           characterData.parts.emotion === 'heart.png' ? '❤️' : '😊'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-3xl">😊</div>
+                )}
+              </div>
             </div>
             
             {/* 기본 정보 */}
@@ -531,48 +618,25 @@ export default function ProfileTab({
               <div>
                 <div className="text-white text-sm font-bold font-mono">수익 비공개</div>
                 <div className="text-gray-400 text-xs font-mono">
-                  {isIncomePrivate ? '다른 사람이 내 수익을 볼 수 없습니다' : '다른 사람이 내 수익을 볼 수 있습니다'}
+                  {localIsIncomePrivate ? '다른 사람이 내 수익을 볼 수 없습니다' : '다른 사람이 내 수익을 볼 수 있습니다'}
                 </div>
               </div>
               
               {/* 토글 스위치 */}
               <div className="relative">
                 <div 
-                  onClick={async () => {
-                    const newValue = !isIncomePrivate
-                    console.log('토글 클릭! 현재값:', isIncomePrivate, '새값:', newValue)
+                  onClick={() => {
+                    const newValue = !localIsIncomePrivate
+                    console.log('토글 클릭! 현재값:', localIsIncomePrivate, '새값:', newValue)
                     
                     // 즉시 로컬 상태 업데이트 (즉시 반응)
-                    await setIsIncomePrivate(newValue)
+                    setLocalIsIncomePrivate(newValue)
                     
-                    try {
-                      const response = await fetch(`/api/users/${userId}`, {
-                        method: 'PUT',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          is_income_private: newValue
-                        }),
-                      })
-                      
-                      if (response.ok) {
-                        console.log('수익 비공개 설정이 저장되었습니다:', newValue)
-                      } else {
-                        console.error('수익 비공개 설정 저장 실패')
-                        // 실패 시 원래 값으로 되돌리기
-                        await setIsIncomePrivate(!newValue)
-                        alert('설정 저장에 실패했습니다. 다시 시도해주세요.')
-                      }
-                    } catch (error) {
-                      console.error('수익 비공개 설정 저장 오류:', error)
-                      // 에러 시 원래 값으로 되돌리기
-                      await setIsIncomePrivate(!newValue)
-                      alert('설정 저장 중 오류가 발생했습니다.')
-                    }
+                    // 부모 컴포넌트에 변경사항 전달
+                    setIsIncomePrivate(newValue)
                   }}
                   className={`w-12 h-6 rounded-full transition-all duration-300 ease-in-out cursor-pointer ${
-                    isIncomePrivate 
+                    localIsIncomePrivate 
                       ? 'bg-[#00ff88] shadow-lg shadow-[#00ff88]/30' 
                       : 'bg-gray-600'
                   }`}
@@ -581,7 +645,7 @@ export default function ProfileTab({
                   {/* 스위치 핸들 */}
                   <div 
                     className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all duration-300 ease-in-out shadow-md ${
-                      isIncomePrivate 
+                      localIsIncomePrivate 
                         ? 'translate-x-6' 
                         : 'translate-x-0.5'
                     }`}
@@ -721,7 +785,40 @@ export default function ProfileTab({
         </div>
       </div>
 
+      {/* 계정 삭제 모달 */}
+      <DeleteAccountModal
+        isOpen={showDeleteAccount}
+        onClose={() => setShowDeleteAccount(false)}
+        onConfirmDelete={async () => {
+          try {
+            const response = await fetch('/api/users/delete-account', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: userId
+              }),
+            })
 
+            const data = await response.json()
+
+            if (data.success) {
+              alert('계정이 성공적으로 삭제되었습니다.')
+              // 로그아웃 처리
+              await onLogout()
+            } else {
+              alert(`계정 삭제 실패: ${data.error}`)
+            }
+          } catch (error) {
+            console.error('계정 삭제 오류:', error)
+            alert('계정 삭제 중 오류가 발생했습니다.')
+          } finally {
+            setShowDeleteAccount(false)
+          }
+        }}
+        isLoading={false}
+      />
 
     </div>
   )

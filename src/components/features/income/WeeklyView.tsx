@@ -2,7 +2,6 @@
 
 import { Platform } from '@/types'
 import { useServerTime } from '@/hooks/useServerTime'
-import html2canvas from 'html2canvas'
 
 interface WeeklyViewProps {
   allRecords: any[]
@@ -124,6 +123,7 @@ export default function WeeklyView({
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // 모바일 바이럴용 최적화된 캡처 설정
+      const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(element, {
         backgroundColor: '#1a202c',
         scale: window.devicePixelRatio || 2,
@@ -602,7 +602,7 @@ export default function WeeklyView({
                           className="font-mono"
                           opacity="0.8"
                         >
-                          목표: {(dailyGoal / 10000).toFixed(1)}만
+                          목표: {Math.round(dailyGoal / 10000)}만
                         </text>
                       </g>
                     )
@@ -693,7 +693,7 @@ export default function WeeklyView({
             <div className="mt-3 text-center">
               <div className="text-xs text-gray-400 font-mono">
                 주간 총 수익: <span className="text-[#ff6b6b] font-bold">
-                  {(weekTotal / 10000).toFixed(1)}만원
+                  ₩{(weekTotal || 0).toLocaleString()}
                 </span>
               </div>
             </div>

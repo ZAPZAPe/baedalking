@@ -213,6 +213,24 @@ export async function PUT(
       }
     })
 
+    // garage_config 부분 업데이트 처리
+    if (body.garage_config && typeof body.garage_config === 'object') {
+      // 기존 garage_config 조회
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('garage_config')
+        .eq('id', actualUserId)
+        .single()
+
+      const currentGarageConfig = currentUser?.garage_config || {}
+      
+      // 기존 설정과 새 설정 병합
+      updateData.garage_config = {
+        ...currentGarageConfig,
+        ...body.garage_config
+      }
+    }
+
     // 업데이트할 데이터가 없는 경우
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
@@ -293,7 +311,7 @@ export async function PUT(
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update(updateData)
-              .eq('id', userId)
+      .eq('id', actualUserId)
       .select('id, email, nickname, region, status_message, avatar_config, garage_config, updated_at')
       .single()
 

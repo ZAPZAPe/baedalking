@@ -22,10 +22,7 @@ export default function ShopItemDetailModal({
   placedItems,
   onPurchase
 }: ShopItemDetailModalProps) {
-  console.log('🛒 ShopItemDetailModal 렌더링:', { isOpen, item: item?.name })
-  
   if (!isOpen || !item) {
-    console.log('🛒 ShopItemDetailModal 조건 불만족:', { isOpen, item })
     return null
   }
 

@@ -494,21 +494,31 @@ export async function loadFloorTileSettings(userId: string): Promise<any> {
       .from('floor_tile_settings')
       .select('*')
       .eq('user_id', userId)
-      .single()
+      .maybeSingle() // single() 대신 maybeSingle() 사용
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // 설정이 없는 경우 기본값 반환
-        return {
-          type: 'default',
-          pattern: 'checkerboard',
-          lightColor: 0xD2B48C,
-          darkColor: 0xA0522D,
-          opacity: 0.8,
-          scale: 1.0
-        }
+      console.error('바닥 타일 설정 로드 오류:', error)
+      // 에러 시 기본값 반환
+      return {
+        type: 'default',
+        pattern: 'checkerboard',
+        lightColor: 0xD2B48C,
+        darkColor: 0xA0522D,
+        opacity: 0.8,
+        scale: 1.0
       }
-      throw error
+    }
+
+    if (!data) {
+      // 데이터가 없는 경우 기본값 반환
+      return {
+        type: 'default',
+        pattern: 'checkerboard',
+        lightColor: 0xD2B48C,
+        darkColor: 0xA0522D,
+        opacity: 0.8,
+        scale: 1.0
+      }
     }
 
     // 데이터베이스 형식을 프론트엔드 형식으로 변환

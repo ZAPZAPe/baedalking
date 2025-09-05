@@ -1,6 +1,6 @@
 'use client'
 
-import { User, Platform } from '@/types'
+import { User, Platform, CharacterData } from '@/types'
 import { ModalType } from '@/hooks/useAppState'
 import {
   IncomeInputPanel,
@@ -68,10 +68,10 @@ interface ModalManagerProps {
   // 캐릭터 편집 상태
   showHeaderCharacterPanel: boolean
   setShowHeaderCharacterPanel: (show: boolean) => void
-  currentEmotion: string
-  setCurrentEmotion: (emotion: string) => void
   garageIntro: string
   setGarageIntro: (intro: string) => void
+  currentCharacterData: CharacterData | null
+  onCharacterUpdate: (characterData: CharacterData) => void
   
   // 아이템 선택 상태
   showCharacterItemPanel: boolean
@@ -156,10 +156,10 @@ export default function ModalManager({
   // 캐릭터 편집 상태
   showHeaderCharacterPanel,
   setShowHeaderCharacterPanel,
-  currentEmotion,
-  setCurrentEmotion,
   garageIntro,
   setGarageIntro,
+  currentCharacterData,
+  onCharacterUpdate,
   // 아이템 선택 상태
   showCharacterItemPanel,
   setShowCharacterItemPanel,
@@ -254,10 +254,22 @@ export default function ModalManager({
       <CharacterEditPanel 
         showHeaderCharacterPanel={showHeaderCharacterPanel}
         setShowHeaderCharacterPanel={setShowHeaderCharacterPanel}
-        currentEmotion={currentEmotion}
-        setCurrentEmotion={setCurrentEmotion}
         garageIntro={garageIntro}
         setGarageIntro={setGarageIntro}
+        userId={user.id}
+        currentCharacterData={currentCharacterData}
+        onCharacterUpdate={(characterData) => {
+          // 캐릭터 업데이트 처리
+          console.log('캐릭터 업데이트:', characterData)
+          
+          // Garage intro 업데이트가 포함된 경우
+          if (characterData.garageIntro) {
+            setGarageIntro(characterData.garageIntro)
+          }
+          
+          // 실제 캐릭터 데이터 업데이트
+          onCharacterUpdate(characterData)
+        }}
       />
 
       {/* 아이템 선택 패널들 */}
@@ -456,11 +468,6 @@ export default function ModalManager({
       />
 
       {/* 상점 아이템 모달 */}
-      {console.log('🛒 ModalManager - 상점 아이템 모달 조건:', { 
-        activeModal, 
-        isShopItemDetail: activeModal === 'shopItemDetail',
-        selectedShopItem: selectedShopItem?.name 
-      })}
       <ShopItemDetailModal
         isOpen={activeModal === 'shopItemDetail'}
         onClose={() => {

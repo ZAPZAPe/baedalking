@@ -7,7 +7,6 @@ import DecorationRenderer from '@/components/decoration/DecorationRenderer'
 
 interface HomeTabProps {
   currentBackground: string
-  currentEmotion: string
   currentVehicle: string
   garageIntro: string
   todayVisitors: number
@@ -26,7 +25,6 @@ interface HomeTabProps {
 
 export default function HomeTab({
   currentBackground,
-  currentEmotion,
   currentVehicle,
   garageIntro,
   todayVisitors,

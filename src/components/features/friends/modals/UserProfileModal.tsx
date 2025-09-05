@@ -148,13 +148,27 @@ export default function UserProfileModal({
                   USER INFO
                 </h4>
                 <div className="text-center mb-4">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3">
-                    <img 
-                      src={`/assets/character/character-happy.png`}
-                      alt="캐릭터"
-                      className="w-full h-full object-contain drop-shadow-lg"
-                      style={{ imageRendering: 'pixelated' }}
-                    />
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 relative">
+                    <div className="w-full h-full flex items-center justify-center rounded-lg border-2 border-[#ffd93d]/50 bg-gradient-to-br from-[#ffd93d]/20 to-[#ff6b6b]/20">
+                      <div className="relative w-12 h-12 sm:w-16 sm:h-16">
+                        {/* 기본 캐릭터 베이스 (가장 아래 레이어) */}
+                        <img 
+                          src="/assets/character/default-character.png"
+                          alt="기본 캐릭터" 
+                          className="absolute w-full h-full object-contain"
+                          style={{ imageRendering: 'pixelated' }}
+                        />
+                        
+                        {/* 감정 이모티콘 - 캐릭터 상단에 표시 */}
+                        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
+                          <div className="bg-white border border-gray-300 px-1 py-0.5 rounded relative shadow-sm">
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-white"></div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 translate-y-px w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-gray-300"></div>
+                            <div className="text-xs">😊</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                                       <h4 className="text-white font-bold text-base sm:text-lg font-mono mb-2">
                       {user.nickname || '사용자'}

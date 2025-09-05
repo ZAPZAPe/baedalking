@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     // 친구 목록 조회 (양방향)
     const { data: friends, error } = await supabase
-      .from('friends')
+      .from('friendships')
       .select(`
         id,
         status,
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     // 이미 친구 관계가 있는지 확인
     const { data: existingFriendship, error: checkError } = await supabase
-      .from('friends')
+      .from('friendships')
       .select('id, status')
       .or(`and(user_id.eq.${userId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${userId})`)
       .single()
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
 
     // 새로운 친구 요청 생성
     const { data: newFriendship, error: insertError } = await supabase
-      .from('friends')
+      .from('friendships')
       .insert([
         {
           user_id: userId,

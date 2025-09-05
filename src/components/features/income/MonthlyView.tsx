@@ -1,7 +1,6 @@
 'use client'
 
 import { useServerTime } from '@/hooks/useServerTime'
-import html2canvas from 'html2canvas'
 
 interface MonthlyViewProps {
   allRecords: any[]
@@ -107,6 +106,7 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // 모바일 바이럴용 최적화된 캡처 설정
+      const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(element, {
         backgroundColor: '#1a202c',
         scale: window.devicePixelRatio || 2,
@@ -544,22 +544,33 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
             <div className="relative">
               {/* 하루 목표 기준선 */}
               {(() => {
-                // 최대 평균 수익 계산
+                // 최대 평균 수익 계산 (만원 단위로 변환)
                 const maxAverage = Math.max(...['일', '월', '화', '수', '목', '금', '토'].map((_, i) => {
                   const d = monthData.filter(d => d.isCurrentMonth && d.dayOfWeek === i);
                   const total = d.reduce((sum, d) => sum + d.total, 0);
                   const count = d.filter(d => d.total > 0).length;
-                  return count > 0 ? total / count : 0;
+                  return count > 0 ? (total / count) / 10000 : 0; // 만원 단위로 변환
                 }));
                 
+                // 목표 금액을 만원 단위로 변환
+                const goalInManwon = dailyGoal / 10000;
+                
+                // 그래프 범위 내에 기준선이 있는지 확인
+                const isGoalInRange = maxAverage > 0 && goalInManwon <= maxAverage;
+                
                 // 목표 기준선 위치 계산 (60px 높이 기준)
-                const goalPosition = maxAverage > 0 ? Math.max(4, 60 - (dailyGoal / maxAverage) * 60) : 56;
+                const goalPosition = isGoalInRange ? Math.max(4, 60 - (goalInManwon / maxAverage) * 60) : 56;
+                
+                // 기준선이 그래프 범위 내에 있을 때만 표시
+                if (!isGoalInRange) {
+                  return null;
+                }
                 
                 return (
                   <div className="absolute left-0 right-0 border-t-2 border-dashed border-[#ffd93d]/60" 
                        style={{ top: `${goalPosition}px` }}>
                     <div className="absolute -top-6 right-0 text-[10px] text-[#ffd93d] font-mono">
-                      목표: {(dailyGoal / 10000).toFixed(1)}만원
+                      목표: {Math.round(goalInManwon)}만원
                     </div>
                   </div>
                 );
@@ -594,7 +605,7 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
                         style={{ height: `${barHeight}px` }}
                       ></div>
                       <div className="text-[10px] text-gray-400 font-mono mt-1">
-                        {(dayAverage / 10000).toFixed(1)}
+                        {Math.round(dayAverage / 10000)}
                       </div>
                     </div>
                   );

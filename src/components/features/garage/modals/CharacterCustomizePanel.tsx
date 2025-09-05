@@ -3,6 +3,23 @@
 import { useState, useEffect } from 'react'
 import { CharacterParts, CharacterData } from '@/types'
 
+interface UserCharacterItem {
+  id: string
+  userId: string
+  itemId: string
+  quantity: number
+  purchasedAt: string
+  item: {
+    id: string
+    name: string
+    description: string
+    main_category: string
+    sub_category: string
+    image_url: string
+    price: number
+  }
+}
+
 interface CharacterCustomizePanelProps {
   isOpen: boolean
   onClose: () => void
@@ -14,19 +31,13 @@ interface CharacterCustomizePanelProps {
 // 기본 캐릭터 파츠 옵션들
 const CHARACTER_PARTS = {
   hair: [
-    { id: 'hair01.png', name: '기본 헤어', preview: '/assets/character/hair01.png' },
-    { id: 'hair02.png', name: '짧은 헤어', preview: '/assets/character/hair02.png' },
-    { id: 'hair03.png', name: '긴 헤어', preview: '/assets/character/hair03.png' },
+    { id: 'none.png', name: '없음', preview: '/assets/character/none.png' },
   ],
   top: [
-    { id: 'jacket01.png', name: '기본 상의', preview: '/assets/character/jacket01.png' },
-    { id: 'jacket02.png', name: '후드티', preview: '/assets/character/jacket02.png' },
-    { id: 'shirt01.png', name: '셔츠', preview: '/assets/character/shirt01.png' },
+    { id: 'none.png', name: '없음', preview: '/assets/character/none.png' },
   ],
   bottom: [
-    { id: 'pants01.png', name: '기본 하의', preview: '/assets/character/pants01.png' },
-    { id: 'pants02.png', name: '청바지', preview: '/assets/character/pants02.png' },
-    { id: 'shorts01.png', name: '반바지', preview: '/assets/character/shorts01.png' },
+    { id: 'none.png', name: '없음', preview: '/assets/character/none.png' },
   ],
   emotion: [
     { id: 'happy.png', name: '행복', preview: '/assets/character/emotions/happy.png' },
@@ -44,18 +55,104 @@ export default function CharacterCustomizePanel({
   onCharacterUpdate
 }: CharacterCustomizePanelProps) {
   const [selectedParts, setSelectedParts] = useState<CharacterParts>({
-    hair: 'hair01.png',
-    top: 'jacket01.png',
-    bottom: 'pants01.png',
+    hair: 'none.png',
+    top: 'none.png',
+    bottom: 'none.png',
     emotion: 'happy.png'
   })
+  
+  // 사용자 캐릭터 아이템 상태
+  const [userCharacterItems, setUserCharacterItems] = useState<UserCharacterItem[]>([])
+  const [loadingItems, setLoadingItems] = useState(false)
+
+  // 사용자 캐릭터 아이템 로드
+  const loadUserCharacterItems = async () => {
+    if (!userId) return
+    
+    setLoadingItems(true)
+    try {
+      const response = await fetch(`/api/user-shop-inventory?userId=${userId}&mainCategory=character`)
+      if (response.ok) {
+        const data = await response.json()
+        setUserCharacterItems(data.inventory || [])
+      }
+    } catch (error) {
+      console.error('캐릭터 아이템 로드 실패:', error)
+    } finally {
+      setLoadingItems(false)
+    }
+  }
+
+  // 동적 캐릭터 파츠 옵션 생성
+  const getCharacterPartsOptions = () => {
+    const baseOptions = {
+      hair: [{ id: 'none.png', name: '없음', preview: '/assets/character/none.png' }],
+      top: [{ id: 'none.png', name: '없음', preview: '/assets/character/none.png' }],
+      bottom: [{ id: 'none.png', name: '없음', preview: '/assets/character/none.png' }],
+      emotion: [
+        { id: 'happy.png', name: '행복', preview: '/assets/character/emotions/happy.png' },
+        { id: 'angry.png', name: '화남', preview: '/assets/character/emotions/angry.png' },
+        { id: 'tired.png', name: '피곤', preview: '/assets/character/emotions/tired.png' },
+        { id: 'heart.png', name: '하트', preview: '/assets/character/emotions/heart.png' },
+      ]
+    }
+
+    // 사용자가 구매한 캐릭터 아이템들을 카테고리별로 추가
+    userCharacterItems.forEach(userItem => {
+      if (!userItem || !userItem.item) return
+      
+      const item = userItem.item
+      const partOption = {
+        id: item.id,
+        name: item.name,
+        preview: item.image_url
+      }
+
+      if (item.sub_category === 'hair') {
+        baseOptions.hair.push(partOption)
+      } else if (item.sub_category === 'top') {
+        baseOptions.top.push(partOption)
+      } else if (item.sub_category === 'bottom') {
+        baseOptions.bottom.push(partOption)
+      }
+    })
+
+    // 현재 캐릭터 데이터에서 착용한 아이템들도 추가
+    if (currentCharacterData?.equippedItems) {
+      currentCharacterData.equippedItems.forEach((equippedItem: any) => {
+        if (!equippedItem || !equippedItem.item) return
+        
+        const item = equippedItem.item
+        const partOption = {
+          id: item.id,
+          name: item.name,
+          preview: item.image_url
+        }
+
+        // 이미 추가되지 않은 경우에만 추가
+        if (item.sub_category === 'hair' && !baseOptions.hair.find(hair => hair.id === item.id)) {
+          baseOptions.hair.push(partOption)
+        } else if (item.sub_category === 'top' && !baseOptions.top.find(top => top.id === item.id)) {
+          baseOptions.top.push(partOption)
+        } else if (item.sub_category === 'bottom' && !baseOptions.bottom.find(bottom => bottom.id === item.id)) {
+          baseOptions.bottom.push(partOption)
+        }
+      })
+    }
+
+    return baseOptions
+  }
 
   // 패널이 열릴 때 현재 캐릭터 데이터로 초기화
   useEffect(() => {
-    if (isOpen && currentCharacterData) {
-      setSelectedParts(currentCharacterData.parts)
+    if (isOpen) {
+      if (currentCharacterData) {
+        setSelectedParts(currentCharacterData.parts)
+      }
+      // 사용자 캐릭터 아이템 로드
+      loadUserCharacterItems()
     }
-  }, [isOpen, currentCharacterData])
+  }, [isOpen, currentCharacterData, userId])
 
   const handlePartChange = (partType: keyof CharacterParts, partId: string) => {
     setSelectedParts(prev => ({
@@ -139,38 +236,74 @@ export default function CharacterCustomizePanel({
             </h4>
             <div className="flex justify-center">
               <div className="relative">
-                {/* 캐릭터 파츠들을 레이어 순서대로 렌더링 */}
-                <img 
-                  src={`/assets/character/${selectedParts.bottom}`}
-                  alt="하의" 
-                  className="absolute"
-                  style={{ imageRendering: 'pixelated' }}
-                />
-                <img 
-                  src={`/assets/character/${selectedParts.top}`}
-                  alt="상의" 
-                  className="absolute"
-                  style={{ imageRendering: 'pixelated' }}
-                />
-                <img 
-                  src={`/assets/character/${selectedParts.hair}`}
-                  alt="헤어" 
-                  className="absolute"
-                  style={{ imageRendering: 'pixelated' }}
-                />
-                {/* 감정 이모티콘 */}
-                <img 
-                  src={`/assets/character/emotions/${selectedParts.emotion}`}
-                  alt="감정" 
-                  className="absolute -top-8 left-1/2 transform -translate-x-1/2"
-                  style={{ imageRendering: 'pixelated', width: '24px', height: '24px' }}
-                />
+                {/* 캐릭터 프레임 */}
+                <div className="w-20 h-24 bg-gradient-to-br from-[#00d4ff]/20 to-[#9c88ff]/20 border-2 border-[#00ff88]/50 relative"
+                     style={{borderRadius: '6px'}}>
+                  
+                  {/* 캐릭터 파츠들을 레이어 순서대로 렌더링 */}
+                  <div className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-5/6 h-5/6">
+                    {/* 기본 캐릭터 베이스 (가장 아래 레이어) */}
+                    <img 
+                      src="/assets/character/default-character.png"
+                      alt="기본 캐릭터" 
+                      className="absolute w-full h-full object-contain"
+                      style={{ imageRendering: 'pixelated' }}
+                    />
+                    {/* 하의 레이어 - "없음"이 아닐 때만 표시 */}
+                    {selectedParts.bottom !== 'none.png' && (
+                      <img 
+                        src={getCharacterPartsOptions().bottom.find(item => item.id === selectedParts.bottom)?.preview || '/assets/character/none.png'}
+                        alt="하의" 
+                        className="absolute w-full h-full object-contain"
+                        style={{ imageRendering: 'pixelated' }}
+                      />
+                    )}
+                    {/* 상의 레이어 - "없음"이 아닐 때만 표시 */}
+                    {selectedParts.top !== 'none.png' && (
+                      <img 
+                        src={getCharacterPartsOptions().top.find(item => item.id === selectedParts.top)?.preview || '/assets/character/none.png'}
+                        alt="상의" 
+                        className="absolute w-full h-full object-contain"
+                        style={{ imageRendering: 'pixelated' }}
+                      />
+                    )}
+                    {/* 헤어 레이어 (가장 위) - "없음"이 아닐 때만 표시 */}
+                    {selectedParts.hair !== 'none.png' && (
+                      <img 
+                        src={getCharacterPartsOptions().hair.find(item => item.id === selectedParts.hair)?.preview || '/assets/character/none.png'}
+                        alt="헤어" 
+                        className="absolute w-full h-full object-contain"
+                        style={{ imageRendering: 'pixelated' }}
+                      />
+                    )}
+                  </div>
+                  
+                  {/* 말풍선 스타일 감정 이모티콘 - 캐릭터 상단에 표시 */}
+                  <div className="absolute top-1 left-1/2 transform -translate-x-1/2 z-10">
+                    <div className="bg-white border border-gray-300 px-1 py-0.5 rounded relative shadow-sm">
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-white"></div>
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 translate-y-px w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-gray-300"></div>
+                      <div className="text-xs">
+                        {selectedParts.emotion === 'happy.png' ? '😊' :
+                         selectedParts.emotion === 'angry.png' ? '😠' :
+                         selectedParts.emotion === 'tired.png' ? '😴' :
+                         selectedParts.emotion === 'heart.png' ? '❤️' : '😊'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 프레임 모서리 픽셀 도트 */}
+                  <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-0.5 left-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-0.5 right-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* 파츠 선택 */}
-          {Object.entries(CHARACTER_PARTS).map(([partType, parts]) => (
+          {Object.entries(getCharacterPartsOptions()).map(([partType, parts]) => (
             <div key={partType} className="space-y-2">
               <h4 className="text-[#00d4ff] font-bold text-sm font-mono tracking-wider uppercase">
                 {partType}
@@ -187,12 +320,18 @@ export default function CharacterCustomizePanel({
                     }`}
                     style={{borderRadius: '4px'}}
                   >
-                    <img 
-                      src={part.preview} 
-                      alt={part.name}
-                      className="w-full h-12 object-contain mb-1"
-                      style={{ imageRendering: 'pixelated' }}
-                    />
+                    {part.id === 'none.png' ? (
+                      <div className="w-full h-12 flex items-center justify-center mb-1 text-2xl text-red-500">
+                        ✕
+                      </div>
+                    ) : (
+                      <img 
+                        src={part.preview} 
+                        alt={part.name}
+                        className="w-full h-12 object-contain mb-1"
+                        style={{ imageRendering: 'pixelated' }}
+                      />
+                    )}
                     <div className="text-white text-xs font-mono text-center">
                       {part.name}
                     </div>

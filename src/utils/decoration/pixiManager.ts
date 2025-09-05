@@ -15,43 +15,68 @@ import { gridToIso, isoToGrid, DEFAULT_GRID_CONFIG, calculatePlacementPosition }
 // PixiJS 동적 import를 위한 타입 정의
 let PIXI: any = null
 
-// PixiJS 동적 로드 함수
+// PixiJS 동적 로드 함수 - 간소화된 버전
 async function loadPixi() {
   if (!PIXI) {
     try {
-      // 정적 import 시도
-      PIXI = await import('pixi.js')
-    } catch (error) {
-      // PixiJS 동적 로드 실패, CDN 시도
+      // 먼저 window에서 확인 (이미 로드된 경우)
+      if (typeof window !== 'undefined' && (window as any).PIXI) {
+        PIXI = (window as any).PIXI
+        console.log('✅ PixiJS 이미 로드됨 (window에서 가져옴)')
+        return PIXI
+      }
+
+      console.log('🔄 PixiJS 로딩 시작...')
       
-      // 대안: CDN에서 로드
-      await new Promise<void>((resolve, reject) => {
-        if (typeof window === 'undefined') {
-          reject(new Error('Window not available'))
-          return
-        }
-
-        // 이미 로드되어 있는지 확인
-        if ((window as any).PIXI) {
-          PIXI = (window as any).PIXI
-          resolve()
-          return
-        }
-
-        // CDN에서 로드
-        const script = document.createElement('script')
-        script.src = 'https://pixijs.download/release/pixi.min.js'
-        script.onload = () => {
+      // 정적 import 시도 (더 빠른 로딩)
+      const pixiModule = await import('pixi.js')
+      PIXI = pixiModule
+      
+      // window에도 저장 (다음 로딩 시 빠른 접근)
+      if (typeof window !== 'undefined') {
+        (window as any).PIXI = PIXI
+      }
+      
+      console.log('✅ PixiJS 정적 로드 성공')
+    } catch (error) {
+      console.warn('❌ PixiJS 정적 로드 실패, CDN 시도:', error)
+      
+      // CDN에서 로드 (폴백) - 더 간단한 방식
+      if (typeof window !== 'undefined') {
+        return new Promise((resolve, reject) => {
+          // 이미 로드되어 있는지 재확인
           if ((window as any).PIXI) {
             PIXI = (window as any).PIXI
-            resolve()
-          } else {
-            reject(new Error('PIXI not loaded from CDN'))
+            console.log('✅ PixiJS 이미 로드됨 (CDN 재확인)')
+            resolve(PIXI)
+            return
           }
-        }
-        script.onerror = () => reject(new Error('Failed to load PIXI from CDN'))
-        document.head.appendChild(script)
-      })
+
+          console.log('🔄 PixiJS CDN 로딩 시작...')
+          
+          // CDN에서 로드
+          const script = document.createElement('script')
+          script.src = 'https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js'
+          script.async = true
+          script.onload = () => {
+            if ((window as any).PIXI) {
+              PIXI = (window as any).PIXI
+              console.log('✅ PixiJS CDN 로드 성공')
+              resolve(PIXI)
+            } else {
+              console.error('❌ PixiJS CDN 로드 실패: PIXI 객체 없음')
+              reject(new Error('PIXI not loaded from CDN'))
+            }
+          }
+          script.onerror = (e) => {
+            console.error('❌ PixiJS CDN 로드 실패:', e)
+            reject(new Error('Failed to load PIXI from CDN'))
+          }
+          document.head.appendChild(script)
+        })
+      } else {
+        throw new Error('Window not available')
+      }
     }
   }
   return PIXI
@@ -68,6 +93,8 @@ export class PixiManager {
   private isDestroying: boolean = false
   private isRendering: boolean = false
   private destroyPromise: Promise<void> | null = null
+  private gridRendered: boolean = false // 🔧 그리드 렌더링 상태 추적
+  private lastShowFullGrid: boolean | null = null // 🔧 마지막 그리드 표시 설정
 
   constructor(config: GridConfig = DEFAULT_GRID_CONFIG) {
     this.config = config
@@ -79,6 +106,9 @@ export class PixiManager {
   updateFloorTileConfig(floorTileConfig: any): void {
     console.log('🔄 PixiManager 바닥 타일 설정 업데이트:', floorTileConfig)
     this.config.floorTile = floorTileConfig
+    // 🔧 바닥 타일 설정 변경 시 그리드 렌더링 플래그 리셋
+    this.gridRendered = false
+    this.lastShowFullGrid = null
   }
 
   /**
@@ -144,28 +174,37 @@ export class PixiManager {
     height: number = 600
   ): Promise<void> {
     try {
+      console.log('🚀 PixiManager 초기화 시작...')
+      
       // 이미 초기화되어 있다면 정리 후 재초기화
       if (this.isInitialized) {
+        console.log('🔄 기존 인스턴스 정리 중...')
         await this.destroy()
-        // 정리 후 잠시 대기
-        await new Promise(resolve => setTimeout(resolve, 100))
+        // 정리 후 최소한의 대기 (로딩 속도 향상)
+        await new Promise(resolve => setTimeout(resolve, 10))
       }
       
-      // PixiJS 동적 로드
+      console.log('📦 PixiJS 로딩 중...')
+      // PixiJS 동적 로드 (캐시된 버전 우선 사용)
       const PixiJS = await loadPixi()
+      console.log('✅ PixiJS 로드 완료')
       
-      // PixiJS v8 방식으로 앱 생성
+      console.log('🎮 PixiJS 앱 생성 중...')
+      // PixiJS v8 방식으로 앱 생성 (최적화된 설정)
       this.app = new PixiJS.Application()
       await this.app.init({
         width,
         height,
         backgroundColor: 0x0a0a2a,
-        antialias: true,
-        resolution: window.devicePixelRatio || 1,
+        antialias: false, // 성능 향상을 위해 antialias 비활성화
+        resolution: Math.min(window.devicePixelRatio || 1, 2), // 최대 해상도 제한
         autoDensity: true,
-        hello: true, // WebGL 컨텍스트 손실 처리 활성화
-        powerPreference: 'default'
+        hello: false, // 불필요한 로그 제거
+        powerPreference: 'high-performance', // 성능 우선
+        sharedTicker: false, // 독립적인 ticker 사용
+        sharedLoader: false // 독립적인 loader 사용
       })
+      console.log('✅ PixiJS 앱 생성 완료')
 
       // 캔버스 직접 추가 (React DOM 관리 우회)
       const canvas = this.app.canvas as HTMLCanvasElement
@@ -177,6 +216,7 @@ export class PixiManager {
       canvas.style.touchAction = 'none' // 터치 스크롤 방지
       canvas.style.userSelect = 'none' // 텍스트 선택 방지
       
+      console.log('🎨 캔버스 DOM 추가 중...')
       // DOM에 직접 추가 (React와 분리)
       try {
         // 기존 캔버스 제거 (안전하게)
@@ -185,7 +225,7 @@ export class PixiManager {
           try {
             canvasElement.removeChild(existingCanvas)
           } catch (e) {
-    
+            console.warn('기존 캔버스 제거 중 오류:', e)
           }
         }
         
@@ -194,21 +234,28 @@ export class PixiManager {
         // 캔버스 참조 저장 (정리용)
         this.canvasElement = canvasElement
         this.canvasNode = canvas
+        console.log('✅ 캔버스 DOM 추가 완료')
       } catch (error) {
+        console.error('❌ 캔버스 DOM 추가 실패:', error)
         throw error
       }
 
+      console.log('🏗️ 컨테이너 구조 생성 중...')
       // 컨테이너 구조 생성
       this.createContainers()
+      console.log('✅ 컨테이너 구조 생성 완료')
 
+      console.log('📐 자동 스케일링 설정 중...')
       // 그리드 크기에 맞춰 자동 스케일링 설정
       this.setupAutoScaling(width, height)
+      console.log('✅ 자동 스케일링 설정 완료')
 
       // 초기화 완료 표시
       this.isInitialized = true
-
+      console.log('🎉 PixiManager 초기화 완료!')
 
     } catch (error) {
+      console.error('❌ PixiManager 초기화 실패:', error)
       this.isInitialized = false
       throw error
     }
@@ -295,6 +342,11 @@ export class PixiManager {
 
     const { grid } = this.containers
     if (!grid) {
+      return
+    }
+
+    // 🔧 그리드가 이미 렌더링되었고 설정이 동일하면 건너뛰기
+    if (this.gridRendered && grid.children.length > 0 && this.lastShowFullGrid === showFullGrid) {
       return
     }
 
@@ -392,6 +444,10 @@ export class PixiManager {
     }
 
     grid.addChild(gridGraphics)
+    
+    // 🔧 그리드 렌더링 완료 플래그 설정
+    this.gridRendered = true
+    this.lastShowFullGrid = showFullGrid
   }
 
   /**
@@ -408,10 +464,18 @@ export class PixiManager {
 
     try {
       const texture = await PIXI.Assets.load(imageUrl)
+      
+      // 텍스처가 유효한지 확인 (PixiJS v8+ 호환)
+      if (!texture || !texture.source || !texture.source.resource) {
+        console.warn(`유효하지 않은 텍스처: ${imageUrl}`)
+        return null
+      }
+      
       this.loadedTextures.set(imageUrl, texture)
       return texture
     } catch (error) {
-      throw error
+      console.warn(`텍스처 로딩 실패: ${imageUrl}`, error)
+      return null
     }
   }
 
@@ -421,18 +485,23 @@ export class PixiManager {
   async renderItem(
     item: DecorationItem, 
     gridPosition: Position3D,
-    container: any = this.containers!.items
+    container: any = this.containers!.items,
+    isActive: boolean = false
   ): Promise<any> {
     try {
       if (!PIXI) await loadPixi()
       
       const texture = await this.loadTexture(item.imageUrl)
+      if (!texture) {
+        console.warn(`텍스처 로딩 실패: ${item.imageUrl}`)
+        return null
+      }
       const sprite = new PIXI.Sprite(texture)
 
       // 3D 그리드 데이터가 있으면 센터 기준으로, 없으면 앵커 기준으로 배치
       let position: Position2D
       
-      if (item.gridData && item.gridData.cells.length > 0) {
+      if (item.gridData && Array.isArray(item.gridData.cells) && item.gridData.cells.length > 0) {
         // 🔧 Z축 조정 적용: 실제 배치될 높이에 맞게 이미지 위치 계산
         const adjustedZ = gridPosition.z // Z축 조정된 높이 사용
         const isoPos = gridToIso(gridPosition.x, gridPosition.y, adjustedZ, this.config)
@@ -462,12 +531,23 @@ export class PixiManager {
       // Z-index 설정 (Z축 조정된 높이 반영)
       sprite.zIndex = gridPosition.z * 1000 + gridPosition.y * 10 + gridPosition.x + 500
 
-
-
       // 아이템 정보 저장
       sprite.label = item.id
       sprite.interactive = true
       sprite.cursor = 'pointer'
+
+      // 활성화 상태에 따른 시각적 효과
+      if (isActive) {
+        sprite.tint = 0x00ff00 // 초록색으로 활성화 표시
+        sprite.alpha = 0.8
+        // 활성화 테두리 추가
+        const border = new PIXI.Graphics()
+        border.lineStyle(3, 0x00ff00, 0.8)
+        border.drawRect(-sprite.width/2 - 2, -sprite.height/2 - 2, sprite.width + 4, sprite.height + 4)
+        border.zIndex = sprite.zIndex + 1
+        container.addChild(border)
+        sprite.border = border // 나중에 제거할 수 있도록 참조 저장
+      }
 
       // 레이어별 Z-index 설정 (Z축 조정 반영)
       sprite.zIndex = gridPosition.z * 1000 + gridPosition.y * 10 + gridPosition.x
@@ -508,7 +588,8 @@ export class PixiManager {
    */
   async renderPlacedItems(
     placedItems: PlacedItem[], 
-    storeItems: DecorationItem[]
+    storeItems: DecorationItem[],
+    activeItemId: string | null = null
   ): Promise<void> {
     if (!this.containers || !this.isInitialized || !this.app || this.isDestroying) {
       return
@@ -535,13 +616,23 @@ export class PixiManager {
     const itemMap = new Map(storeItems.map(item => [item.id, item]))
 
     // Z 레이어 순서로 정렬하여 렌더링
-    const sortedItems = [...placedItems].sort((a, b) => a.gridPosition.z - b.gridPosition.z)
+    const sortedItems = [...placedItems].sort((a, b) => {
+      const aZ = a.gridPosition?.z ?? a.position_z
+      const bZ = b.gridPosition?.z ?? b.position_z
+      return aZ - bZ
+    })
 
     for (const placedItem of sortedItems) {
       const storeItem = itemMap.get(placedItem.itemId)
       if (storeItem) {
         try {
-          await this.renderItem(storeItem, placedItem.gridPosition, items)
+          const gridPosition: Position3D = placedItem.gridPosition ?? {
+            x: placedItem.position_x,
+            y: placedItem.position_y,
+            z: placedItem.position_z
+          }
+          const isActive = activeItemId === placedItem.id
+          await this.renderItem(storeItem, gridPosition, items, isActive)
         } catch (error) {
           console.warn('아이템 렌더링 실패:', error)
         }
@@ -582,9 +673,14 @@ export class PixiManager {
         const { cells: placedCells } = placedStoreItem.gridData
 
         return placedCells.some(placedCell => {
-          const placedWorldX = placedItem.gridPosition.x + placedCell.x
-          const placedWorldY = placedItem.gridPosition.y + placedCell.y
-          const placedWorldZ = placedItem.gridPosition.z + placedCell.z
+          const gridPos = placedItem.gridPosition ?? {
+            x: placedItem.position_x,
+            y: placedItem.position_y,
+            z: placedItem.position_z
+          }
+          const placedWorldX = gridPos.x + placedCell.x
+          const placedWorldY = gridPos.y + placedCell.y
+          const placedWorldZ = gridPos.z + placedCell.z
 
           return placedWorldX === worldX && placedWorldY === worldY && placedWorldZ === worldZ
         })
@@ -607,33 +703,33 @@ export class PixiManager {
     dataStore?: any,
     placedItems?: PlacedItem[],
     storeItems?: DecorationItem[]
-  ): Promise<void> {
+  ): Promise<Position3D | null> {
     if (!this.containers || !this.isInitialized || !this.app || this.isDestroying) {
-      return
+      return null
     }
 
     // 렌더러가 유효한지 확인
     if (!this.app.renderer || !this.app.renderer.gl) {
-      return
+      return null
     }
 
     const { preview } = this.containers
     if (!preview) {
-      return
+      return null
     }
 
     try {
       preview.removeChildren()
     } catch (error) {
       console.warn('미리보기 컨테이너 정리 중 오류:', error)
-      return
+      return null
     }
 
-    if (!item || !gridPosition) return
+    if (!item || !gridPosition) return null
 
     // 🔧 아이템의 모든 픽셀이 타일 영역 안에 있는지 확인
     if (!this.isItemWithinTileBounds(gridPosition, item)) {
-      return // 타일 영역을 넘어가면 미리보기도 표시하지 않음
+      return null // 타일 영역을 넘어가면 미리보기도 표시하지 않음
     }
 
     try {
@@ -660,12 +756,17 @@ export class PixiManager {
         }
         
         if (!foundPosition) {
-          return
+          return null
         }
       }
 
       // 🔧 실제 배치와 똑같은 방식으로 아이템 렌더링 (조정된 위치 사용)
       const sprite = await this.renderItem(item, finalPosition, preview)
+      if (!sprite) {
+        console.warn('미리보기 아이템 렌더링 실패:', item.name)
+        return null
+      }
+      
       if (sprite) {
         sprite.alpha = 0.7 // 투명하게 표시
         
@@ -707,8 +808,12 @@ export class PixiManager {
           sprite.tint = 0x00ff00 // 녹색 (정상 배치)
         }
       }
+      
+      // 🔧 계산된 최종 위치 반환
+      return finalPosition
     } catch (error) {
       // 미리보기 렌더링 실패
+      return null
     }
   }
 
@@ -1062,6 +1167,13 @@ export class PixiManager {
 
     const { cells } = item.gridData
 
+    // cells가 배열이 아닌 경우 기본 검사만 수행
+    if (!Array.isArray(cells)) {
+      console.warn('⚠️ gridData.cells가 배열이 아닙니다:', cells)
+      return gridPosition.x >= -halfSize && gridPosition.x < halfSize && 
+             gridPosition.y >= -halfSize && gridPosition.y < halfSize
+    }
+
     // 아이템의 모든 셀(픽셀)이 타일 영역 안에 있는지 확인
     for (const cell of cells) {
       const worldX = gridPosition.x + cell.x
@@ -1090,14 +1202,24 @@ export class PixiManager {
     if (!this.containers) return null
 
     // 역순으로 검사 (상위 레이어부터)
-    const sortedItems = [...placedItems].sort((a, b) => b.gridPosition.z - a.gridPosition.z)
+    const sortedItems = [...placedItems].sort((a, b) => {
+      const aZ = a.gridPosition?.z ?? a.position_z
+      const bZ = b.gridPosition?.z ?? b.position_z
+      return bZ - aZ
+    })
     
     for (const placedItem of sortedItems) {
       const storeItem = storeItems.find(item => item.id === placedItem.itemId)
       if (!storeItem) continue
 
+      const gridPosition: Position3D = placedItem.gridPosition ?? {
+        x: placedItem.position_x,
+        y: placedItem.position_y,
+        z: placedItem.position_z
+      }
+
       const itemPosition = calculatePlacementPosition(
-        placedItem.gridPosition,
+        gridPosition,
         storeItem.anchor.x,
         storeItem.anchor.y,
         this.config
@@ -1125,108 +1247,567 @@ export class PixiManager {
   }
 
   /**
-   * 캐릭터 렌더링
+   * 배치된 아이템 클릭 이벤트 설정
+   */
+  setupPlacedItemClickEvents(
+    onItemClick: (placedItem: PlacedItem) => void,
+    placedItems: PlacedItem[],
+    storeItems: DecorationItem[]
+  ): void {
+    if (!this.containers?.items) return
+
+    // 기존 이벤트 리스너 제거
+    this.containers.items.children.forEach((child: any) => {
+      if (child.interactive) {
+        child.removeAllListeners()
+      }
+    })
+
+    // 각 배치된 아이템에 클릭 이벤트 추가
+    placedItems.forEach(placedItem => {
+      const storeItem = storeItems.find(item => item.id === placedItem.itemId)
+      if (!storeItem) return
+
+      // 해당 아이템의 스프라이트 찾기
+      const sprite = this.containers?.items?.children?.find((child: any) => 
+        child.label === storeItem.id
+      ) as any
+
+      if (sprite && sprite.interactive) {
+        sprite.on('pointerdown', (event: any) => {
+          event.stopPropagation()
+          console.log('🎯 배치된 아이템 클릭됨:', placedItem.id, storeItem.name)
+          onItemClick(placedItem)
+        })
+      }
+    })
+  }
+
+  /**
+   * 활성화된 아이템 드래그 앤 드롭 설정 (모바일 지원)
+   */
+  setupActiveItemDragDrop(
+    activeItemId: string,
+    placedItems: PlacedItem[],
+    storeItems: DecorationItem[],
+    onDragComplete: (newPosition: { x: number; y: number; z: number }) => void
+  ): void {
+    if (!this.containers?.items || !activeItemId) return
+
+    // 활성화된 아이템 찾기
+    const activePlacedItem = placedItems.find(item => item.id === activeItemId)
+    if (!activePlacedItem) return
+
+    const storeItem = storeItems.find(item => item.id === activePlacedItem.itemId)
+    if (!storeItem) return
+
+    // 해당 아이템의 스프라이트 찾기
+    const sprite = this.containers?.items?.children?.find((child: any) => 
+      child.label === storeItem.id
+    ) as any
+
+    if (!sprite || !sprite.interactive) return
+
+    let isDragging = false
+    let dragStart = { x: 0, y: 0 }
+    let spriteStart = { x: 0, y: 0 }
+
+    // 모바일 환경 감지
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768
+
+    // 드래그 시작 (마우스와 터치 모두 지원)
+    sprite.on('pointerdown', (event: any) => {
+      console.log('🖱️ 드래그 시작:', activeItemId, isMobile ? '(모바일)' : '(데스크톱)')
+      isDragging = true
+      dragStart.x = event.data.global.x
+      dragStart.y = event.data.global.y
+      spriteStart.x = sprite.x
+      spriteStart.y = sprite.y
+      
+      // 드래그 중인 아이템을 최상위로 이동
+      sprite.zIndex = 9999
+      
+      // 모바일에서는 추가적인 터치 이벤트 설정
+      if (isMobile) {
+        sprite.on('pointermove', handlePointerMove)
+        sprite.on('pointerup', handlePointerUp)
+        sprite.on('pointerupoutside', handlePointerUpOutside)
+      }
+    })
+
+    const handlePointerMove = (event: any) => {
+      if (!isDragging) return
+
+      const deltaX = event.data.global.x - dragStart.x
+      const deltaY = event.data.global.y - dragStart.y
+
+      sprite.x = spriteStart.x + deltaX
+      sprite.y = spriteStart.y + deltaY
+      
+      console.log('🖱️ 드래그 중:', { deltaX, deltaY, newPos: { x: sprite.x, y: sprite.y } })
+      
+      // 모바일에서는 실시간 미리보기 표시
+      if (isMobile) {
+        const gridPos = this.getGridPositionFromSprite(sprite)
+        if (gridPos) {
+          // 미리보기 렌더링 (비동기로 처리하여 성능 최적화)
+          requestAnimationFrame(() => {
+            this.renderPreview(
+              storeItem,
+              gridPos,
+              null, // dataStore는 배치된 아이템 드래그에서는 필요 없음
+              placedItems.filter(item => item.id !== activeItemId), // 현재 드래그 중인 아이템 제외
+              storeItems
+            ).catch(error => {
+              console.warn('모바일 드래그 미리보기 실패:', error)
+            })
+          })
+        }
+      }
+    }
+
+    const handlePointerUp = () => {
+      if (!isDragging) return
+      
+      console.log('🖱️ 드래그 종료!')
+      isDragging = false
+      
+      // 그리드에 맞춰 위치 조정
+      const gridPos = this.getGridPositionFromSprite(sprite)
+      if (gridPos) {
+        // Z축 자동 조정
+        const finalPosition = this.adjustZPosition(gridPos, storeItem, placedItems, storeItems)
+        
+        // 최종 위치로 스프라이트 이동
+        const finalIsoPos = gridToIso(finalPosition.x, finalPosition.y, finalPosition.z, this.config)
+        sprite.x = finalIsoPos.x - sprite.width / 2
+        sprite.y = finalIsoPos.y - sprite.height / 2
+        
+        // Z-index 복원
+        sprite.zIndex = finalPosition.z * 1000 + finalPosition.y * 10 + finalPosition.x
+        
+        console.log('✅ 드래그 완료, 최종 위치:', finalPosition)
+        onDragComplete(finalPosition)
+      }
+      
+      // 모바일 이벤트 리스너 제거
+      if (isMobile) {
+        sprite.off('pointermove', handlePointerMove)
+        sprite.off('pointerup', handlePointerUp)
+        sprite.off('pointerupoutside', handlePointerUpOutside)
+      }
+    }
+
+    const handlePointerUpOutside = () => {
+      if (isDragging) {
+        isDragging = false
+        // 원래 위치로 복원
+        sprite.x = spriteStart.x
+        sprite.y = spriteStart.y
+        console.log('🔄 드래그 취소')
+        
+        // 모바일 이벤트 리스너 제거
+        if (isMobile) {
+          sprite.off('pointermove', handlePointerMove)
+          sprite.off('pointerup', handlePointerUp)
+          sprite.off('pointerupoutside', handlePointerUpOutside)
+        }
+      }
+    }
+
+    // 데스크톱에서는 기존 방식 유지
+    if (!isMobile) {
+      sprite.on('pointermove', handlePointerMove)
+      sprite.on('pointerup', handlePointerUp)
+      sprite.on('pointerupoutside', handlePointerUpOutside)
+    }
+  }
+
+  /**
+   * 스프라이트 위치에서 그리드 위치 계산
+   */
+  private getGridPositionFromSprite(sprite: any): { x: number; y: number; z: number } | null {
+    if (!this.containers?.main) return null
+
+    const mainContainer = this.containers.main
+    const scale = mainContainer.scale.x
+    const offsetX = mainContainer.x
+    const offsetY = mainContainer.y
+
+    // 스프라이트의 월드 좌표 계산
+    const worldX = (sprite.x * scale) + offsetX
+    const worldY = (sprite.y * scale) + offsetY
+
+    // 캔버스 좌표로 변환
+    const canvas = this.app.canvas as HTMLCanvasElement
+    const rect = canvas.getBoundingClientRect()
+    const displayWidth = rect.width
+    const displayHeight = rect.height
+    
+    const pixiWidth = this.app.screen.width
+    const pixiHeight = this.app.screen.height
+    
+    const canvasX = (worldX / pixiWidth) * displayWidth
+    const canvasY = (worldY / pixiHeight) * displayHeight
+
+    return this.getGridPositionFromMouse(canvasX, canvasY)
+  }
+
+  /**
+   * Z축 위치 자동 조정
+   */
+  private adjustZPosition(
+    position: { x: number; y: number; z: number },
+    item: DecorationItem,
+    placedItems: PlacedItem[],
+    storeItems: DecorationItem[]
+  ): { x: number; y: number; z: number } {
+    if (!item.gridData) return position
+
+    const maxZ = 10
+    let foundPosition = false
+    let finalPosition = position
+
+    // Z축을 점진적으로 올려가며 충돌 검사
+    for (let z = position.z; z <= maxZ; z++) {
+      const testPosition = { ...position, z }
+      
+      // 충돌 검사 수행
+      const hasCollision = this.checkPreviewCollision(testPosition, item, placedItems, storeItems)
+      
+      if (!hasCollision) {
+        finalPosition = testPosition
+        foundPosition = true
+        console.log('🔧 Z축 자동 조정:', position.z, '→', finalPosition.z)
+        break
+      }
+    }
+
+    return finalPosition
+  }
+
+  /**
+   * 장착한 아이템에서 특정 아이템 찾기
+   */
+  private findEquippedItem(characterData: CharacterData, itemId: string) {
+    if (!characterData.equippedItems || !Array.isArray(characterData.equippedItems)) {
+      return null
+    }
+    
+    return characterData.equippedItems.find(equippedItem => {
+      // null 체크 추가
+      if (!equippedItem || !equippedItem.item || !equippedItem.item.id) {
+        return false
+      }
+      return equippedItem.item.id === itemId
+    })
+  }
+
+  /**
+   * 캐릭터 렌더링 - 상점 프리뷰와 동일한 레이어드 시스템
    */
   async renderCharacter(characterData: CharacterData | null): Promise<any> {
-    if (!this.containers || !this.isInitialized || !this.app || this.isDestroying) {
-      return null
-    }
-
-    const { character } = this.containers
-    if (!character) {
+    if (!characterData || !this.app) {
       return null
     }
 
     try {
-      // 기존 캐릭터 제거
-      character.removeChildren()
-
-      // characterData가 null이면 캐릭터를 제거하고 종료
-      if (!characterData) {
-        console.log('🙈 캐릭터 숨김 - 캐릭터 제거됨')
-        return null
-      }
-
+      const PIXI = await loadPixi()
+      
+      // 캐릭터 데이터 로깅
+      console.log('🎭 캐릭터 렌더링 시작:', {
+        parts: characterData.parts,
+        equippedItems: characterData.equippedItems,
+        equippedItemsLength: characterData.equippedItems?.length || 0
+      })
+      
       // 캐릭터 컨테이너 생성
       const characterContainer = new PIXI.Container()
-      characterContainer.x = characterData.position.x
-      characterContainer.y = characterData.position.y
-      characterContainer.interactive = true
-      characterContainer.cursor = 'pointer'
       characterContainer.label = 'character'
-
-      // 캐릭터 파츠 렌더링 (레이어 순서대로)
-      await this.renderCharacterPart(characterContainer, characterData.parts.bottom, 'bottom')
-      await this.renderCharacterPart(characterContainer, characterData.parts.top, 'top')
-      await this.renderCharacterPart(characterContainer, characterData.parts.hair, 'hair')
       
-      // 감정 이모티콘은 캐릭터 머리 위에 표시
-      await this.renderEmotionOverlay(characterContainer, characterData.parts.emotion)
-
-      character.addChild(characterContainer)
-      console.log('👤 캐릭터 표시 - 캐릭터 렌더링됨')
+      // 캐릭터 크기 설정 (확실히 보이도록 크게)
+      const characterSize = this.config?.tileWidth ? this.config.tileWidth * 3 : 96 // 더 크게
+      
+      // 기본 캐릭터 베이스 렌더링
+      await this.renderCharacterPart(characterContainer, 'default-character.png', 'base', characterSize)
+      
+      // 각 파츠 렌더링 (레이어 순서: 하의 → 상의 → 헤어 → 감정)
+      // 하의 렌더링
+      if (characterData.parts.bottom && characterData.parts.bottom !== 'none.png') {
+        const bottomItem = this.findEquippedItem(characterData, characterData.parts.bottom)
+        const bottomImageUrl = bottomItem?.item?.image_url || characterData.parts.bottom
+        console.log('👕 하의 렌더링:', { itemId: characterData.parts.bottom, bottomItem, bottomImageUrl })
+        await this.renderCharacterPart(characterContainer, bottomImageUrl, 'bottom', characterSize)
+      }
+      
+      // 상의 렌더링
+      if (characterData.parts.top && characterData.parts.top !== 'none.png') {
+        const topItem = this.findEquippedItem(characterData, characterData.parts.top)
+        const topImageUrl = topItem?.item?.image_url || characterData.parts.top
+        console.log('👔 상의 렌더링:', { itemId: characterData.parts.top, topItem, topImageUrl })
+        await this.renderCharacterPart(characterContainer, topImageUrl, 'top', characterSize)
+      }
+      
+      // 헤어 렌더링
+      if (characterData.parts.hair && characterData.parts.hair !== 'none.png') {
+        const hairItem = this.findEquippedItem(characterData, characterData.parts.hair)
+        const hairImageUrl = hairItem?.item?.image_url || characterData.parts.hair
+        console.log('💇 헤어 렌더링:', { itemId: characterData.parts.hair, hairItem, hairImageUrl })
+        await this.renderCharacterPart(characterContainer, hairImageUrl, 'hair', characterSize)
+      }
+      
+      // 감정 렌더링 (말풍선 형태)
+      if (characterData.parts.emotion && characterData.parts.emotion !== 'none.png') {
+        console.log('😊 감정 말풍선 렌더링:', { emotionFileName: characterData.parts.emotion })
+        await this.renderEmotionBubble(characterContainer, characterData.parts.emotion, characterSize)
+      }
+      
+      // 캐릭터 위치 설정 (화면 중앙에 고정 배치)
+      characterContainer.x = 0 // 화면 중앙 X
+      characterContainer.y = 0 // 화면 중앙 Y
+      
+      // 캐릭터 컨테이너 앵커 설정 (중앙 기준)
+      characterContainer.anchor?.set(0.5, 0.5) // X, Y 모두 중앙
+      
+      // 캐릭터 드래그 설정 (즉시 활성화)
+      characterContainer.interactive = true
+      characterContainer.buttonMode = true
+      characterContainer.cursor = 'pointer'
+      
+      // 캐릭터를 캔버스에 추가
+      if (this.containers?.character) {
+        this.containers.character.addChild(characterContainer)
+        console.log('✅ 캐릭터가 character 컨테이너에 추가됨')
+      } else {
+        console.error('❌ character 컨테이너가 초기화되지 않았습니다.')
+        return null
+      }
+      
+      console.log('🎭 캐릭터 렌더링 완료:', {
+        parts: characterData.parts,
+        containerPosition: { x: characterContainer.x, y: characterContainer.y },
+        containerChildren: characterContainer.children.length,
+        containerVisible: characterContainer.visible,
+        containerAlpha: characterContainer.alpha,
+        containerScale: { x: characterContainer.scale.x, y: characterContainer.scale.y },
+        containerAnchor: characterContainer.anchor ? { x: characterContainer.anchor.x, y: characterContainer.anchor.y } : 'no anchor',
+        characterSize: characterSize,
+        mainContainerChildren: this.containers?.main?.children?.length || 0,
+        mainContainerVisible: this.containers?.main?.visible,
+        mainContainerAlpha: this.containers?.main?.alpha,
+        mainContainerPosition: this.containers?.main ? { x: this.containers.main.x, y: this.containers.main.y } : 'no main container',
+        mainContainerScale: this.containers?.main ? { x: this.containers.main.scale.x, y: this.containers.main.scale.y } : 'no main container'
+      })
+      
       return characterContainer
     } catch (error) {
-      console.warn('캐릭터 렌더링 실패:', error)
+      console.error('❌ 캐릭터 렌더링 실패:', error)
       return null
     }
   }
 
   /**
-   * 캐릭터 파츠 렌더링
+   * 캐릭터 파츠 렌더링 - 상점 프리뷰와 동일한 이미지 처리
    */
-  private async renderCharacterPart(container: any, partFileName: string, partType: string): Promise<void> {
-    if (!partFileName || !PIXI) return
+  private async renderCharacterPart(container: any, partFileName: string, partType: string, size: number): Promise<void> {
+    if (!this.app) return
+
+    // 이미지 소스 결정 (상점 프리뷰와 동일한 로직)
+    let imageSrc = ''
+    if (!partFileName || partFileName === 'none.png') {
+      imageSrc = '/assets/character/none.png'
+    } else if (partFileName.startsWith('data:image/')) {
+      imageSrc = partFileName // base64 이미지
+    } else if (partFileName.startsWith('http') || partFileName.startsWith('/')) {
+      imageSrc = partFileName // 전체 URL
+    } else {
+      // 파일명에 확장자가 없으면 .png 추가
+      const fileName = partFileName.includes('.') ? partFileName : `${partFileName}.png`
+      imageSrc = `/assets/character/${fileName}` // 파일명
+    }
 
     try {
-      const texture = await this.loadTexture(`/assets/character/${partFileName}`)
-      const sprite = new PIXI.Sprite(texture)
+      const PIXI = await loadPixi()
       
-      // 파츠별 위치 조정
-      switch (partType) {
-        case 'bottom':
-          sprite.anchor.set(0.5, 0.5)
-          sprite.x = 0
-          sprite.y = 0
-          break
-        case 'top':
-          sprite.anchor.set(0.5, 0.5)
-          sprite.x = 0
-          sprite.y = 0
-          break
-        case 'hair':
-          sprite.anchor.set(0.5, 0.5)
-          sprite.x = 0
-          sprite.y = -5 // 머리카락은 약간 위에
-          break
+      // 텍스처 로드
+      const texture = await PIXI.Assets.load(imageSrc)
+      
+      // 텍스처가 null인 경우 처리
+      if (!texture) {
+        console.warn(`⚠️ 텍스처 로드 실패: ${imageSrc}, 기본 이미지로 대체`)
+        // 기본 이미지로 대체 시도
+        const fallbackTexture = await PIXI.Assets.load('/assets/character/default-character.png')
+        if (!fallbackTexture) {
+          console.error(`❌ 기본 이미지도 로드 실패: /assets/character/default-character.png`)
+          return
+        }
+        const sprite = new PIXI.Sprite(fallbackTexture)
+        sprite.label = `character-${partType}-fallback`
+        sprite.width = size
+        sprite.height = size
+        sprite.anchor.set(0.5, 0.5)
+        sprite.zIndex = this.getCharacterPartZIndex(partType)
+        container.addChild(sprite)
+        return
       }
-
+      
+      // 스프라이트 생성
+      const sprite = new PIXI.Sprite(texture)
       sprite.label = `character-${partType}`
+      
+      // 크기 설정 (픽셀 아트 스타일 유지)
+      sprite.width = size
+      sprite.height = size
+      
+      // 앵커 포인트 설정 (중앙 기준)
+      sprite.anchor.set(0.5, 0.5)
+      
+      // 레이어 순서에 따른 z-index 설정
+      const zIndex = this.getCharacterPartZIndex(partType)
+      sprite.zIndex = zIndex
+      
       container.addChild(sprite)
+      
+      console.log(`✅ 캐릭터 파츠 렌더링 성공: ${partType}`, {
+        imageSrc,
+        size,
+        zIndex
+      })
     } catch (error) {
-      console.warn(`캐릭터 파츠 렌더링 실패 (${partType}):`, error)
+      console.error(`❌ 캐릭터 파츠 렌더링 실패: ${partType}`, {
+        error: error instanceof Error ? error.message : String(error),
+        imageSrc,
+        partFileName,
+        partType
+      })
+      
+      // 에러 발생 시 기본 이미지로 대체 시도
+      try {
+        const PIXI = await loadPixi()
+        const fallbackTexture = await PIXI.Assets.load('/assets/character/default-character.png')
+        if (fallbackTexture) {
+          const fallbackSprite = new PIXI.Sprite(fallbackTexture)
+          fallbackSprite.label = `character-${partType}-error-fallback`
+          fallbackSprite.width = size
+          fallbackSprite.height = size
+          fallbackSprite.anchor.set(0.5, 0.5)
+          fallbackSprite.zIndex = this.getCharacterPartZIndex(partType)
+          container.addChild(fallbackSprite)
+          console.log(`✅ 에러 대체 이미지 렌더링 성공: ${partType}`)
+        }
+      } catch (fallbackError) {
+        console.error(`❌ 대체 이미지 렌더링도 실패: ${partType}`, fallbackError)
+      }
     }
+  }
+  
+  /**
+   * 캐릭터 파츠의 z-index 결정
+   */
+  private getCharacterPartZIndex(partType: string): number {
+    const zIndexMap: Record<string, number> = {
+      'base': 0,      // 기본 캐릭터 (맨 아래)
+      'bottom': 1,    // 하의
+      'top': 2,       // 상의
+      'hair': 3,      // 헤어 (맨 위)
+      'emotion': 4    // 감정 (최상위)
+    }
+    return zIndexMap[partType] || 0
   }
 
   /**
-   * 감정 이모티콘 오버레이 렌더링
+   * 감정 텍스트 매핑
    */
-  private async renderEmotionOverlay(container: any, emotionFileName: string): Promise<void> {
-    if (!emotionFileName || !PIXI) return
+  private getEmotionText(emotionFileName: string): string {
+    const emotionMap: Record<string, string> = {
+      'happy.png': '😊',
+      'sad.png': '😢',
+      'angry.png': '😠',
+      'surprised.png': '😲',
+      'love.png': '❤️',
+      'heart.png': '❤️',
+      'laugh.png': '😂',
+      'wink.png': '😉',
+      'cool.png': '😎',
+      'sleepy.png': '😴',
+      'confused.png': '😕',
+      'excited.png': '🤩',
+      'default': '😊'
+    }
+    
+    // 파일명에서 확장자 제거
+    const emotionKey = emotionFileName.replace('.png', '')
+    return emotionMap[emotionKey] || emotionMap['default']
+  }
+
+  /**
+   * 감정 말풍선 렌더링 (텍스트 기반)
+   */
+  private async renderEmotionBubble(container: any, emotionFileName: string, size: number): Promise<void> {
+    if (!this.app) return
 
     try {
-      const texture = await this.loadTexture(`/assets/character/emotions/${emotionFileName}`)
-      const sprite = new PIXI.Sprite(texture)
+      const PIXI = await loadPixi()
       
-      sprite.anchor.set(0.5, 0.5)
-      sprite.x = 0
-      sprite.y = -30 // 캐릭터 머리 위에 표시
-      sprite.scale.set(0.8, 0.8) // 약간 작게
+      // 감정 텍스트 가져오기
+      const emotionText = this.getEmotionText(emotionFileName)
       
-      sprite.label = 'character-emotion'
-      container.addChild(sprite)
+      // 말풍선 컨테이너 생성
+      const bubbleContainer = new PIXI.Container()
+      bubbleContainer.label = 'emotion-bubble'
+      
+      // 말풍선 배경 (원형)
+      const bubbleGraphics = new PIXI.Graphics()
+      bubbleGraphics.beginFill(0xFFFFFF, 0.9) // 흰색 배경, 약간 투명
+      bubbleGraphics.lineStyle(2, 0x000000, 0.8) // 검은색 테두리
+      bubbleGraphics.drawCircle(0, 0, size * 0.3) // 원형 말풍선
+      bubbleGraphics.endFill()
+      
+      // 말풍선 꼬리 (아래쪽)
+      bubbleGraphics.beginFill(0xFFFFFF, 0.9)
+      bubbleGraphics.lineStyle(2, 0x000000, 0.8)
+      bubbleGraphics.moveTo(-size * 0.1, size * 0.2)
+      bubbleGraphics.lineTo(size * 0.1, size * 0.2)
+      bubbleGraphics.lineTo(0, size * 0.4)
+      bubbleGraphics.closePath()
+      bubbleGraphics.endFill()
+      
+      bubbleContainer.addChild(bubbleGraphics)
+      
+      // 감정 텍스트 생성
+      const emotionStyle = new PIXI.TextStyle({
+        fontFamily: 'Arial',
+        fontSize: size * 0.4,
+        fill: 0x000000,
+        align: 'center'
+      })
+      
+      const emotionDisplay = new PIXI.Text(emotionText, emotionStyle)
+      emotionDisplay.anchor.set(0.5, 0.5)
+      emotionDisplay.x = 0
+      emotionDisplay.y = 0
+      
+      bubbleContainer.addChild(emotionDisplay)
+      
+      // 말풍선 위치 설정 (캐릭터 위쪽)
+      bubbleContainer.x = 0
+      bubbleContainer.y = -size * 0.8 // 캐릭터 위쪽에 배치
+      
+      // 앵커 포인트 설정 (중앙 기준)
+      bubbleContainer.anchor?.set(0.5, 0.5)
+      
+      // 최상위 레이어
+      bubbleContainer.zIndex = this.getCharacterPartZIndex('emotion')
+      
+      container.addChild(bubbleContainer)
+      
+      console.log('✅ 감정 말풍선 렌더링 성공:', {
+        emotionText,
+        emotionFileName,
+        bubbleSize: size * 0.3
+      })
     } catch (error) {
-      console.warn('감정 이모티콘 렌더링 실패:', error)
+      console.error('❌ 감정 말풍선 렌더링 실패:', error)
     }
   }
 
@@ -1234,57 +1815,86 @@ export class PixiManager {
    * 캐릭터 드래그 앤 드롭 설정
    */
   setupCharacterDragDrop(characterContainer: any, onPositionChange: (position: Position2D) => void): void {
-    if (!characterContainer || !PIXI) return
+    if (!characterContainer || !this.app) return
 
     let isDragging = false
-    let dragStartPosition = { x: 0, y: 0 }
+    let dragStart = { x: 0, y: 0 }
+    let characterStart = { x: 0, y: 0 }
+
+    // 마우스 이벤트 설정
+    characterContainer.interactive = true
+    characterContainer.cursor = 'pointer'
 
     // 드래그 시작
     characterContainer.on('pointerdown', (event: any) => {
+      console.log('🎭 캐릭터 클릭됨! 드래그 시작')
       isDragging = true
-      dragStartPosition = { x: event.data.global.x, y: event.data.global.y }
-      characterContainer.alpha = 0.8
+      dragStart.x = event.data.global.x
+      dragStart.y = event.data.global.y
+      characterStart.x = characterContainer.x
+      characterStart.y = characterContainer.y
+      
+      console.log('🎭 드래그 시작 위치:', { 
+        dragStart: dragStart, 
+        characterStart: characterStart,
+        currentPos: { x: characterContainer.x, y: characterContainer.y }
+      })
     })
 
     // 드래그 중
     characterContainer.on('pointermove', (event: any) => {
       if (!isDragging) return
 
-      const currentPosition = { x: event.data.global.x, y: event.data.global.y }
-      const deltaX = currentPosition.x - dragStartPosition.x
-      const deltaY = currentPosition.y - dragStartPosition.y
+      const deltaX = event.data.global.x - dragStart.x
+      const deltaY = event.data.global.y - dragStart.y
 
-      characterContainer.x += deltaX
-      characterContainer.y += deltaY
-
-      dragStartPosition = currentPosition
+      characterContainer.x = characterStart.x + deltaX
+      characterContainer.y = characterStart.y + deltaY
+      
+      console.log('🎭 드래그 중:', { 
+        deltaX, deltaY, 
+        newPos: { x: characterContainer.x, y: characterContainer.y }
+      })
     })
 
     // 드래그 종료
     characterContainer.on('pointerup', () => {
       if (!isDragging) return
       
+      console.log('🎭 캐릭터 드래그 종료!')
       isDragging = false
-      characterContainer.alpha = 1.0
+      
+      // 그리드에 맞춰 위치 조정
+      const gridConfig = this.config || DEFAULT_GRID_CONFIG
+      const gridPos = isoToGrid(characterContainer.x, characterContainer.y, gridConfig)
+      
+      // 캐릭터는 4픽셀 공간을 차지하므로 범위 조정
+      const clampedX = Math.max(0, Math.min(gridPos.x, gridConfig.cols - 2))
+      const clampedY = Math.max(0, Math.min(gridPos.y, gridConfig.rows - 2))
+      
+      // 최종 위치 설정
+      const finalWorldPos = gridToIso(clampedX, clampedY, 0, gridConfig)
+      characterContainer.x = finalWorldPos.x
+      characterContainer.y = finalWorldPos.y
       
       // 위치 변경 콜백 호출
-      onPositionChange({
-        x: characterContainer.x,
-        y: characterContainer.y
+      onPositionChange({ x: clampedX, y: clampedY })
+      
+      console.log('🎭 캐릭터 드래그 완료:', {
+        gridPos: { x: clampedX, y: clampedY },
+        worldPos: { x: finalWorldPos.x, y: finalWorldPos.y }
       })
     })
 
+    // 드래그 취소 (마우스가 캔버스 밖으로 나간 경우)
     characterContainer.on('pointerupoutside', () => {
-      if (!isDragging) return
-      
-      isDragging = false
-      characterContainer.alpha = 1.0
-      
-      // 위치 변경 콜백 호출
-      onPositionChange({
-        x: characterContainer.x,
-        y: characterContainer.y
-      })
+      if (isDragging) {
+        isDragging = false
+        // 원래 위치로 복원
+        characterContainer.x = characterStart.x
+        characterContainer.y = characterStart.y
+        console.log('🎭 캐릭터 드래그 취소')
+      }
     })
   }
 
@@ -1456,6 +2066,8 @@ export class PixiManager {
       this.isInitialized = false
       this.isDestroying = false
       this.destroyPromise = null
+      this.gridRendered = false // 🔧 그리드 렌더링 플래그 리셋
+      this.lastShowFullGrid = null
     }
   }
 

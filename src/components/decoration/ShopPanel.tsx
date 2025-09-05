@@ -51,9 +51,18 @@ export default function ShopPanel({
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <h3 className="text-white font-bold text-lg">🛒 꾸미기 상점</h3>
-        <div className="flex items-center gap-2 bg-yellow-500/20 px-3 py-1 rounded-lg border border-yellow-500/30">
-          <span className="text-yellow-400 text-sm">📦</span>
-          <span className="text-yellow-200 font-bold">{userMoney.toLocaleString()}</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-yellow-500/20 px-3 py-1 rounded-lg border border-yellow-500/30">
+            <span className="text-yellow-400 text-sm">📦</span>
+            <span className="text-yellow-200 font-bold">{userMoney.toLocaleString()}</span>
+          </div>
+          <button
+            onClick={() => window.location.href = '/shop'}
+            className="bg-gradient-to-r from-[#ffd93d]/20 to-[#ff6b6b]/20 border border-[#ffd93d]/50 hover:border-[#ffd93d] px-3 py-1 rounded-lg transition-all duration-200 hover:scale-105"
+            style={{borderRadius: '4px'}}
+          >
+            <span className="text-[#ffd93d] text-xs font-mono">🛍️ 상점</span>
+          </button>
         </div>
       </div>
 

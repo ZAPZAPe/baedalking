@@ -1,41 +1,6 @@
-// 소셜 기능 관련 타입 정의
+// 소셜 기능 관련 타입 정의 (기존 타입과 통합)
 
-export interface UserProfile {
-  id: string
-  minihomeId: string // 고유한 미니홈피 주소 (변경 불가)
-  email: string
-  nickname: string // 변경 가능한 닉네임
-  statusMessage?: string
-  totalVisitors: number
-  dailyVisitors: number
-  lastVisitorReset: Date
-  createdAt: Date
-}
-
-export interface MinihomeSettings {
-  id: string
-  userId: string
-  background: string
-  characterEmotion: string
-  vehicle: string
-  speechText: string
-  garageIntro: string
-  isPublic: boolean
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface Friendship {
-  id: string
-  userId: string
-  friendId: string
-  status: 'pending' | 'accepted' | 'blocked'
-  requestedAt: Date
-  acceptedAt?: Date
-  friend?: UserProfile // 친구 정보 (JOIN 시 포함)
-}
-
-// API 응답용 친구 데이터 타입
+// API 응답용 친구 데이터 타입 (기존 Friend 타입과 통합)
 export interface FriendData {
   id: string
   friendId: string
@@ -51,15 +16,18 @@ export interface FriendData {
   receiverNickname?: string
 }
 
-export interface GuestbookEntry {
+// 미니홈피 관련 추가 타입들
+export interface MinihomeSettings {
   id: string
-  minihomeUserId: string
-  writerId: string
-  content: string
-  isPrivate: boolean
+  userId: string
+  background: string
+  characterEmotion: string
+  vehicle: string
+  speechText: string
+  garageIntro: string
+  isPublic: boolean
   createdAt: Date
   updatedAt: Date
-  writer?: UserProfile // 작성자 정보 (JOIN 시 포함)
 }
 
 export interface MinihomeVisit {
@@ -67,15 +35,15 @@ export interface MinihomeVisit {
   minihomeUserId: string
   visitorId: string
   visitedAt: Date
-  visitor?: UserProfile // 방문자 정보 (JOIN 시 포함)
+  visitor?: any // 방문자 정보 (JOIN 시 포함)
 }
 
 // 미니홈피 전체 데이터
 export interface MinihomeData {
-  profile: UserProfile
+  profile: any
   settings: MinihomeSettings
   recentVisitors: MinihomeVisit[]
-  guestbookEntries: GuestbookEntry[]
+  guestbookEntries: any[]
   isFriend: boolean
   isOwner: boolean
 }

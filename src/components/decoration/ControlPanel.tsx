@@ -43,7 +43,7 @@ export default function ControlPanel({
             renderState.currentMode === 'edit' ? 'bg-green-400' : 'bg-gray-400'
           }`}></div>
           <span className="text-white/60 text-sm">
-            {renderState.currentMode === 'view' ? '보기 모드' : 
+            {renderState.currentMode === 'view' ? '' : 
              renderState.currentMode === 'edit' ? '편집 모드' : '기타 모드'}
           </span>
         </div>
@@ -61,7 +61,7 @@ export default function ControlPanel({
               className="p-3"
             >
               <div className="text-lg mb-1">👁️</div>
-              <div className="text-xs">보기 모드</div>
+              <div className="text-xs">보기</div>
             </PixelButton>
             
             <PixelButton

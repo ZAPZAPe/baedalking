@@ -1,4 +1,4 @@
-// 🎨 3D 아이템 에디터 - 관리자 전용 아이템 등록 시스템
+// 🎨 3D 미니차고 아이템 에디터 - 관리자 전용 미니차고 아이템 등록 시스템 (캐릭터 아이템 제외)
 // 완전 리팩토링 버전 - RLS 문제 해결
 
 'use client'
@@ -37,7 +37,7 @@ interface StoreItem {
   anchor: ItemAnchor
   price?: number
   description?: string
-  category?: string
+  subCategory?: 'vehicle' | 'interior' | 'props'
   gridData?: {
     cells: GridCell3D[]
     width: number
@@ -88,6 +88,13 @@ function gridToIso(x: number, y: number, z: number, config: GridConfig): Positio
   }
 }
 
+// 미니차고 카테고리 정의 (미니차고 전용)
+const GARAGE_CATEGORIES = {
+  vehicle: { label: '운송수단' },
+  interior: { label: '인테리어' },
+  props: { label: '소품' }
+}
+
 // 데이터베이스 기반 DataStore 클래스
 class DatabaseDataStore {
   private storeItems: StoreItem[] = []
@@ -99,10 +106,11 @@ class DatabaseDataStore {
   private async loadFromDatabase(): Promise<void> {
     try {
       const { data, error } = await supabase
-        .from('decoration_items')
+        .from('shop_items')
         .select('*')
         .eq('is_active', true)
-        .order('category', { ascending: true })
+        .eq('main_category', 'garage') // 미니차고 아이템만 가져오기
+        .order('sub_category', { ascending: true })
         .order('name', { ascending: true })
 
       if (error) {
@@ -110,24 +118,32 @@ class DatabaseDataStore {
         return
       }
 
-      this.storeItems = (data || []).map(item => ({
-        id: item.id,
-        name: item.name,
-        description: item.description || '',
-        imageUrl: item.image_url,
-        category: item.category || '기타',
-        price: item.price || 0,
-        anchor: item.anchor || { x: 0, y: 0 },
-        gridData: item.grid_data || {
-          cells: [],
-          width: 32,
-          height: 32,
-          depth: 1,
-          centerX: 16,
-          centerY: 16,
-          totalCells: 0
+      this.storeItems = (data || []).map(item => {
+        // 안전한 카테고리 매핑
+        const validCategories = ['vehicle', 'interior', 'props'] as const
+        const subCategory = validCategories.includes(item.sub_category as any) 
+          ? item.sub_category as 'vehicle' | 'interior' | 'props'
+          : 'props' // 기본값
+
+        return {
+          id: item.id,
+          name: item.name,
+          description: item.description || '',
+          imageUrl: item.image_url,
+          subCategory,
+          price: item.price || 0,
+          anchor: item.anchor || { x: 0, y: 0 },
+          gridData: item.pixel_data || {
+            cells: [],
+            width: 32,
+            height: 32,
+            depth: 1,
+            centerX: 16,
+            centerY: 16,
+            totalCells: 0
+          }
         }
-      }))
+      })
     } catch (error) {
       console.error('데이터베이스 로드 실패:', error)
     }
@@ -147,10 +163,11 @@ class DatabaseDataStore {
         name: item.name,
         description: item.description || '',
         image_url: item.imageUrl,
-        category: item.category || '기타',
+        main_category: 'garage', // 미니차고 전용
+        sub_category: item.subCategory || 'props',
         price: item.price || 0,
         anchor: item.anchor,
-        grid_data: item.gridData,
+        pixel_data: item.gridData,
         is_active: true,
         created_by: user?.id || null // 현재 사용자 ID 또는 NULL
       }
@@ -158,7 +175,7 @@ class DatabaseDataStore {
       console.log('아이템 추가 시도:', dbItem)
 
       const { error } = await supabase
-        .from('decoration_items')
+        .from('shop_items')
         .insert([dbItem])
 
       if (error) {
@@ -183,10 +200,11 @@ class DatabaseDataStore {
         name: item.name,
         description: item.description || '',
         image_url: item.imageUrl,
-        category: item.category || '기타',
+        main_category: 'garage', // 미니차고 전용
+        sub_category: item.subCategory || 'props',
         price: item.price || 0,
         anchor: item.anchor,
-        grid_data: item.gridData,
+        pixel_data: item.gridData,
         updated_at: new Date().toISOString(),
         created_by: user?.id || null // 현재 사용자 ID 또는 NULL
       }
@@ -194,7 +212,7 @@ class DatabaseDataStore {
       console.log('아이템 수정 시도:', dbItem)
 
       const { error } = await supabase
-        .from('decoration_items')
+        .from('shop_items')
         .update(dbItem)
         .eq('id', item.id)
 
@@ -214,7 +232,7 @@ class DatabaseDataStore {
   async removeStoreItem(itemId: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('decoration_items')
+        .from('shop_items')
         .update({ is_active: false })
         .eq('id', itemId)
 
@@ -256,6 +274,7 @@ export default function ItemEditorPage() {
     anchor: { x: 0, y: 0 },
     price: 0,
     description: '',
+    subCategory: 'props',
     gridData: {
       cells: [],
       width: 32,
@@ -889,6 +908,7 @@ export default function ItemEditorPage() {
       anchor: { x: 0, y: 0 },
       price: 0,
       description: '',
+      subCategory: 'props',
       gridData: {
         cells: [],
         width: 32,
@@ -907,8 +927,8 @@ export default function ItemEditorPage() {
 
   // 💾 아이템 저장 (리팩토링된 버전)
   const handleSave = useCallback(async () => {
-    if (!editingItem.name || !editingItem.imageUrl) {
-      alert('이름과 이미지는 필수입니다.')
+    if (!editingItem.name || !editingItem.imageUrl || !editingItem.subCategory) {
+      alert('이름, 이미지, 카테고리는 필수입니다.')
       return
     }
 
@@ -1143,10 +1163,10 @@ export default function ItemEditorPage() {
             >
               ← 홈으로
             </button>
-            <h1 className="text-2xl font-bold">🎨 3D 아이템 에디터</h1>
+            <h1 className="text-2xl font-bold">🏠 3D 미니차고 아이템 에디터</h1>
           </div>
           <div className="text-sm text-white/60">
-            decoration-system-standalone 기반 에디터
+            미니차고 전용 아이템 관리 시스템
           </div>
         </div>
       </header>
@@ -1193,7 +1213,7 @@ export default function ItemEditorPage() {
             {/* 아이템 관리 패널 */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/20">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">🎨 아이템 관리</h3>
+                <h3 className="text-lg font-bold">🏠 미니차고 아이템 관리</h3>
                 <button
                   onClick={startNewItem}
                   className="px-3 py-1 bg-blue-500/80 hover:bg-blue-500 text-white rounded text-sm transition-all"
@@ -1205,7 +1225,7 @@ export default function ItemEditorPage() {
               {existingItems.length > 0 ? (
                 <div className="space-y-3">
                   <div className="text-sm text-white/60 mb-2">
-                    총 {existingItems.length}개 아이템
+                    총 {existingItems.length}개 미니차고 아이템
                   </div>
                   
                   <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
@@ -1240,6 +1260,9 @@ export default function ItemEditorPage() {
                               <span>💎 {item.price?.toLocaleString() || 0}원</span>
                               <span>🎯 {item.gridData?.totalCells || 0}픽셀</span>
                               <span>🏗️ {item.gridData?.depth || 1}층</span>
+                            </div>
+                            <div className="text-xs text-blue-300 mt-1">
+                              🏠 미니차고 → 🏷️ {GARAGE_CATEGORIES[item.subCategory as keyof typeof GARAGE_CATEGORIES]?.label || '알 수 없음'}
                             </div>
                           </div>
                           
@@ -1289,12 +1312,12 @@ export default function ItemEditorPage() {
               ) : (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-2">📦</div>
-                  <div className="text-white/60 mb-4">등록된 아이템이 없습니다</div>
+                  <div className="text-white/60 mb-4">등록된 미니차고 아이템이 없습니다</div>
                   <button
                     onClick={startNewItem}
                     className="px-4 py-2 bg-blue-500/80 hover:bg-blue-500 text-white rounded transition-all"
                   >
-                    🆕 첫 번째 아이템 만들기
+                    🆕 첫 번째 미니차고 아이템 만들기
                   </button>
                 </div>
               )}
@@ -1481,6 +1504,36 @@ export default function ItemEditorPage() {
                   />
                 </div>
 
+                {/* 미니차고 카테고리 선택 */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">미니차고 카테고리 *</label>
+                  
+                  {/* 서브 카테고리 */}
+                  <div>
+                    <label className="block text-xs text-white/60 mb-1">카테고리 선택</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {Object.entries(GARAGE_CATEGORIES).map(([key, category]) => (
+                        <button
+                          key={key}
+                          onClick={() => setEditingItem(prev => ({ ...prev, subCategory: key as 'vehicle' | 'interior' | 'props' }))}
+                          className={`px-3 py-2 rounded-lg text-sm transition-all ${
+                            editingItem.subCategory === key
+                              ? 'bg-green-500 text-white shadow-lg'
+                              : 'bg-white/10 text-white/60 hover:bg-white/20'
+                          }`}
+                        >
+                          {category.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 현재 선택된 카테고리 표시 */}
+                  <div className="mt-2 p-2 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-200">
+                    <div>🏠 미니차고</div>
+                    <div>🏷️ {GARAGE_CATEGORIES[editingItem.subCategory as keyof typeof GARAGE_CATEGORIES]?.label || '알 수 없음'}</div>
+                  </div>
+                </div>
 
               </div>
             </div>
@@ -1489,9 +1542,9 @@ export default function ItemEditorPage() {
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/20">
               <button
                 onClick={handleSave}
-                disabled={isSubmitting || !editingItem.name || (!selectedExistingItem && !editingItem.imageUrl)}
+                disabled={isSubmitting || !editingItem.name || (!selectedExistingItem && !editingItem.imageUrl) || !editingItem.subCategory}
                 className={`w-full py-3 rounded-lg font-bold transition-all duration-200 ${
-                  isSubmitting || !editingItem.name || (!selectedExistingItem && !editingItem.imageUrl)
+                  isSubmitting || !editingItem.name || (!selectedExistingItem && !editingItem.imageUrl) || !editingItem.subCategory
                     ? 'bg-gray-600 cursor-not-allowed text-gray-400'
                     : selectedExistingItem 
                       ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-blue-500/25'
@@ -1509,10 +1562,11 @@ export default function ItemEditorPage() {
               </button>
               
               {/* 저장 조건 안내 */}
-              {(!editingItem.name || (!selectedExistingItem && !editingItem.imageUrl)) && (
+              {(!editingItem.name || (!selectedExistingItem && !editingItem.imageUrl) || !editingItem.subCategory) && (
                 <div className="mt-2 text-xs text-red-400">
                   {!editingItem.name ? '• 아이템 이름을 입력하세요' : ''}
                   {!selectedExistingItem && !editingItem.imageUrl ? '• 이미지를 업로드하세요' : ''}
+                  {!editingItem.subCategory ? '• 미니차고 카테고리를 선택하세요' : ''}
                 </div>
               )}
             </div>
@@ -1521,12 +1575,13 @@ export default function ItemEditorPage() {
             <div className="bg-blue-500/10 backdrop-blur-sm rounded-xl p-4 border border-blue-500/30">
               <h4 className="text-sm font-bold mb-2">💡 사용법</h4>
               <div className="text-xs text-white/70 space-y-1">
-                <div><strong>🆕 새 아이템:</strong> 이미지 업로드 → 복셀 편집 → 정보 입력 → 저장</div>
+                <div><strong>🆕 새 아이템:</strong> 이미지 업로드 → 미니차고 카테고리 선택 → 복셀 편집 → 정보 입력 → 저장</div>
                 <div><strong>✏️ 기존 편집:</strong> 아이템 선택 → 수정 → 저장</div>
                 <div><strong>📋 복사:</strong> 아이템 복사 → 이름 변경 → 저장</div>
                 <div><strong>🗑️ 삭제:</strong> 아이템 삭제 버튼 클릭</div>
                 <div className="mt-2 pt-2 border-t border-white/20">
                   <div>🧊 복셀 선택 모드에서 3D 캔버스를 클릭하여 편집하세요</div>
+                  <div>🏠 미니차고 카테고리: 운송수단 / 인테리어 / 소품</div>
                 </div>
               </div>
             </div>

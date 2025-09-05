@@ -32,15 +32,16 @@ export class DecorationDataStore {
   }
 
   /**
-   * 상점 아이템 목록 조회 (Supabase에서)
+   * 상점 아이템 목록 조회 (Supabase에서) - 미니차고 아이템만
    */
   async getStoreItems(): Promise<DecorationItem[]> {
     try {
       const { data, error } = await supabase
-        .from('decoration_items')
+        .from('shop_items')
         .select('*')
         .eq('is_active', true)
-        .order('category', { ascending: true })
+        .eq('main_category', 'garage') // 🔧 미니차고 아이템만 필터링
+        .order('sub_category', { ascending: true })
         .order('name', { ascending: true })
 
       if (error) {
@@ -53,7 +54,7 @@ export class DecorationDataStore {
         name: item.name,
         description: item.description,
         imageUrl: item.image_url,
-        category: item.category,
+        category: item.main_category,
         price: item.price,
         anchor: item.anchor,
         gridData: item.grid_data,
@@ -71,7 +72,7 @@ export class DecorationDataStore {
   }
 
   /**
-   * 사용자 인벤토리 조회 (Supabase에서)
+   * 사용자 인벤토리 조회 (Supabase에서) - 미니차고 아이템만
    */
   async getUserInventory(userId: string): Promise<InventoryItem[]> {
     try {
@@ -79,6 +80,7 @@ export class DecorationDataStore {
         .from('user_inventory_detailed')
         .select('*')
         .eq('user_id', userId)
+        .eq('item_main_category', 'garage') // 🔧 미니차고 아이템만 필터링
 
       if (error) {
         console.error('❌ 사용자 인벤토리 조회 오류:', error)
@@ -128,14 +130,18 @@ export class DecorationDataStore {
 
       const placedItems: PlacedItem[] = data?.map(item => ({
         id: item.id,
+        userId: item.user_id,
         itemId: item.item_id,
+        position_x: item.position_x,
+        position_y: item.position_y,
+        position_z: item.position_z,
+        placed_at: item.placed_at,
+        updated_at: item.updated_at,
         gridPosition: {
           x: item.position_x,
           y: item.position_y,
           z: item.position_z
         },
-        placedAt: item.placed_at,
-        updatedAt: item.updated_at,
         item: {
           id: item.item_id,
           name: item.item_name,
@@ -144,7 +150,7 @@ export class DecorationDataStore {
           category: item.item_category,
           anchor: item.item_anchor,
           gridData: item.item_grid_data
-        }
+        } as any
       })) || []
 
       const garageData: UserGarageData = {
@@ -171,21 +177,30 @@ export class DecorationDataStore {
         .from('floor_tile_settings')
         .select('*')
         .eq('user_id', userId)
-        .single()
+        .maybeSingle() // single() 대신 maybeSingle() 사용
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // 설정이 없는 경우 기본값 반환
-          return {
-            type: 'default',
-            pattern: 'checkerboard',
-            lightColor: 0xD2B48C,
-            darkColor: 0xA0522D,
-            opacity: 0.8,
-            scale: 1.0
-          }
+        console.error('❌ 바닥 타일 설정 조회 오류:', error)
+        return {
+          type: 'default',
+          pattern: 'checkerboard',
+          lightColor: 0xD2B48C,
+          darkColor: 0xA0522D,
+          opacity: 0.8,
+          scale: 1.0
         }
-        throw error
+      }
+
+      if (!data) {
+        // 데이터가 없는 경우 기본값 반환
+        return {
+          type: 'default',
+          pattern: 'checkerboard',
+          lightColor: 0xD2B48C,
+          darkColor: 0xA0522D,
+          opacity: 0.8,
+          scale: 1.0
+        }
       }
 
       return {
@@ -337,6 +352,39 @@ export class DecorationDataStore {
 
     } catch (error) {
       console.error('❌ 아이템 제거 실패:', error)
+      return false
+    }
+  }
+
+  /**
+   * 배치된 아이템 위치 업데이트
+   */
+  async updateItemPosition(userId: string, placedItemId: string, newPosition: Position3D): Promise<boolean> {
+    try {
+      console.log('🔄 아이템 위치 업데이트 시작:', { userId, placedItemId, newPosition })
+      
+      const { error } = await supabase
+        .from('garage_placements')
+        .update({
+          position_x: newPosition.x,
+          position_y: newPosition.y,
+          position_z: newPosition.z,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', placedItemId)
+        .eq('user_id', userId)
+
+      if (error) {
+        console.error('❌ 아이템 위치 업데이트 실패:', error)
+        return false
+      }
+
+      console.log('✅ 아이템 위치 업데이트 완료:', newPosition)
+      // 캐시 무효화
+      this.cache.userGarageData = null
+      return true
+    } catch (error) {
+      console.error('❌ 아이템 위치 업데이트 중 오류:', error)
       return false
     }
   }

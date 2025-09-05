@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserProfile, Friendship, FriendData } from '@/types/social'
+import { User } from '@/types'
+import { FriendData } from '@/types/social'
 
 interface FriendsTabProps {
   currentUserId: string

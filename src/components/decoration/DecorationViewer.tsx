@@ -30,13 +30,14 @@ export default function DecorationViewer({
     
     setIsLoading(true)
     try {
-      // 상점 아이템 로드 (데이터베이스에서)
+      // 상점 아이템 로드 (데이터베이스에서) - 미니차고 아이템만
       try {
         const { data: items, error: itemsError } = await supabase
-          .from('decoration_items')
+          .from('shop_items')
           .select('*')
           .eq('is_active', true)
-          .order('category', { ascending: true })
+          .eq('main_category', 'garage') // 🔧 미니차고 아이템만 필터링
+          .order('sub_category', { ascending: true })
           .order('name', { ascending: true })
 
         if (itemsError) {
@@ -66,14 +67,18 @@ export default function DecorationViewer({
             console.log('🏠 데이터베이스에서 배치된 아이템 로드됨:', garage?.length || 0)
             const placedItemsData = garage?.map(item => ({
               id: item.id,
+              userId: item.user_id,
               itemId: item.item_id,
+              position_x: item.position_x,
+              position_y: item.position_y,
+              position_z: item.position_z,
+              placed_at: item.placed_at,
+              updated_at: item.updated_at,
               gridPosition: {
                 x: item.position_x,
                 y: item.position_y,
                 z: item.position_z
               },
-              placedAt: item.placed_at,
-              updatedAt: item.updated_at,
               item: {
                 id: item.item_id,
                 name: item.item_name,
@@ -84,7 +89,7 @@ export default function DecorationViewer({
                 gridData: item.item_grid_data
               }
             })) || []
-            setPlacedItems(placedItemsData)
+            setPlacedItems(placedItemsData as unknown as PlacedItem[])
           }
         } catch (error) {
           console.error('❌ 배치된 아이템 로드 실패:', error)

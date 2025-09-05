@@ -43,8 +43,6 @@ export interface AppState {
   closeModal: () => void
   
   // UI 상태들 (기존과 동일 - 하위 호환성 유지)
-  currentEmotion: string
-  setCurrentEmotion: (emotion: string) => void
   showCustomizePanel: boolean
   setShowCustomizePanel: (show: boolean) => void
   showIncomePanel: boolean
@@ -150,7 +148,6 @@ export function useAppState(): AppState {
   const [activeModal, setActiveModal] = useState<ModalType>('none')
   
   // 기본 UI 상태들 (기존과 동일 - 하위 호환성 유지)
-  const [currentEmotion, setCurrentEmotion] = useState('happy')
   const [showCustomizePanel, setShowCustomizePanel] = useState(false)
   const [showIncomePanel, setShowIncomePanel] = useState(false)
   const [showIncomeInputPanel, setShowIncomeInputPanel] = useState(false)
@@ -187,7 +184,7 @@ export function useAppState(): AppState {
   // 에러 상태
   const [errorMessage, setErrorMessage] = useState('')
   
-  // 플랫폼 상태 (사용자별로 관리)
+  // 플랫폼 상태 (사용자별로 관리) - 기본값으로 초기화하되 사용자 데이터로 덮어씌움
   const [platforms, setPlatforms] = useState<Platform[]>([
     { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', bgColor: '#00C851/20', isActive: true, type: 'default' },
     { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', bgColor: '#E4002B/20', isActive: true, type: 'default' }
@@ -338,34 +335,20 @@ export function useAppState(): AppState {
       loadUserBoxes()
       
       // 사용자별 설정 로드
-      if (user.platforms) {
-        // user.platforms를 Platform[] 타입으로 변환
-        const convertedPlatforms: Platform[] = [
-          {
-            id: 'baemin',
-            name: '배민',
-            icon: '🍽️',
-            color: '#00C851',
-            bgColor: '#00C851',
-            isActive: user.platforms.baemin,
-            type: 'default'
-          },
-          {
-            id: 'coupang',
-            name: '쿠팡',
-            icon: '📦',
-            color: '#E4002B',
-            bgColor: '#E4002B',
-            isActive: user.platforms.coupang,
-            type: 'default'
-          }
-        ]
-        setPlatforms(convertedPlatforms)
+      if (user.platforms && Array.isArray(user.platforms)) {
+        setPlatforms(user.platforms)
+        console.log('✅ 사용자 플랫폼 설정 로드:', user.platforms)
       }
       if (user.goals) {
         setDailyGoal(user.goals.daily)
         setWeeklyGoal(user.goals.weekly)
         setMonthlyGoal(user.goals.monthly)
+      }
+      
+      // Garage intro 로드
+      if (user.garage_config?.intro) {
+        setGarageIntro(user.garage_config.intro)
+        console.log('✅ 사용자 Garage intro 로드:', user.garage_config.intro)
       }
     }
   }, [user?.id])
@@ -406,13 +389,23 @@ export function useAppState(): AppState {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ platforms: updatedPlatforms })
+        .update({ 
+          platforms: updatedPlatforms,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', user.id)
 
       if (error) {
         console.error('플랫폼 설정 저장 실패:', error)
       } else {
         console.log('✅ 플랫폼 설정이 서버에 저장되었습니다!')
+        
+        // 사용자 데이터도 즉시 업데이트
+        setUser(prev => prev ? {
+          ...prev,
+          platforms: updatedPlatforms,
+          updated_at: new Date().toISOString()
+        } : null)
       }
     } catch (error) {
       console.error('플랫폼 설정 저장 중 오류:', error)
@@ -456,13 +449,23 @@ export function useAppState(): AppState {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ platforms: updatedPlatforms })
+        .update({ 
+          platforms: updatedPlatforms,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', user.id)
 
       if (error) {
         console.error('플랫폼 추가 저장 실패:', error)
       } else {
         console.log('✅ 플랫폼이 서버에 저장되었습니다!')
+        
+        // 사용자 데이터도 즉시 업데이트
+        setUser(prev => prev ? {
+          ...prev,
+          platforms: updatedPlatforms,
+          updated_at: new Date().toISOString()
+        } : null)
       }
     } catch (error) {
       console.error('플랫폼 추가 저장 중 오류:', error)
@@ -479,13 +482,23 @@ export function useAppState(): AppState {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ platforms: updatedPlatforms })
+        .update({ 
+          platforms: updatedPlatforms,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', user.id)
 
       if (error) {
         console.error('플랫폼 삭제 저장 실패:', error)
       } else {
         console.log('✅ 플랫폼 삭제가 서버에 저장되었습니다!')
+        
+        // 사용자 데이터도 즉시 업데이트
+        setUser(prev => prev ? {
+          ...prev,
+          platforms: updatedPlatforms,
+          updated_at: new Date().toISOString()
+        } : null)
       }
     } catch (error) {
       console.error('플랫폼 삭제 저장 중 오류:', error)
@@ -724,7 +737,6 @@ export function useAppState(): AppState {
     openModal, closeModal,
     
     // UI 상태들 (enhanced 함수들로 대체)
-    currentEmotion, setCurrentEmotion,
     showCustomizePanel, setShowCustomizePanel: enhancedSetShowCustomizePanel,
     showIncomePanel, setShowIncomePanel: enhancedSetShowIncomePanel,
     showIncomeInputPanel, setShowIncomeInputPanel: enhancedSetShowIncomeInputPanel,

@@ -15,14 +15,14 @@ import { RankingTab } from '@/components/features/ranking'
 import { FriendsTab } from '@/components/features/friends'
 import { ProfileTab } from '@/components/features/profile'
 import { ModalManager } from '@/components/core'
-import { User } from '@/types'
+import { User, CharacterData } from '@/types'
 
 interface MainAppProps {
   user: User
 }
 
 export default function MainApp({ user }: MainAppProps) {
-  const { setUser, signOut } = useAuth()
+  const { signOut } = useAuth()
   const router = useRouter()
   const { serverTime } = useServerTime()
 
@@ -30,7 +30,6 @@ export default function MainApp({ user }: MainAppProps) {
   const {
     user: appUser, setUser: setAppUser,
     activeModal, openModal, closeModal,
-    currentEmotion, setCurrentEmotion,
     showIncomePanel, setShowIncomePanel,
     showIncomeInputPanel, setShowIncomeInputPanel,
     showHeaderCharacterPanel, setShowHeaderCharacterPanel,
@@ -80,6 +79,29 @@ export default function MainApp({ user }: MainAppProps) {
            String(today.getMonth() + 1).padStart(2, '0') + '-' + 
            String(today.getDate()).padStart(2, '0')
   })
+
+  // 캐릭터 데이터 상태
+  const [currentCharacterData, setCurrentCharacterData] = useState<CharacterData | null>(null)
+
+  // 캐릭터 데이터 로드 함수
+  const loadCharacterData = async () => {
+    try {
+      const response = await fetch(`/api/character?userId=${user.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentCharacterData(data)
+        console.log('캐릭터 데이터 로드됨:', data)
+      }
+    } catch (error) {
+      console.error('캐릭터 데이터 로딩 실패:', error)
+    }
+  }
+
+  // 캐릭터 업데이트 함수
+  const handleCharacterUpdate = (characterData: CharacterData) => {
+    setCurrentCharacterData(characterData)
+    console.log('캐릭터 데이터 업데이트됨:', characterData)
+  }
 
   // 선택된 날짜 상태 (수입 상세 모달용)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -146,6 +168,13 @@ export default function MainApp({ user }: MainAppProps) {
   useEffect(() => {
     setCurrentWeather({ temp: 22, condition: 'sunny' })
   }, [])
+
+  // 캐릭터 데이터 로드
+  useEffect(() => {
+    if (user?.id) {
+      loadCharacterData()
+    }
+  }, [user?.id])
 
   // 사용자 데이터 로딩
   useEffect(() => {
@@ -280,7 +309,6 @@ export default function MainApp({ user }: MainAppProps) {
       {/* 헤더 */}
       <Header
         userNickname={user?.nickname || '배달킹'}
-        currentEmotion={currentEmotion}
         totalBoxes={totalBoxes}
         emotions={emotions}
         onShowHeaderCharacterPanel={() => setShowHeaderCharacterPanel(true)}
@@ -296,7 +324,6 @@ export default function MainApp({ user }: MainAppProps) {
               {activeTab === 'home' && (
                 <HomeTab
                   currentBackground={currentBackground}
-                  currentEmotion={currentEmotion}
                   currentVehicle={currentVehicle}
                   garageIntro={garageIntro}
                   todayVisitors={todayVisitors}
@@ -391,29 +418,39 @@ export default function MainApp({ user }: MainAppProps) {
               {activeTab === 'profile' && (
                 <ProfileTab 
                   userNickname={user?.nickname || '배달킹'}
-                  currentEmotion={currentEmotion}
                   userLocation={user?.region || '서울'}
                   emotions={emotions}
                   isIncomePrivate={user?.is_income_private || false}
-                  setIsIncomePrivate={async (isPrivate: boolean) => {
+                  setIsIncomePrivate={(isPrivate: boolean) => {
                     if (user) {
                       const updatedUser = { ...user, is_income_private: isPrivate }
                       setAppUser(updatedUser)
-                      setUser(updatedUser)
                       
-                      await supabase
+                      // 백그라운드에서 데이터베이스 업데이트 (비동기)
+                      supabase
                         .from('users')
                         .update({ 
                           is_income_private: isPrivate,
                           updated_at: new Date().toISOString()
                         })
                         .eq('id', user.id)
+                        .then(({ error }) => {
+                          if (error) {
+                            console.error('수익 비공개 설정 저장 실패:', error)
+                            // 실패 시 원래 값으로 되돌리기
+                            const revertedUser = { ...user, is_income_private: !isPrivate }
+                            setAppUser(revertedUser)
+                            alert('설정 저장에 실패했습니다. 다시 시도해주세요.')
+                          } else {
+                            console.log('✅ 수익 비공개 설정이 저장되었습니다:', isPrivate)
+                          }
+                        })
                     }
                   }}
                   setShowPrivacyPolicy={() => openModal('privacyPolicy')}
                   setShowTermsOfService={() => openModal('termsOfService')}
-                  showDeleteAccount={false}
-                  setShowDeleteAccount={() => {}}
+                  showDeleteAccount={activeModal === 'deleteAccount'}
+                  setShowDeleteAccount={() => openModal('deleteAccount')}
                   onLogout={async () => {
                     await signOut()
                     router.push('/login')
@@ -439,7 +476,6 @@ export default function MainApp({ user }: MainAppProps) {
                         if (user) {
                           const updatedUser = { ...user, [field]: value }
                           setAppUser(updatedUser)
-                          setUser(updatedUser)
                           
                           await supabase
                             .from('users')
@@ -504,10 +540,10 @@ export default function MainApp({ user }: MainAppProps) {
         // 캐릭터 편집 상태
         showHeaderCharacterPanel={showHeaderCharacterPanel}
         setShowHeaderCharacterPanel={setShowHeaderCharacterPanel}
-        currentEmotion={currentEmotion}
-        setCurrentEmotion={setCurrentEmotion}
         garageIntro={garageIntro}
         setGarageIntro={setGarageIntro}
+        currentCharacterData={currentCharacterData}
+        onCharacterUpdate={handleCharacterUpdate}
         // 아이템 선택 상태
         showCharacterItemPanel={showCharacterItemPanel}
         setShowCharacterItemPanel={setShowCharacterItemPanel}

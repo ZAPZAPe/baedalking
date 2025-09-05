@@ -30,7 +30,7 @@ export async function PUT(
     if (action === 'accept') {
       // 친구 요청 수락
       const { data, error } = await supabase
-        .from('friends')
+        .from('friendships')
         .update({ status: 'accepted' })
         .eq('id', friendshipId)
         .select()
@@ -51,7 +51,7 @@ export async function PUT(
     } else {
       // 친구 요청 거절 (삭제)
       const { error } = await supabase
-        .from('friends')
+        .from('friendships')
         .delete()
         .eq('id', friendshipId)
 
@@ -93,7 +93,7 @@ export async function DELETE(
     }
 
     const { error } = await supabase
-      .from('friends')
+      .from('friendships')
       .delete()
       .eq('id', friendshipId)
 

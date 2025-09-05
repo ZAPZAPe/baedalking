@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react'
 import { Platform } from '@/types'
 import { useServerTime } from '@/hooks/useServerTime'
 import { VIEW_COLORS, PLATFORM_COLORS } from '@/data/colors'
-// @ts-ignore
-import html2canvas from 'html2canvas'
 
 interface DailyViewProps {
   todayRecords: any[]
@@ -83,6 +81,7 @@ export default function DailyView({
       await new Promise(resolve => setTimeout(resolve, 200))
 
       // html2canvas로 고품질 이미지 생성
+      const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(element, {
         backgroundColor: '#1a202c',
         scale: window.devicePixelRatio || 2,

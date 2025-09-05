@@ -66,6 +66,7 @@ export interface Database {
           daily_visitors: number
           created_at: string
           updated_at: string
+          last_login: string | null
         }
         Insert: {
           id?: string
@@ -83,6 +84,7 @@ export interface Database {
           daily_visitors?: number
           created_at?: string
           updated_at?: string
+          last_login?: string | null
         }
         Update: {
           id?: string
@@ -100,6 +102,7 @@ export interface Database {
           daily_visitors?: number
           created_at?: string
           updated_at?: string
+          last_login?: string | null
         }
       }
       
@@ -404,6 +407,40 @@ export interface Database {
           visitor_id?: string
           visited_user_id?: string
           created_at?: string
+        }
+      }
+      
+      // 캐릭터 데이터 테이블
+      character_data: {
+        Row: {
+          id: string
+          user_id: string
+          parts: any
+          position: any
+          is_visible: boolean
+          image_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          parts?: any
+          position?: any
+          is_visible?: boolean
+          image_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          parts?: any
+          position?: any
+          is_visible?: boolean
+          image_url?: string | null
+          created_at?: string
+          updated_at?: string
         }
       }
     }

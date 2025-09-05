@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     // 전체 메시지 수 조회
     const { count: totalCount, error: countError } = await supabase
-      .from('guestbook')
+      .from('guestbook_entries')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', actualUserId)
 

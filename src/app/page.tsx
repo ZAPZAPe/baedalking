@@ -20,13 +20,16 @@ export default function Home() {
     }
   }, [user, loading, router])
 
-  // 사용자 프로필 설정 체크
+  // 사용자 프로필 설정 체크 (한 번만 실행)
   useEffect(() => {
     if (!loading && user) {
-      // 닉네임이 없거나 지역이 기본값인 경우 설정 페이지로 이동
-      const isProfileComplete = user.nickname && user.nickname !== '배달킹' && user.region && user.region !== '서울특별시'
+      // 프로필 완성도 체크 - 더 관대한 기준 적용
+      const isProfileComplete = user.nickname && user.region
       
-      if (!isProfileComplete) {
+      // localStorage에서 프로필 설정 완료 여부 확인
+      const profileSetupCompleted = localStorage.getItem('profileSetupCompleted')
+      
+      if (!isProfileComplete && !profileSetupCompleted) {
         console.log('프로필 미완성, 설정 페이지로 이동:', { nickname: user.nickname, region: user.region })
         router.push('/auth/setup')
       }

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 interface HeaderProps {
   userNickname: string
   totalBoxes: number
-  currentEmotion: string
   emotions: Array<{
     id: string
     label: string
@@ -18,7 +17,6 @@ interface HeaderProps {
 export default function Header({
   userNickname,
   totalBoxes,
-  currentEmotion,
   emotions,
   onShowHeaderCharacterPanel
 }: HeaderProps) {
@@ -54,33 +52,12 @@ export default function Header({
           {/* 좌측 - 플레이어 카드 (클릭 가능) */}
           <button 
             onClick={onShowHeaderCharacterPanel}
-            className="bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#00d4ff]/40 hover:border-[#00d4ff]/70 px-3 py-2 transition-all duration-300 hover:scale-105 hover:shadow-lg relative group backdrop-blur-sm"
+            className="h-10 px-3 flex items-center justify-center text-xs bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#00d4ff]/40 hover:border-[#00d4ff]/70 transition-all duration-300 hover:scale-105 hover:shadow-lg relative group backdrop-blur-sm"
             style={{borderRadius: '6px'}}
           >
-            <div className="flex items-center gap-3">
-              {/* 아바타 with 글로우 */}
-              <div className="relative">
-                <div className="w-8 h-8 bg-gradient-to-br from-[#00d4ff]/20 to-[#9c88ff]/20 border border-[#00d4ff]/50 flex items-center justify-center overflow-hidden" 
-                     style={{borderRadius: '4px'}}>
-                  <img 
-                    src={`/assets/character/character-${currentEmotion}.png`}
-                    alt="캐릭터" 
-                    className="w-6 h-6 object-contain"
-                    style={{ imageRendering: 'pixelated' }}
-                  />
-                </div>
-                {/* 온라인 인디케이터 */}
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#00ff88] border border-[#0a0a23]" 
-                     style={{borderRadius: '50%', boxShadow: '0 0 8px rgba(0, 255, 136, 0.6)'}}></div>
-              </div>
-              
-              {/* 감정 정보만 */}
-              <div className="text-left">
-                <div className="text-[#00d4ff] text-sm font-mono" 
-                     style={{textShadow: '0 0 4px rgba(0, 212, 255, 0.5)'}}>
-                  {emotions.find(e => e.id === currentEmotion)?.label}
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[#00d4ff]">😊</span>
+              <span className="text-[#00d4ff] text-[10px] leading-none font-bold" style={{textShadow: '0 0 6px rgba(0, 212, 255, 0.5)'}}>CHARACTER</span>
             </div>
 
             {/* 호버 글로우 */}
@@ -88,16 +65,21 @@ export default function Header({
                  style={{borderRadius: '6px'}}></div>
           </button>
           
-          {/* 우측 - 박스 디스플레이 (표시용) */}
-          <div
-            className="h-10 px-3 flex items-center justify-center text-xs bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#ffd93d]/40"
+          {/* 우측 - 박스 디스플레이 (클릭 가능) */}
+          <button
+            onClick={() => router.push('/shop')}
+            className="h-10 px-3 flex items-center justify-center text-xs bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#ffd93d]/40 hover:border-[#ffd93d]/70 transition-all duration-300 hover:scale-105 hover:shadow-lg relative group backdrop-blur-sm"
             style={{borderRadius: '6px'}}
           >
             <div className="flex items-center gap-2">
               <span className="text-[#ffd93d]">📦</span>
               <span className="text-[#ffd93d] text-[10px] leading-none font-bold" style={{textShadow: '0 0 6px rgba(255, 217, 61, 0.5)'}}>{totalBoxes.toLocaleString()}</span>
             </div>
-          </div>
+
+            {/* 호버 글로우 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#ffd93d]/0 via-[#ffd93d]/10 to-[#ffd93d]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+                 style={{borderRadius: '6px'}}></div>
+          </button>
         </div>
 
         {/* 장식용 사이드 라인들 */}

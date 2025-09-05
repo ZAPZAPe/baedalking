@@ -54,40 +54,6 @@ export default function LoginPage() {
     }
   }
 
-  // 개발용 테스트 로그인 (실제 카카오 ID 설정 전까지 사용)
-  const handleTestLogin = async () => {
-    try {
-      setIsLoading(true)
-      
-      const testUser = {
-        kakao_id: 'test_user_12345',
-        email: 'test@kakao.com',
-        nickname: '테스트사용자',
-        region: '서울',
-        avatar_config: {},
-        garage_config: {},
-        status_message: null,
-        is_income_private: false,
-        platforms: [
-          { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', isActive: true, type: 'default' },
-          { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', isActive: true, type: 'default' }
-        ],
-        goals: { daily: 50000, weekly: 350000, monthly: 1500000 },
-        total_visitors: 0,
-        daily_visitors: 0
-      }
-
-      const success = await handleKakaoLogin(testUser)
-      if (success) {
-        router.push('/')
-      }
-    } catch (error) {
-      console.error('테스트 로그인 오류:', error)
-      alert('테스트 로그인 중 오류가 발생했습니다.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a2e] to-[#16213e] flex items-center justify-center p-4">
@@ -131,32 +97,12 @@ export default function LoginPage() {
           </span>
         </button>
 
-        {/* 개발용 테스트 로그인 버튼 */}
-        <button
-          onClick={handleTestLogin}
-          disabled={isLoading}
-          className={`w-full mt-4 font-bold py-3 px-6 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-3 ${
-            isLoading 
-              ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-              : 'bg-[#00ff88] hover:bg-[#00e677] text-[#1a1a2e]'
-          }`}
-          style={{
-            boxShadow: isLoading ? 'none' : '0 4px 15px rgba(0, 255, 136, 0.3)'
-          }}
-        >
-          <span className="text-lg">
-            {isLoading ? '로그인 중...' : '🧪 개발용 테스트 로그인'}
-          </span>
-        </button>
 
           {/* 설명 텍스트 */}
           <div className="mt-6 text-center">
             <p className="text-gray-400 text-sm">
               카카오 계정으로 간편하게 로그인하고<br />
               배달킹의 모든 기능을 이용하세요
-            </p>
-            <p className="text-gray-500 text-xs mt-2">
-              개발 중: 테스트 로그인으로 앱 기능을 체험해보세요
             </p>
           </div>
         </div>

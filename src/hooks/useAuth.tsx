@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   const { data: existingUser, error: userError } = await supabase
                     .from('users')
                     .select('*')
-                    .eq('kakao_id', kakaoId)
+                    .eq('kakao_id', String(kakaoId))
                     .single()
                   
                   if (existingUser && !userError) {
@@ -150,8 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status_message: kakaoUser.status_message || null,
         is_income_private: kakaoUser.is_income_private || false,
         platforms: kakaoUser.platforms || [
-          { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', isActive: true, type: 'default' },
-          { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', isActive: true, type: 'default' }
+          { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', bgColor: '#00C851', isActive: true, type: 'default' },
+          { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', bgColor: '#E4002B', isActive: true, type: 'default' }
         ],
         goals: kakaoUser.goals || { daily: 50000, weekly: 350000, monthly: 1500000 },
         total_visitors: 0,
@@ -164,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('*')
-        .eq('kakao_id', userData.kakao_id)
+        .eq('kakao_id', String(userData.kakao_id))
         .maybeSingle() // single() 대신 maybeSingle() 사용으로 404 에러 방지
 
       let finalUser: User
@@ -204,23 +204,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('💾 사용자 정보를 localStorage에 저장했습니다')
       }
 
-      // 4. Supabase에 로그인 시간 업데이트
+      // 4. Supabase에 업데이트 시간만 업데이트 (last_login 컬럼이 없으므로 제거)
       try {
         const { error: updateError } = await supabase
           .from('users')
           .update({ 
-            last_login: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
           .eq('id', finalUser.id)
         
         if (updateError) {
-          console.error('❌ 로그인 시간 업데이트 실패:', updateError)
+          console.error('❌ 업데이트 시간 업데이트 실패:', updateError)
         } else {
-          console.log('💾 Supabase에 로그인 시간 업데이트됨')
+          console.log('💾 Supabase에 업데이트 시간 업데이트됨')
         }
       } catch (updateError) {
-        console.error('❌ 로그인 시간 업데이트 중 오류:', updateError)
+        console.error('❌ 업데이트 시간 업데이트 중 오류:', updateError)
       }
 
       // 5. 세션 상태 설정
@@ -253,7 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Supabase에서 로그아웃 처리
+      // Supabase에서 로그아웃 처리 (updated_at만 업데이트)
       if (user) {
         try {
           const { error: updateError } = await supabase
@@ -280,7 +279,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // localStorage 정리
       if (typeof window !== 'undefined') {
         localStorage.removeItem('kakaoUser')
-        console.log('🗑️ localStorage에서 사용자 정보 제거됨')
+        localStorage.removeItem('profileSetupCompleted')
+        console.log('🗑️ localStorage에서 사용자 정보 및 프로필 설정 플래그 제거됨')
       }
       
       console.log('✅ 로그아웃 완료 - 모든 세션 데이터 정리됨')

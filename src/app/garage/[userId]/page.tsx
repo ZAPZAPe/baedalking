@@ -14,6 +14,9 @@ import { useAppState } from '@/hooks/useAppState'
 import KakaoAd from '@/components/ui/KakaoAd'
 import PixelButton from '@/components/ui/PixelButton'
 import { ModalManager } from '@/components/core'
+import Header from '@/components/layout/Header'
+import BottomNavigation from '@/components/layout/BottomNavigation'
+import { emotions } from '@/data/constants'
 
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
@@ -44,6 +47,7 @@ export default function MinihompyPage() {
   const [currentWeather, setCurrentWeather] = useState({ temp: 22, condition: 'sunny' })
   const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null)
   const [showUserProfile, setShowUserProfile] = useState(false)
+  const [targetUserBoxes, setTargetUserBoxes] = useState(0)
 
   // 사용자 정보 불러오기
   const fetchUserProfile = async () => {
@@ -56,6 +60,17 @@ export default function MinihompyPage() {
 
       if (response.ok && data.user) {
         setTargetUser(data.user)
+        
+        // 해당 사용자의 박스 수 가져오기
+        try {
+          const boxesResponse = await fetch(`/api/boxes?userId=${userId}`)
+          if (boxesResponse.ok) {
+            const boxesData = await boxesResponse.json()
+            setTargetUserBoxes(boxesData.totalBoxes || 0)
+          }
+        } catch (error) {
+          console.error('박스 수 가져오기 실패:', error)
+        }
         
         // 날씨 정보는 제거됨
       } else {
@@ -183,24 +198,50 @@ export default function MinihompyPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a2e] to-[#16213e]">
-        <div className="text-white text-xl font-bold">차고 로딩 중...</div>
+      <div className="w-full min-h-[100dvh] bg-[#1a1a2e] flex flex-col relative"
+        style={{ minHeight: '100dvh' }}>
+        
+        {/* 전체 도트 패턴 오버레이 */}
+        <div 
+          className="absolute inset-0 z-[1] opacity-[0.03]"
+          style={{
+            backgroundImage: `radial-gradient(circle, #ffffff 1px, transparent 1px)`,
+            backgroundSize: '20px 20px'
+          }}
+        />
+        
+        <div className="flex items-center justify-center flex-1 relative z-10">
+          <div className="text-white text-xl font-bold">차고 로딩 중...</div>
+        </div>
       </div>
     )
   }
 
   if (!targetUser) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a2e] to-[#16213e] text-white text-center p-4">
-        <h1 className="text-2xl font-bold mb-4">사용자를 찾을 수 없습니다</h1>
-        <p className="text-gray-300 mb-6">요청하신 차고가 존재하지 않습니다.</p>
-        <PixelButton 
-          onClick={() => router.push('/')}
-          variant="success"
-          size="lg"
-        >
-          홈으로 돌아가기
-        </PixelButton>
+      <div className="w-full min-h-[100dvh] bg-[#1a1a2e] flex flex-col relative"
+        style={{ minHeight: '100dvh' }}>
+        
+        {/* 전체 도트 패턴 오버레이 */}
+        <div 
+          className="absolute inset-0 z-[1] opacity-[0.03]"
+          style={{
+            backgroundImage: `radial-gradient(circle, #ffffff 1px, transparent 1px)`,
+            backgroundSize: '20px 20px'
+          }}
+        />
+        
+        <div className="flex flex-col items-center justify-center flex-1 relative z-10 text-white text-center p-4">
+          <h1 className="text-2xl font-bold mb-4">사용자를 찾을 수 없습니다</h1>
+          <p className="text-gray-300 mb-6">요청하신 차고가 존재하지 않습니다.</p>
+          <PixelButton 
+            onClick={() => router.push('/')}
+            variant="success"
+            size="lg"
+          >
+            홈으로 돌아가기
+          </PixelButton>
+        </div>
       </div>
     )
   }
@@ -217,110 +258,119 @@ export default function MinihompyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#1a1a2e] to-[#16213e] text-white">
+    <div className="w-full min-h-[100dvh] bg-[#1a1a2e] flex flex-col relative"
+      style={{ minHeight: '100dvh' }}>
+      
+      {/* 전체 도트 패턴 오버레이 */}
+      <div 
+        className="absolute inset-0 z-[1] opacity-[0.03]"
+        style={{
+          backgroundImage: `radial-gradient(circle, #ffffff 1px, transparent 1px)`,
+          backgroundSize: '20px 20px'
+        }}
+      />
+
       {/* 헤더 */}
-      <header className="bg-black/30 backdrop-blur-lg border-b border-[#00ff88]/20 p-4">
-        <div className="flex items-center justify-between max-w-md mx-auto">
-          <PixelButton 
-            onClick={() => router.push('/')}
-            variant="secondary"
-            size="sm"
-            className="w-10 h-10 p-0 flex items-center justify-center"
-          >
-            🏠
-          </PixelButton>
-          <h1 className="text-lg font-bold text-[#00ff88]">{targetUser.nickname}의 미니차고</h1>
-          <div className="h-10 px-3 flex items-center justify-center text-xs bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#ffd93d]/40"
-            style={{borderRadius: '6px'}}
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-[#ffd93d]">📦</span>
-              <span className="text-[#ffd93d] text-[10px] leading-none font-bold" style={{textShadow: '0 0 6px rgba(255, 217, 61, 0.5)'}}>{totalBoxes.toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header
+        userNickname={targetUser.nickname}
+        totalBoxes={targetUserBoxes}
+        emotions={emotions}
+        onShowHeaderCharacterPanel={() => {}}
+      />
 
-      {/* 메인 컨텐츠 */}
-      <main className="max-w-md mx-auto p-4 space-y-4">
-        {/* Today 방문자수 카드 - 최상단으로 이동 */}
-        <div className="bg-gradient-to-br from-[#1a4a2e]/90 to-[#1a1a2e]/90 backdrop-blur-lg rounded-2xl p-3 border border-[#00ff88]/20 shadow-2xl">
-          <div className="bg-[#1a202c] border-2 border-[#00ff88]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
-            <div className="flex items-center justify-center space-x-6">
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-300 text-xs font-mono">Total</span>
-                <span className="text-white font-bold text-sm font-mono">{visitCount.total}명</span>
+      {/* 메인 컨텐츠 영역 */}
+      <div className="flex-1 relative z-10 flex flex-col">
+        <div className="flex-1 relative bg-gradient-to-b from-[#0f0f23] to-[#1a1a2e] scroll-container">
+          <div className="p-2 sm:p-3 lg:p-4 pb-24">
+            <div className="max-w-md mx-auto w-full space-y-2 sm:space-y-3 lg:space-y-4">
+              
+              {/* 방문자 수 카드 */}
+              <div className="bg-gradient-to-br from-[#1a4a2e]/90 to-[#1a1a2e]/90 backdrop-blur-lg rounded-2xl p-3 border border-[#00ff88]/20 shadow-2xl">
+                <div className="bg-[#1a202c] border-2 border-[#00ff88]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
+                  <div className="flex items-center justify-center space-x-6">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-300 text-xs font-mono">Total</span>
+                      <span className="text-white font-bold text-sm font-mono">{visitCount.total}명</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-300 text-xs font-mono">Today</span>
+                      <span className="text-white font-bold text-sm font-mono">{visitCount.today}명</span>
+                    </div>
+                  </div>
+                  {/* 픽셀 도트들 */}
+                  <div className="absolute top-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute top-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-300 text-xs font-mono">Today</span>
-                <span className="text-white font-bold text-sm font-mono">{visitCount.today}명</span>
+
+              {/* 꾸미기 공간 카드 */}
+              <div className="bg-gradient-to-br from-[#1a4a2e]/90 to-[#1a1a2e]/90 backdrop-blur-lg rounded-2xl p-2 sm:p-3 lg:p-4 border border-[#00ff88]/20 shadow-2xl">
+                {/* 꾸미기 시스템 캔버스 */}
+                <div className="relative bg-gradient-to-b from-[#2d3748] to-[#1a202c] rounded-xl p-3 sm:p-4 lg:p-5 mb-2 sm:mb-3 lg:mb-4 border border-[#00ff88]/30 shadow-inner">
+                  <div className="w-full aspect-[4/3] bg-gray-900 rounded-lg overflow-hidden relative">
+                    <DecorationRenderer userId={userId} isOwner={user?.id === userId} viewOnly={true} />
+                  </div>
+                  
+                  {/* 꾸미기 공간 테두리 효과 */}
+                  <div className="absolute inset-0 rounded-xl border-2 border-[#00ff88]/20 pointer-events-none"></div>
+                  
+                  {/* 코너 장식 */}
+                  <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-[#00ff88]/60 rounded-tl-lg"></div>
+                  <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-[#00ff88]/60 rounded-tr-lg"></div>
+                  <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-[#00ff88]/60 rounded-bl-lg"></div>
+                  <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-[#00ff88]/60 rounded-br-lg"></div>
+                </div>
+
+                {/* 차고 소개 */}
+                <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 border border-[#00ff88]/20">
+                  <div className="text-center">
+                    <p className="text-white text-sm font-medium leading-relaxed">{garageIntro}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 편집하기 버튼 */}
+              <button 
+                onClick={() => router.push(`/garage/${userId}?mode=decoration`)}
+                className="w-full bg-gradient-to-r from-[#00ff88]/20 to-[#00d4ff]/20 border-2 border-[#00ff88]/50 hover:border-[#00ff88] p-3 rounded text-center hover:from-[#00ff88]/30 hover:to-[#00d4ff]/30 transition-all duration-300 shadow-lg" 
+                style={{borderRadius: '8px'}}
+              >
+                <div className="flex flex-col items-center justify-center">
+                  <div className="text-[#00ff88] text-sm font-bold font-mono">🎨 미니차고 꾸미기</div>
+                  <div className="text-gray-300 text-xs font-mono">상점, 인벤토리, 미니차고 꾸미기</div>
+                </div>
+              </button>
+
+              {/* 카카오 광고 */}
+              <KakaoAd 
+                adUnit="DAN-xsiNefKQFaudq5Uw"
+                width={320}
+                height={100}
+              />
+
+              {/* 방명록 미리보기 */}
+              <div className="bg-gradient-to-br from-[#1a4a2e]/80 to-[#1a1a2e]/80 backdrop-blur-lg rounded-xl p-4 border border-[#00ff88]/20">
+                <div className="mb-3 text-center">
+                  <h3 className="text-lg font-bold text-[#00ff88]">방명록</h3>
+                </div>
+                <GuestbookPreview 
+                  userId={userId} 
+                  isOwnPage={user?.id === userId}
+                  onShowUserProfile={handleShowUserProfile}
+                />
               </div>
             </div>
-            {/* 픽셀 도트들 */}
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
           </div>
         </div>
+      </div>
 
-        {/* 꾸미기 공간 카드 */}
-        <div className="bg-gradient-to-br from-[#1a4a2e]/90 to-[#1a1a2e]/90 backdrop-blur-lg rounded-2xl p-2 sm:p-3 lg:p-4 border border-[#00ff88]/20 shadow-2xl">
-          {/* 꾸미기 시스템 캔버스 - 홈화면과 동일한 방식 */}
-          <div className="relative bg-gradient-to-b from-[#2d3748] to-[#1a202c] rounded-xl p-3 sm:p-4 lg:p-5 mb-2 sm:mb-3 lg:mb-4 border border-[#00ff88]/30 shadow-inner">
-            <div className="w-full aspect-[4/3] bg-gray-900 rounded-lg overflow-hidden relative">
-              <DecorationRenderer userId={userId} isOwner={user?.id === userId} viewOnly={true} />
-            </div>
-            
-            {/* 꾸미기 공간 테두리 효과 */}
-            <div className="absolute inset-0 rounded-xl border-2 border-[#00ff88]/20 pointer-events-none"></div>
-            
-            {/* 코너 장식 */}
-            <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-[#00ff88]/60 rounded-tl-lg"></div>
-            <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-[#00ff88]/60 rounded-tr-lg"></div>
-            <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-[#00ff88]/60 rounded-bl-lg"></div>
-            <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-[#00ff88]/60 rounded-br-lg"></div>
-          </div>
-
-          {/* 가라지 소개 */}
-          <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 border border-[#00ff88]/20">
-            <div className="text-center">
-              <p className="text-white text-sm font-medium leading-relaxed">{garageIntro}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* 편집하기 버튼 */}
-        <button 
-          onClick={() => router.push(`/garage/${userId}?mode=decoration`)}
-          className="w-full bg-gradient-to-r from-[#00ff88]/20 to-[#00d4ff]/20 border-2 border-[#00ff88]/50 hover:border-[#00ff88] p-3 rounded text-center hover:from-[#00ff88]/30 hover:to-[#00d4ff]/30 transition-all duration-300 shadow-lg" 
-          style={{borderRadius: '8px'}}
-        >
-          <div className="flex flex-col items-center justify-center">
-            <div className="text-[#00ff88] text-sm font-bold font-mono">🎨 미니차고 꾸미기</div>
-            <div className="text-gray-300 text-xs font-mono">상점, 인벤토리, 미니차고 꾸미기</div>
-          </div>
-        </button>
-
-        {/* 카카오 광고 */}
-        <KakaoAd 
-          adUnit="DAN-xsiNefKQFaudq5Uw"
-          width={320}
-          height={100}
-        />
-
-        {/* 방명록 미리보기 */}
-        <div className="bg-gradient-to-br from-[#1a4a2e]/80 to-[#1a1a2e]/80 backdrop-blur-lg rounded-xl p-4 border border-[#00ff88]/20">
-          <div className="mb-3 text-center">
-            <h3 className="text-lg font-bold text-[#00ff88]">방명록</h3>
-          </div>
-          <GuestbookPreview 
-            userId={userId} 
-            isOwnPage={user?.id === userId}
-            onShowUserProfile={handleShowUserProfile}
-          />
-        </div>
-      </main>
+      {/* 하단 네비게이션 */}
+      <BottomNavigation
+        activeTab="home"
+        onTabChange={() => {}}
+      />
 
       {/* 사용자 프로필 모달 */}
       {showUserProfile && selectedUserProfile && (
@@ -365,10 +415,10 @@ export default function MinihompyPage() {
         // 캐릭터 편집 상태 (기본값)
         showHeaderCharacterPanel={false}
         setShowHeaderCharacterPanel={() => {}}
-        currentEmotion="happy"
-        setCurrentEmotion={() => {}}
         garageIntro={garageIntro}
         setGarageIntro={() => {}}
+        currentCharacterData={null}
+        onCharacterUpdate={() => {}}
         // 아이템 선택 상태 (기본값)
         showCharacterItemPanel={false}
         setShowCharacterItemPanel={() => {}}
