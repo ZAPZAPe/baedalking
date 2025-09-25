@@ -120,7 +120,7 @@ export default function UserProfileModal({
                 <div className="text-center mb-4">
                   <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3">
                     <img 
-                      src={`/assets/character/character-happy.png`}
+                      src={`/Garage/Character/배민/S_1.png`}
                       alt="캐릭터"
                       className="w-full h-full object-contain drop-shadow-lg"
                       style={{ imageRendering: 'pixelated' }}

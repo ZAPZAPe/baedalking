@@ -66,7 +66,6 @@ export default function KakaoAd({
     }
     
     script.onerror = () => {
-      console.error('❌ 카카오 광고 스크립트 로드 실패')
     }
     
     document.head.appendChild(script)

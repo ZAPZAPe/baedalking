@@ -7,16 +7,14 @@ import { supabase } from '@/lib/supabase'
 
 import GuestbookPreview from '@/components/garage/GuestbookPreview'
 import { UserProfileModal } from '@/components/features/friends'
-import DecorationViewer from '@/components/decoration/DecorationViewer'
-import DecorationRenderer from '@/components/decoration/DecorationRenderer'
 import { UserProfile } from '@/types'
 import { useAppState } from '@/hooks/useAppState'
 import KakaoAd from '@/components/ui/KakaoAd'
+import MiniGarageCanvas from '@/components/minigame'
 import PixelButton from '@/components/ui/PixelButton'
 import { ModalManager } from '@/components/core'
 import Header from '@/components/layout/Header'
 import BottomNavigation from '@/components/layout/BottomNavigation'
-import { emotions } from '@/data/constants'
 
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
@@ -27,7 +25,6 @@ export default function MinihompyPage() {
   const searchParams = useSearchParams()
   const { user } = useAuth()
   const userId = params.userId as string
-  const mode = searchParams.get('mode') // 'decoration' 모드 체크
   
   // useAppState에서 필요한 상태들 가져오기
   const { 
@@ -37,8 +34,6 @@ export default function MinihompyPage() {
     activeModal,
     openModal,
     closeModal,
-    selectedShopItem,
-    setSelectedShopItem
   } = useAppState()
 
   const [targetUser, setTargetUser] = useState<UserProfile | null>(null)
@@ -69,7 +64,6 @@ export default function MinihompyPage() {
             setTargetUserBoxes(boxesData.totalBoxes || 0)
           }
         } catch (error) {
-          console.error('박스 수 가져오기 실패:', error)
         }
         
         // 날씨 정보는 제거됨
@@ -246,16 +240,6 @@ export default function MinihompyPage() {
     )
   }
 
-  // 3D 꾸미기 모드인 경우
-  if (mode === 'decoration') {
-    return (
-      <DecorationRenderer
-        userId={userId}
-        isOwner={user?.id === userId}
-        onNavigateBack={() => router.push('/')}
-      />
-    )
-  }
 
   return (
     <div className="w-full min-h-[100dvh] bg-[#1a1a2e] flex flex-col relative"
@@ -274,7 +258,6 @@ export default function MinihompyPage() {
       <Header
         userNickname={targetUser.nickname}
         totalBoxes={targetUserBoxes}
-        emotions={emotions}
         onShowHeaderCharacterPanel={() => {}}
       />
 
@@ -305,15 +288,28 @@ export default function MinihompyPage() {
                 </div>
               </div>
 
-              {/* 꾸미기 공간 카드 */}
+              {/* 캔버스 영역 카드 */}
               <div className="bg-gradient-to-br from-[#1a4a2e]/90 to-[#1a1a2e]/90 backdrop-blur-lg rounded-2xl p-2 sm:p-3 lg:p-4 border border-[#00ff88]/20 shadow-2xl">
-                {/* 꾸미기 시스템 캔버스 */}
+                {/* 캔버스 영역 */}
                 <div className="relative bg-gradient-to-b from-[#2d3748] to-[#1a202c] rounded-xl p-3 sm:p-4 lg:p-5 mb-2 sm:mb-3 lg:mb-4 border border-[#00ff88]/30 shadow-inner">
                   <div className="w-full aspect-[4/3] bg-gray-900 rounded-lg overflow-hidden relative">
-                    <DecorationRenderer userId={userId} isOwner={user?.id === userId} viewOnly={true} />
+                    {/* 방문자 모드 플래그 전달 */}
+                    <script
+                      dangerouslySetInnerHTML={{
+                        __html: `window.__GARAGE_VISITOR_MODE__ = true;`
+                      }}
+                    />
+                    <div className="absolute inset-0">
+                      <MiniGarageCanvas
+                        width={800}
+                        height={600}
+                        mode="minigarage"
+                        userId={userId}
+                      />
+                    </div>
                   </div>
                   
-                  {/* 꾸미기 공간 테두리 효과 */}
+                  {/* 캔버스 공간 테두리 효과 */}
                   <div className="absolute inset-0 rounded-xl border-2 border-[#00ff88]/20 pointer-events-none"></div>
                   
                   {/* 코너 장식 */}
@@ -331,17 +327,6 @@ export default function MinihompyPage() {
                 </div>
               </div>
 
-              {/* 편집하기 버튼 */}
-              <button 
-                onClick={() => router.push(`/garage/${userId}?mode=decoration`)}
-                className="w-full bg-gradient-to-r from-[#00ff88]/20 to-[#00d4ff]/20 border-2 border-[#00ff88]/50 hover:border-[#00ff88] p-3 rounded text-center hover:from-[#00ff88]/30 hover:to-[#00d4ff]/30 transition-all duration-300 shadow-lg" 
-                style={{borderRadius: '8px'}}
-              >
-                <div className="flex flex-col items-center justify-center">
-                  <div className="text-[#00ff88] text-sm font-bold font-mono">🎨 미니차고 꾸미기</div>
-                  <div className="text-gray-300 text-xs font-mono">상점, 인벤토리, 미니차고 꾸미기</div>
-                </div>
-              </button>
 
               {/* 카카오 광고 */}
               <KakaoAd 
@@ -369,7 +354,10 @@ export default function MinihompyPage() {
       {/* 하단 네비게이션 */}
       <BottomNavigation
         activeTab="home"
-        onTabChange={() => {}}
+        onTabChange={(tab) => {
+          // 메인페이지로 이동
+          router.push('/')
+        }}
       />
 
       {/* 사용자 프로필 모달 */}
@@ -417,8 +405,6 @@ export default function MinihompyPage() {
         setShowHeaderCharacterPanel={() => {}}
         garageIntro={garageIntro}
         setGarageIntro={() => {}}
-        currentCharacterData={null}
-        onCharacterUpdate={() => {}}
         // 아이템 선택 상태 (기본값)
         showCharacterItemPanel={false}
         setShowCharacterItemPanel={() => {}}
@@ -454,13 +440,6 @@ export default function MinihompyPage() {
         selectedRecords={[]}
         setSelectedRecords={() => {}}
         onEditIncomeRecord={() => {}}
-        // 상점 아이템 모달 상태
-        selectedShopItem={selectedShopItem}
-        setSelectedShopItem={setSelectedShopItem}
-        userMoney={totalBoxes}
-        userInventory={[]}
-        placedItems={[]}
-        onPurchase={() => {}}
       />
     </div>
   )

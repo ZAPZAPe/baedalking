@@ -381,7 +381,7 @@ export default function ItemSelectionPanels({
                       {/* 배경 미리보기 이미지 */}
                       <div className="w-full h-12 sm:h-16 mb-2 rounded-lg overflow-hidden border border-gray-600">
                         <img 
-                          src={`/assets/background/${background.id}.png`}
+                          src={`/Garage/Item/Individual PNGs/Back1024x768.png`}
                           alt={background.name}
                           className="w-full h-full object-cover"
                           style={{ imageRendering: 'pixelated' }}

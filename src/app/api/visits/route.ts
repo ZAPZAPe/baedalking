@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('🔍 방문자 수 조회 요청:', userId, 'from URL:', request.url)
 
     // 총 방문자 수 조회
     const { count: totalVisits, error: totalError } = await supabase
@@ -36,7 +35,6 @@ export async function GET(request: NextRequest) {
       .eq('visited_user_id', userId)
 
     if (totalError) {
-      console.error('총 방문자 수 조회 오류:', totalError)
       return NextResponse.json(
         { error: '방문자 수를 불러오는데 실패했습니다.' },
         { status: 500 }
@@ -53,14 +51,12 @@ export async function GET(request: NextRequest) {
       .lt('created_at', `${today}T23:59:59`)
 
     if (todayError) {
-      console.error('오늘 방문자 수 조회 오류:', todayError)
       return NextResponse.json(
         { error: '오늘 방문자 수를 불러오는데 실패했습니다.' },
         { status: 500 }
       )
     }
 
-    console.log('✅ 방문자 수 조회 완료:', { totalVisits: totalVisits || 0, todayVisits: todayVisits || 0 })
     
     return NextResponse.json({
       totalVisits: totalVisits || 0,
@@ -68,7 +64,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('방문자 수 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -80,7 +75,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { visitedUserId, visitorId } = await request.json()
-    console.log('📝 방문 기록 요청:', { visitedUserId, visitorId })
 
     if (!visitedUserId || !visitorId) {
       return NextResponse.json(
@@ -91,7 +85,6 @@ export async function POST(request: NextRequest) {
 
     // 자신의 페이지 방문은 기록하지 않음
     if (visitedUserId === visitorId) {
-      console.log('ℹ️ 자신의 페이지 방문 - 기록하지 않음:', { visitedUserId, visitorId })
       return NextResponse.json({
         message: '자신의 페이지 방문은 기록되지 않습니다.'
       })
@@ -109,7 +102,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') {
-      console.error('방문 기록 확인 오류:', checkError)
       return NextResponse.json(
         { error: '방문 기록 확인에 실패했습니다.' },
         { status: 500 }
@@ -118,7 +110,6 @@ export async function POST(request: NextRequest) {
 
     // 이미 오늘 방문한 기록이 있으면 중복 기록하지 않음
     if (existingVisit) {
-      console.log('🔄 오늘 이미 방문 기록 있음:', { visitedUserId, visitorId, existingVisitId: existingVisit.id })
       return NextResponse.json({
         message: '오늘 이미 방문 기록이 있습니다.'
       })
@@ -135,21 +126,18 @@ export async function POST(request: NextRequest) {
       ])
 
     if (insertError) {
-      console.error('방문 기록 생성 오류:', insertError)
       return NextResponse.json(
         { error: '방문 기록 생성에 실패했습니다.' },
         { status: 500 }
       )
     }
 
-    console.log('✅ 새로운 방문 기록 생성 완료:', { visitedUserId, visitorId })
     
     return NextResponse.json({
       message: '방문이 기록되었습니다.'
     })
 
   } catch (error) {
-    console.error('방문 기록 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

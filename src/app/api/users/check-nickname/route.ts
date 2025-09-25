@@ -68,7 +68,6 @@ export async function GET(request: NextRequest) {
     const { data: existingUsers, error: checkError } = await query
 
     if (checkError) {
-      console.error('닉네임 중복 체크 오류:', checkError)
       return NextResponse.json(
         { error: '닉네임 중복 체크 중 오류가 발생했습니다.' },
         { status: 500 }
@@ -89,7 +88,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('닉네임 체크 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

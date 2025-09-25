@@ -26,7 +26,6 @@ export function useServerTime(updateInterval: number = 60000) { // 기본 1분�
         throw new Error(data.error || '서버 시간을 가져올 수 없습니다.')
       }
     } catch (err) {
-      console.error('서버 시간 가져오기 실패:', err)
       setError(err instanceof Error ? err.message : '알 수 없는 오류')
       
       // 폴백: 로컬 시간 사용 (한국 시간대 직접)

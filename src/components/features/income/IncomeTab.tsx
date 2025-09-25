@@ -549,7 +549,6 @@ export default function IncomeTab({
                         onClick={() => {
                           setShowDetailModal(false)
                           // 수정 모드로 전환 (향후 구현)
-                          console.log('수정 모드로 전환:', selectedDate)
                         }}
                         className="flex-1 bg-gradient-to-r from-[#00ff88]/20 to-[#00d4ff]/20 border-2 border-[#00ff88]/50 hover:border-[#00ff88] text-[#00ff88] hover:text-white font-bold py-3 sm:py-4 transition-all duration-300 hover:scale-105 hover:shadow-lg relative font-mono tracking-wide"
                         style={{

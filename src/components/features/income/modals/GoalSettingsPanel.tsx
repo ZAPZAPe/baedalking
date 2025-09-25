@@ -38,7 +38,6 @@ export default function GoalSettingsPanel({
       })
       onClose()
     } catch (error) {
-      console.error('목표 설정 저장 오류:', error)
       alert('목표 설정 저장 중 오류가 발생했습니다.')
     }
   }

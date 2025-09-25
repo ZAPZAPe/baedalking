@@ -69,18 +69,13 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
   useEffect(() => {
     const fetchRankings = async () => {
       try {
-        console.log('🔍 랭킹 데이터 가져오기 시작...')
         const response = await fetch('/api/rankings?period=daily&limit=100') // 전체 랭킹을 가져와서 내순위 계산
         const data = await response.json()
         
-        console.log('📊 API 응답:', { response: response.ok, data })
         
         if (response.ok && data.rankings && Array.isArray(data.rankings) && data.rankings.length > 0) {
-          console.log('✅ 실제 랭킹 데이터 사용:', data.rankings)
-          console.log('🔍 첫 번째 랭킹 데이터 상세:', JSON.stringify(data.rankings[0], null, 2))
           
-          const formattedRankers = data.rankings.map((ranking: any, index: number) => {
-            console.log(`📋 랭킹 ${index + 1} 데이터:`, {
+          const formattedRankers = data.rankings.map((ranking: any, index: number) => ({
               original: ranking,
               formatted: {
                 id: ranking.user_id || ranking.id,
@@ -92,23 +87,8 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
                 region: ranking.region || '서울',
                 platforms: ranking.platforms || [ranking.platform || '배민']
               }
-            })
-            
-            return {
-              id: ranking.user_id || ranking.id,
-              rank: ranking.rank || index + 1,
-              income: ranking.income || ranking.total_amount || 0,
-              count: ranking.count || ranking.delivery_count || 0,
-              platform: ranking.platform || 'baemin',
-              nickname: ranking.nickname || '알 수 없음',
-              region: ranking.region || '서울',
-              platforms: Array.isArray(ranking.platforms) && ranking.platforms.length > 0 
-                ? ranking.platforms 
-                : [ranking.platform || 'baemin']
-            }
-          })
+            }))
           
-          console.log('🎯 최종 포맷된 랭커들:', formattedRankers)
           // 상위 5명만 표시
           setTopRankers(formattedRankers.slice(0, 5))
           
@@ -127,19 +107,16 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
             // page.tsx로 내순위 정보 전달
             onMyRankUpdate(calculatedRank, data.totalUsers)
             
-            console.log(`🎯 내순위 계산: 수입 ${myIncome}, 높은 수입 사용자 ${usersWithHigherIncome}명, 내순위 ${calculatedRank}위`)
           } else {
             setMyRank(null)
             setTotalUsers(data.totalUsers || 0)
             onMyRankUpdate(null, data.totalUsers || 0)
           }
         } else {
-          console.log('⚠️ API 응답이 없거나 비어있음, 실제 데이터 없음')
           // API 응답이 없으면 빈 배열로 설정 (설명 텍스트 표시)
           setTopRankers([])
         }
       } catch (error) {
-        console.error('❌ 랭킹 데이터 로딩 오류:', error)
         // 에러 시에도 빈 배열로 설정 (설명 텍스트 표시)
         setTopRankers([])
       } finally {

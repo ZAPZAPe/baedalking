@@ -1,6 +1,6 @@
 'use client'
 
-import { User, Platform, CharacterData } from '@/types'
+import { User, Platform } from '@/types'
 import { ModalType } from '@/hooks/useAppState'
 import {
   IncomeInputPanel,
@@ -35,7 +35,6 @@ import {
 } from '@/components/features/profile'
 
 import { ErrorModal } from '@/components/ui/ErrorModal'
-import ShopItemDetailModal from '@/components/decoration/ShopItemDetailModal'
 
 interface ModalManagerProps {
   user: User
@@ -70,8 +69,6 @@ interface ModalManagerProps {
   setShowHeaderCharacterPanel: (show: boolean) => void
   garageIntro: string
   setGarageIntro: (intro: string) => void
-  currentCharacterData: CharacterData | null
-  onCharacterUpdate: (characterData: CharacterData) => void
   
   // 아이템 선택 상태
   showCharacterItemPanel: boolean
@@ -119,13 +116,6 @@ interface ModalManagerProps {
   setSelectedRecords: (records: any[]) => void
   onEditIncomeRecord: (date: string, updatedRecords: any[]) => void
   
-  // 상점 아이템 모달 상태
-  selectedShopItem: any | null
-  setSelectedShopItem: (item: any | null) => void
-  userMoney: number
-  userInventory: any[]
-  placedItems: any[]
-  onPurchase: (itemId: string) => void
 }
 
 export default function ModalManager({
@@ -153,13 +143,11 @@ export default function ModalManager({
   setShowIncomePanel,
   incomeRecords,
   totalIncome,
-  // 캐릭터 편집 상태
+  // 캐릭터 편집 상태 (간단한 감정표현만)
   showHeaderCharacterPanel,
   setShowHeaderCharacterPanel,
   garageIntro,
   setGarageIntro,
-  currentCharacterData,
-  onCharacterUpdate,
   // 아이템 선택 상태
   showCharacterItemPanel,
   setShowCharacterItemPanel,
@@ -195,13 +183,6 @@ export default function ModalManager({
   selectedRecords,
   setSelectedRecords,
   onEditIncomeRecord,
-  // 상점 아이템 모달 상태
-  selectedShopItem,
-  setSelectedShopItem,
-  userMoney,
-  userInventory,
-  placedItems,
-  onPurchase,
   // 에러 상태
   errorMessage
 }: ModalManagerProps) {
@@ -257,19 +238,6 @@ export default function ModalManager({
         garageIntro={garageIntro}
         setGarageIntro={setGarageIntro}
         userId={user.id}
-        currentCharacterData={currentCharacterData}
-        onCharacterUpdate={(characterData) => {
-          // 캐릭터 업데이트 처리
-          console.log('캐릭터 업데이트:', characterData)
-          
-          // Garage intro 업데이트가 포함된 경우
-          if (characterData.garageIntro) {
-            setGarageIntro(characterData.garageIntro)
-          }
-          
-          // 실제 캐릭터 데이터 업데이트
-          onCharacterUpdate(characterData)
-        }}
       />
 
       {/* 아이템 선택 패널들 */}
@@ -458,7 +426,6 @@ export default function ModalManager({
               alert(`계정 삭제 실패: ${data.error}`)
             }
           } catch (error) {
-            console.error('계정 삭제 오류:', error)
             alert('계정 삭제 중 오류가 발생했습니다.')
           } finally {
             closeModal()
@@ -467,19 +434,9 @@ export default function ModalManager({
         isLoading={false}
       />
 
-      {/* 상점 아이템 모달 */}
-      <ShopItemDetailModal
-        isOpen={activeModal === 'shopItemDetail'}
-        onClose={() => {
-          setSelectedShopItem(null)
-          closeModal()
-        }}
-        item={selectedShopItem}
-        userMoney={userMoney}
-        userInventory={userInventory}
-        placedItems={placedItems}
-        onPurchase={onPurchase}
-      />
+
+      {/* 상점 모달들은 PIXI.js 게임 내부 UI로 대체됨 */}
+      
 
       {/* 에러 모달 */}
       <ErrorModal

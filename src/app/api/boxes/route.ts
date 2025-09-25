@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 // prerender 방지를 위한 설정
 export const dynamic = 'force-dynamic'
@@ -17,39 +17,45 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Supabase 함수를 사용하여 박스 잔액 조회
-    const { data: totalBoxes, error } = await supabase.rpc('get_user_boxes', {
-      p_user_id: userId
-    })
+    const supabase = createClient()
+
+    // 직접 SQL 쿼리로 박스 잔액 계산
+    const { data: transactions, error } = await supabase
+      .from('box_transactions')
+      .select('amount, type')
+      .eq('user_id', userId)
 
     if (error) {
-      console.error('박스 조회 오류:', error)
       return NextResponse.json(
         { error: '박스 조회에 실패했습니다.' },
         { status: 500 }
       )
     }
 
-    // 박스 거래 내역도 함께 조회
-    const { data: transactions } = await supabase
+    // 박스 잔액 계산 (earn은 +, spend는 -)
+    const totalBoxes = transactions?.reduce((sum, transaction) => {
+      return sum + (transaction.type === 'earn' ? transaction.amount : -transaction.amount)
+    }, 0) || 0
+
+    // 박스 거래 내역도 함께 조회 (상세 정보 포함)
+    const { data: detailedTransactions } = await supabase
       .from('box_transactions')
       .select('amount, type, reason, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(20)
 
-    const earnBoxes = transactions?.filter(t => t.type === 'earn').reduce((sum, t) => sum + t.amount, 0) || 0
-    const spendBoxes = transactions?.filter(t => t.type === 'spend').reduce((sum, t) => sum + t.amount, 0) || 0
+    const earnBoxes = detailedTransactions?.filter(t => t.type === 'earn').reduce((sum, t) => sum + t.amount, 0) || 0
+    const spendBoxes = detailedTransactions?.filter(t => t.type === 'spend').reduce((sum, t) => sum + t.amount, 0) || 0
 
     return NextResponse.json({ 
-      totalBoxes: totalBoxes || 0,
+      totalBoxes: Math.max(0, totalBoxes),
       earnedBoxes: earnBoxes,
       spentBoxes: spendBoxes,
-      transactions: transactions || []
+      transactions: detailedTransactions || []
     })
 
   } catch (error) {
-    console.error('박스 조회 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -70,6 +76,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const supabase = createClient()
+
     // 박스 거래 기록 추가
     const { data, error } = await supabase
       .from('box_transactions')
@@ -83,7 +91,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('박스 추가 오류:', error)
       return NextResponse.json(
         { error: '박스 추가에 실패했습니다.' },
         { status: 500 }
@@ -97,7 +104,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('박스 추가 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

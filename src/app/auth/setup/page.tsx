@@ -201,7 +201,6 @@ export default function SetupPage() {
         .maybeSingle() // single() 대신 maybeSingle() 사용
 
       if (error) {
-        console.error('닉네임 중복 체크 오류:', error)
         setIsNicknameAvailable(null)
         return
       }
@@ -209,7 +208,6 @@ export default function SetupPage() {
       // 데이터가 없으면 사용 가능, 있으면 중복
       setIsNicknameAvailable(!data)
     } catch (error) {
-      console.error('닉네임 중복 체크 오류:', error)
       setIsNicknameAvailable(null)
     }
   }
@@ -246,7 +244,6 @@ export default function SetupPage() {
         .select()
 
       if (updateError) {
-        console.error('사용자 정보 업데이트 오류:', updateError)
         throw updateError
       }
 
@@ -273,12 +270,10 @@ export default function SetupPage() {
       // 프로필 설정 완료 플래그 설정
       localStorage.setItem('profileSetupCompleted', 'true')
       
-      console.log('✅ 사용자 설정이 즉시 반영되었습니다:', updatedUser.nickname)
 
       // 메인 페이지로 이동
       router.push('/')
     } catch (error) {
-      console.error('설정 저장 오류:', error)
       alert('설정 저장 중 오류가 발생했습니다.')
     } finally {
       setIsLoading(false)

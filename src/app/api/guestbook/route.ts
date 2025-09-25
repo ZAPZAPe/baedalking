@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
 
     // URL 디코딩 처리 및 실제 사용자 ID 추출
     const decodedUserId = decodeURIComponent(userId)
-    console.log('🔍 방명록 조회 요청:', decodedUserId, 'from URL:', request.url)
 
     // UUID 형식인지 확인
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decodedUserId)
@@ -54,7 +53,6 @@ export async function GET(request: NextRequest) {
       .eq('user_id', actualUserId)
 
     if (countError) {
-      console.error('방명록 개수 조회 오류:', countError)
       return NextResponse.json(
         { error: '방명록을 불러오는데 실패했습니다.' },
         { status: 500 }
@@ -71,8 +69,7 @@ export async function GET(request: NextRequest) {
         created_at,
         visitor:visitor_id (
           id,
-          nickname,
-          avatar_config
+          nickname
         )
       `)
       .eq('user_id', actualUserId)
@@ -80,14 +77,12 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1)
 
     if (error) {
-      console.error('방명록 조회 오류:', error)
       return NextResponse.json(
         { error: '방명록을 불러오는데 실패했습니다.' },
         { status: 500 }
       )
     }
 
-    console.log('✅ 방명록 조회 완료:', messages?.length || 0, '개 (총', totalCount, '개)')
     
     return NextResponse.json({ 
       messages, 
@@ -98,7 +93,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('방명록 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -110,7 +104,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { userId, visitorId, message, isPrivate = false } = await request.json()
-    console.log('📝 방명록 작성 요청:', { userId, visitorId, messageLength: message?.length, isPrivate })
 
     if (!userId || !visitorId || !message) {
       return NextResponse.json(
@@ -144,21 +137,18 @@ export async function POST(request: NextRequest) {
         created_at,
         visitor:visitor_id (
           id,
-          nickname,
-          avatar_config
+          nickname
         )
       `)
       .single()
 
     if (error) {
-      console.error('방명록 작성 오류:', error)
       return NextResponse.json(
         { error: '방명록 작성에 실패했습니다.' },
         { status: 500 }
       )
     }
 
-    console.log('✅ 방명록 작성 완료:', newMessage?.id)
     
     return NextResponse.json({ 
       message: '방명록이 작성되었습니다!',
@@ -166,7 +156,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('방명록 작성 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -176,16 +165,12 @@ export async function POST(request: NextRequest) {
 
 // 방명록 메시지 수정
 export async function PUT(request: NextRequest) {
-  console.log('🔧 방명록 수정 API 호출됨')
   try {
-    console.log('📝 방명록 수정 API 시작')
     
     const requestBody = await request.json()
-    console.log('📝 요청 본문 파싱 완료:', requestBody)
     
     const { messageId, message, isPrivate = false, userId } = requestBody
 
-    console.log('📝 방명록 수정 요청:', { messageId, userId, messageLength: message?.length, isPrivate })
 
     if (!messageId || !userId || !message) {
       return NextResponse.json(
@@ -203,17 +188,14 @@ export async function PUT(request: NextRequest) {
     }
 
     // 먼저 메시지 정보 조회 (권한 확인용)
-    console.log('🔍 메시지 조회 시작:', messageId)
     const { data: existingMessage, error: fetchError } = await supabase
       .from('guestbook_entries')
       .select('visitor_id')
       .eq('id', messageId)
       .single()
 
-    console.log('🔍 기존 메시지 조회 결과:', { existingMessage, fetchError })
 
     if (fetchError || !existingMessage) {
-      console.error('메시지 조회 오류:', fetchError)
       return NextResponse.json(
         { error: '메시지를 찾을 수 없습니다.' },
         { status: 404 }
@@ -221,7 +203,6 @@ export async function PUT(request: NextRequest) {
     }
 
     // 권한 확인: 메시지 작성자만 수정 가능
-    console.log('🔒 권한 확인:', { existingVisitorId: existingMessage.visitor_id, requestUserId: userId })
     if (existingMessage.visitor_id !== userId) {
       return NextResponse.json(
         { error: '수정 권한이 없습니다. 작성자만 수정할 수 있습니다.' },
@@ -235,7 +216,6 @@ export async function PUT(request: NextRequest) {
       .select('id, message, visitor_id')
       .eq('id', messageId)
       
-    console.log('📝 업데이트 전 메시지 존재 확인:', { preUpdateCheck, preUpdateError })
 
     const { data: updatedMessage, error: updateError } = await supabase
       .from('guestbook_entries')
@@ -246,10 +226,8 @@ export async function PUT(request: NextRequest) {
       .eq('id', messageId)
       .select()
       
-    console.log('📝 업데이트 결과:', { updatedMessage, updateError })
 
     if (updateError) {
-      console.error('방명록 수정 오류:', updateError)
       return NextResponse.json(
         { error: '방명록 수정에 실패했습니다.' },
         { status: 500 }
@@ -257,14 +235,12 @@ export async function PUT(request: NextRequest) {
     }
 
     if (!updatedMessage || updatedMessage.length === 0) {
-      console.error('메시지 업데이트 실패: 대상 메시지를 찾을 수 없음')
       return NextResponse.json(
         { error: '수정할 메시지를 찾을 수 없습니다.' },
         { status: 404 }
       )
     }
 
-    console.log('✅ 방명록 수정 완료:', messageId)
     
     return NextResponse.json({ 
       message: '방명록이 수정되었습니다!',
@@ -272,8 +248,6 @@ export async function PUT(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ 방명록 수정 API 오류:', error)
-    console.error('❌ 에러 스택:', error instanceof Error ? error.stack : 'Unknown error')
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -284,14 +258,11 @@ export async function PUT(request: NextRequest) {
 // 방명록 메시지 삭제
 export async function DELETE(request: NextRequest) {
   try {
-    console.log('🗑️ 방명록 삭제 API 시작')
     
     const requestBody = await request.json()
-    console.log('🗑️ 요청 본문 파싱 완료:', requestBody)
     
     const { messageId, userId } = requestBody
 
-    console.log('🗑️ 방명록 삭제 요청:', { messageId, userId })
 
     if (!messageId || !userId) {
       return NextResponse.json(
@@ -328,21 +299,18 @@ export async function DELETE(request: NextRequest) {
       .eq('id', messageId)
 
     if (deleteError) {
-      console.error('방명록 삭제 오류:', deleteError)
       return NextResponse.json(
         { error: '방명록 삭제에 실패했습니다.' },
         { status: 500 }
       )
     }
 
-    console.log('✅ 방명록 삭제 완료:', messageId)
     
     return NextResponse.json({ 
       message: '방명록이 삭제되었습니다.' 
     })
 
   } catch (error) {
-    console.error('방명록 삭제 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

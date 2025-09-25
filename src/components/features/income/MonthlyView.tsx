@@ -153,7 +153,6 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
       }
 
     } catch (error) {
-      console.error('사진 출력 실패:', error)
       const buttons = document.querySelectorAll('button')
       buttons.forEach(btn => (btn as HTMLElement).style.display = '')
       alert('사진 출력에 실패했습니다. 다시 시도해주세요.')
@@ -281,18 +280,6 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
                 
                 const currentMonthAverage = monthCount > 0 ? monthTotal / monthCount : 0
                 
-                // 디버깅용 로그
-                console.log('🔍 월간 비교 데이터:', {
-                  selectedMonth,
-                  currentMonth: `${year}-${String(month + 1).padStart(2, '0')}`,
-                  lastMonthStart: lastMonthStart.toISOString().split('T')[0],
-                  lastMonthEnd: lastMonthEnd.toISOString().split('T')[0],
-                  lastMonthRecords: lastMonthRecords.length,
-                  lastMonthTotal,
-                  lastMonthCount,
-                  currentMonthTotal: monthTotal,
-                  currentMonthCount: monthCount
-                })
                 
                 let message = ''
                 let color = 'text-gray-400'

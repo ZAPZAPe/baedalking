@@ -34,7 +34,6 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
     
     // 친구 요청만 30초마다 새로고침 (친구 목록은 제외 - 자주 변하지 않음)
     const interval = setInterval(() => {
-      console.log('자동 새로고침 실행 - 친구 요청만')
       loadFriendRequests()
     }, 30000)
 
@@ -43,7 +42,6 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
 
   // 탭 변경 시 필요한 데이터만 새로고침
   useEffect(() => {
-    console.log('탭 변경 감지:', activeView)
     if (activeView === 'requests') {
       loadFriendRequests() // 친구 요청 탭에서는 요청만 새로고침
     }
@@ -53,13 +51,11 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
   // 브라우저 탭 포커스 시 친구 요청만 새로고침
   useEffect(() => {
     const handleFocus = () => {
-      console.log('브라우저 탭 포커스 - 친구 요청만 새로고침')
       loadFriendRequests() // 친구 요청만 새로고침
     }
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('페이지 가시성 변경 - 친구 요청만 새로고침')
         loadFriendRequests() // 친구 요청만 새로고침
       }
     }
@@ -75,21 +71,16 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
 
   const loadFriends = async () => {
     try {
-      console.log('친구 목록 로딩 시작 - userId:', currentUserId)
       const response = await fetch(`/api/friends?userId=${currentUserId}&status=accepted`)
       const data = await response.json()
       
-      console.log('친구 목록 API 응답:', { response: response.ok, data })
       
       if (response.ok && data.friends) {
-        console.log('친구 목록 설정:', data.friends)
         setFriends(data.friends)
       } else {
-        console.log('친구 목록 없음 또는 에러')
         setFriends([])
       }
     } catch (error) {
-      console.error('친구 목록 로딩 오류:', error)
       setFriends([])
     }
   }
@@ -112,8 +103,6 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
             friendId: req.requesterId // 요청자 ID 저장
           }))
         
-        console.log('받은 친구요청 (필터링됨):', receivedRequests)
-        console.log('전체 pending 친구관계:', data.friends)
         setLocalFriendRequests(receivedRequests)
         setFriendRequests(receivedRequests) // 상위 컴포넌트도 업데이트
       } else {
@@ -121,7 +110,6 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
         setFriendRequests([])
       }
     } catch (error) {
-      console.error('친구 요청 로딩 오류:', error)
       setLocalFriendRequests([])
       setFriendRequests([])
     }
@@ -146,7 +134,6 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
         setSearchResults([])
       }
     } catch (error) {
-      console.error('친구 검색 오류:', error)
       setSearchResults([])
     }
   }
@@ -154,19 +141,15 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
   // 친구 상세보기 열기
   const handleOpenFriendDetail = async (friendship: any) => {
     try {
-      console.log('친구 상세보기 로딩 시작:', friendship)
       
       // 실제 사용자 데이터 API 호출
       const userId = friendship.friendId || friendship.id
-      console.log('친구 데이터 요청 userId:', userId, 'friendship:', friendship)
       const response = await fetch(`/api/users/${userId}`)
       const data = await response.json()
       
       if (response.ok && data.user) {
-        console.log('친구 상세 데이터 로드 완료:', data.user)
         onShowUserProfile(data.user)
       } else {
-        console.error('친구 데이터 로드 실패:', data.error)
         // 폴백으로 기본 데이터 사용
         const userProfile = {
           id: friendship.friendId || friendship.id,
@@ -181,7 +164,6 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
         onShowUserProfile(userProfile)
       }
     } catch (error) {
-      console.error('친구 상세보기 API 오류:', error)
       // 폴백으로 기본 데이터 사용
       const userProfile = {
         id: friendship.friendId || friendship.id,
@@ -222,7 +204,6 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
         alert(data.error || '친구 요청 수락에 실패했습니다.')
       }
     } catch (error) {
-      console.error('친구 요청 수락 오류:', error)
       alert('친구 요청 수락 중 오류가 발생했습니다.')
     }
   }
@@ -248,7 +229,6 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
         alert(data.error || '친구 요청 거절에 실패했습니다.')
       }
     } catch (error) {
-      console.error('친구 요청 거절 오류:', error)
       alert('친구 요청 거절 중 오류가 발생했습니다.')
     }
   }
@@ -281,7 +261,6 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
         alert(data.error || '친구 요청에 실패했습니다.')
       }
     } catch (error) {
-      console.error('친구 요청 보내기 오류:', error)
       alert('친구 요청에 실패했습니다.')
     }
   }
@@ -307,22 +286,17 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
         alert(data.error || '친구 삭제에 실패했습니다.')
       }
     } catch (error) {
-      console.error('친구 삭제 오류:', error)
       alert('친구 삭제 중 오류가 발생했습니다.')
     }
   }
 
         // 미니홈피 방문
       const handleVisitMinihome = (minihomeId: string) => {
-        console.log('미니홈피 방문 시도:', minihomeId)
         try {
           // 미니홈피 페이지로 이동
           router.push(`/garage/${minihomeId}`)
-          console.log('라우터 푸시 완료')
         } catch (error) {
-          console.error('라우터 푸시 에러:', error)
           // 폴백: window.location.href 사용
-          console.log('폴백 방법 사용: window.location.href')
           window.location.href = `/garage/${minihomeId}`
         }
       }
@@ -480,7 +454,6 @@ export default function FriendsTab({ currentUserId, setShowFriendDetail, setSele
                 <button
                   onClick={() => {
                     // 친구 검색 로직 (필터링은 이미 실시간으로 작동)
-                    console.log('친구 목록에서 검색:', friendSearchQuery)
                     setCurrentPage(1) // 검색 시 첫 페이지로 이동
                   }}
                   className="bg-[#00ff88] hover:bg-[#00cc6a] text-black font-bold py-2 px-4 rounded-lg transition-all duration-200 font-mono text-sm"

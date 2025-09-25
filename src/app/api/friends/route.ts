@@ -28,14 +28,12 @@ export async function GET(request: NextRequest) {
         user:user_id (
           id,
           nickname,
-          region,
-          avatar_config
+          region
         ),
         friend:friend_id (
           id,
           nickname,
-          region,
-          avatar_config
+          region
         )
       `)
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
@@ -43,7 +41,6 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('친구 목록 조회 오류:', error)
       return NextResponse.json(
         { error: '친구 목록을 불러오는데 실패했습니다.' },
         { status: 500 }
@@ -62,7 +59,6 @@ export async function GET(request: NextRequest) {
         friendId: targetInfo?.id || '',
         nickname: targetInfo?.nickname || '',
         region: targetInfo?.region || '',
-        avatar_config: targetInfo?.avatar_config || {},
         status: friendship.status,
         created_at: friendship.created_at,
         isRequester,
@@ -74,12 +70,10 @@ export async function GET(request: NextRequest) {
       }
     }) || []
 
-    console.log(`친구 목록 조회 완료 - userId: ${userId}, status: ${status}, 결과: ${friendsList.length}개`)
 
     return NextResponse.json({ friends: friendsList })
 
   } catch (error) {
-    console.error('친구 목록 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -129,7 +123,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') {
-      console.error('친구 관계 확인 오류:', checkError)
       return NextResponse.json(
         { error: '친구 관계 확인에 실패했습니다.' },
         { status: 500 }
@@ -166,14 +159,12 @@ export async function POST(request: NextRequest) {
         friend:friend_id (
           id,
           nickname,
-          region,
-          avatar_config
+          region
         )
       `)
       .single()
 
     if (insertError) {
-      console.error('친구 요청 생성 오류:', insertError)
       return NextResponse.json(
         { error: '친구 요청 보내기에 실패했습니다.' },
         { status: 500 }
@@ -186,7 +177,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('친구 요청 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

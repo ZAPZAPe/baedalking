@@ -84,15 +84,6 @@ export default function WeeklyView({
     })
   }
   
-  // 디버깅용 로그
-  console.log('🔍 주간 데이터 생성:', {
-    serverTime: serverTime?.koreaDate,
-    today: todayStr,
-    startOfWeek: startOfWeek.getFullYear() + '-' + 
-                 String(startOfWeek.getMonth() + 1).padStart(2, '0') + '-' + 
-                 String(startOfWeek.getDate()).padStart(2, '0'),
-    weekData: weekData.map(d => `${d.dayName}(${d.date})`)
-  })
 
   // 주간 누적 데이터 계산
   const weekTotal = weekData.reduce((sum, day) => sum + day.total, 0)
@@ -172,7 +163,6 @@ export default function WeeklyView({
       }
 
     } catch (error) {
-      console.error('사진 출력 실패:', error)
       const buttons = document.querySelectorAll('button')
       buttons.forEach(btn => (btn as HTMLElement).style.display = '')
       alert('사진 출력에 실패했습니다. 다시 시도해주세요.')
@@ -325,18 +315,6 @@ export default function WeeklyView({
                 
                 const currentWeekAverage = weekCount > 0 ? weekTotal / weekCount : 0
                 
-                // 디버깅용 로그
-                console.log('🔍 주간 비교 데이터:', {
-                  selectedWeek,
-                  currentWeekStart: startOfWeek.toISOString().split('T')[0],
-                  lastWeekStart: lastWeekStart.toISOString().split('T')[0],
-                  lastWeekEnd: lastWeekEnd.toISOString().split('T')[0],
-                  lastWeekRecords: lastWeekRecords.length,
-                  lastWeekTotal,
-                  lastWeekCount,
-                  currentWeekTotal: weekTotal,
-                  currentWeekCount: weekCount
-                })
                 
                 let message = ''
                 let color = 'text-gray-400'

@@ -6,7 +6,6 @@ export interface FriendData {
   friendId: string
   nickname: string
   region: string
-  avatar_config: any
   status: string
   created_at: string
   isRequester: boolean

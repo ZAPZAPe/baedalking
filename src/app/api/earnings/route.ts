@@ -36,7 +36,6 @@ export async function GET(request: NextRequest) {
     const { data: earnings, error } = await query
 
     if (error) {
-      console.error('수익 조회 오류:', error)
       return NextResponse.json(
         { error: '수익 데이터를 불러오는데 실패했습니다.' },
         { status: 500 }
@@ -46,7 +45,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ earnings })
 
   } catch (error) {
-    console.error('수익 조회 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -94,7 +92,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') {
-      console.error('중복 확인 오류:', checkError)
       return NextResponse.json(
         { error: '중복 확인에 실패했습니다.' },
         { status: 500 }
@@ -118,7 +115,6 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (updateError) {
-        console.error('수익 업데이트 오류:', updateError)
         return NextResponse.json(
           { error: '수익 업데이트에 실패했습니다.' },
           { status: 500 }
@@ -142,7 +138,6 @@ export async function POST(request: NextRequest) {
     })
 
     if (insertError) {
-      console.error('수입 등록 오류:', insertError)
       return NextResponse.json(
         { error: '수입 등록에 실패했습니다.' },
         { status: 500 }
@@ -166,7 +161,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('수익 등록 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

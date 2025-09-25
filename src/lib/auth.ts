@@ -26,7 +26,6 @@ export async function verifyUser(request: NextRequest): Promise<{ userId: string
     
     return { userId: user.id, error: null }
   } catch (error) {
-    console.error('인증 검증 오류:', error)
     return { userId: null, error: '인증 검증 중 오류가 발생했습니다.' }
   }
 }
@@ -52,7 +51,6 @@ export async function verifyUserFromBody(userId: string | null | undefined): Pro
     
     return { isValid: true, error: null }
   } catch (error) {
-    console.error('사용자 검증 오류:', error)
     return { isValid: false, error: '사용자 검증 중 오류가 발생했습니다.' }
   }
 }

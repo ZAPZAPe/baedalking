@@ -130,7 +130,6 @@ export default function DailyView({
       }
 
     } catch (error) {
-      console.error('사진 출력 실패:', error)
       
       // 에러 시 버튼 복구
       const buttons = document.querySelectorAll('button')

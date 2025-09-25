@@ -13,8 +13,8 @@ type BoxTransactions = Database['public']['Tables']['box_transactions']['Row']
 type BoxTransactionsInsert = Database['public']['Tables']['box_transactions']['Insert']
 
 type DecorationItems = Database['public']['Tables']['decoration_items']['Row']
-type UserInventory = Database['public']['Tables']['user_inventory']['Row']
-type UserInventoryInsert = Database['public']['Tables']['user_inventory']['Insert']
+type UserItems = Database['public']['Tables']['user_items']['Row']
+type UserItemsInsert = Database['public']['Tables']['user_items']['Insert']
 
 type Friendships = Database['public']['Tables']['friendships']['Row']
 type FriendshipsInsert = Database['public']['Tables']['friendships']['Insert']
@@ -34,13 +34,11 @@ export async function createUser(userData: UserInsert): Promise<User | null> {
       .single()
 
     if (error) {
-      console.error('사용자 생성 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('사용자 생성 예외:', error)
     return null
   }
 }
@@ -54,13 +52,11 @@ export async function getUserById(userId: string): Promise<User | null> {
       .single()
 
     if (error) {
-      console.error('사용자 조회 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('사용자 조회 예외:', error)
     return null
   }
 }
@@ -74,13 +70,11 @@ export async function getUserByEmail(email: string): Promise<User | null> {
       .single()
 
     if (error) {
-      console.error('이메일로 사용자 조회 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('이메일로 사용자 조회 예외:', error)
     return null
   }
 }
@@ -95,13 +89,11 @@ export async function updateUser(userId: string, updates: UserUpdate): Promise<U
       .single()
 
     if (error) {
-      console.error('사용자 업데이트 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('사용자 업데이트 예외:', error)
     return null
   }
 }
@@ -117,13 +109,11 @@ export async function createEarnings(earningsData: EarningsInsert): Promise<Earn
       .single()
 
     if (error) {
-      console.error('수입 기록 생성 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('수입 기록 생성 예외:', error)
     return null
   }
 }
@@ -146,13 +136,11 @@ export async function getUserEarnings(userId: string, startDate?: string, endDat
     const { data, error } = await query
 
     if (error) {
-      console.error('사용자 수입 조회 오류:', error)
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error('사용자 수입 조회 예외:', error)
     return []
   }
 }
@@ -167,13 +155,11 @@ export async function updateEarnings(earningsId: string, updates: EarningsUpdate
       .single()
 
     if (error) {
-      console.error('수입 기록 업데이트 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('수입 기록 업데이트 예외:', error)
     return null
   }
 }
@@ -195,13 +181,11 @@ export async function addBoxes(userId: string, amount: number, type: 'earn' | 's
       .single()
 
     if (error) {
-      console.error('박스 추가 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('박스 추가 예외:', error)
     return null
   }
 }
@@ -214,7 +198,6 @@ export async function getUserBoxes(userId: string): Promise<number> {
       .eq('user_id', userId)
 
     if (error) {
-      console.error('사용자 박스 조회 오류:', error)
       return 0
     }
 
@@ -226,7 +209,6 @@ export async function getUserBoxes(userId: string): Promise<number> {
 
     return Math.max(0, totalBoxes)
   } catch (error) {
-    console.error('사용자 박스 조회 예외:', error)
     return 0
   }
 }
@@ -241,21 +223,19 @@ export async function getAvailableItems(): Promise<DecorationItems[]> {
       .order('price', { ascending: true })
 
     if (error) {
-      console.error('사용 가능한 아이템 조회 오류:', error)
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error('사용 가능한 아이템 조회 예외:', error)
     return []
   }
 }
 
-export async function getUserItems(userId: string): Promise<UserInventory[]> {
+export async function getUserItems(userId: string): Promise<UserItems[]> {
   try {
     const { data, error } = await supabase
-      .from('user_inventory')
+      .from('user_items')
       .select(`
         *,
         items (*)
@@ -263,18 +243,16 @@ export async function getUserItems(userId: string): Promise<UserInventory[]> {
       .eq('user_id', userId)
 
     if (error) {
-      console.error('사용자 아이템 조회 오류:', error)
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error('사용자 아이템 조회 예외:', error)
     return []
   }
 }
 
-export async function purchaseItem(userId: string, itemId: string): Promise<UserInventory | null> {
+export async function purchaseItem(userId: string, itemId: string): Promise<UserItems | null> {
   try {
     // 아이템 가격 확인
     const { data: item, error: itemError } = await supabase
@@ -284,20 +262,18 @@ export async function purchaseItem(userId: string, itemId: string): Promise<User
       .single()
 
     if (itemError || !item) {
-      console.error('아이템 조회 오류:', itemError)
       return null
     }
 
     // 사용자 박스 확인
     const userBoxes = await getUserBoxes(userId)
     if (userBoxes < item.price) {
-      console.error('박스 부족')
       return null
     }
 
     // 트랜잭션 시작
     const { data: userItem, error: purchaseError } = await supabase
-      .from('user_inventory')
+      .from('user_items')
       .insert({
         user_id: userId,
         item_id: itemId,
@@ -307,7 +283,6 @@ export async function purchaseItem(userId: string, itemId: string): Promise<User
       .single()
 
     if (purchaseError) {
-      console.error('아이템 구매 오류:', purchaseError)
       return null
     }
 
@@ -316,7 +291,6 @@ export async function purchaseItem(userId: string, itemId: string): Promise<User
 
     return userItem
   } catch (error) {
-    console.error('아이템 구매 예외:', error)
     return null
   }
 }
@@ -336,13 +310,11 @@ export async function sendFriendRequest(userId: string, friendId: string): Promi
       .single()
 
     if (error) {
-      console.error('친구 요청 전송 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('친구 요청 전송 예외:', error)
     return null
   }
 }
@@ -359,13 +331,11 @@ export async function getFriendRequests(userId: string): Promise<Friendships[]> 
       .eq('status', 'pending')
 
     if (error) {
-      console.error('친구 요청 조회 오류:', error)
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error('친구 요청 조회 예외:', error)
     return []
   }
 }
@@ -380,13 +350,11 @@ export async function acceptFriendRequest(requestId: string): Promise<Friendship
       .single()
 
     if (error) {
-      console.error('친구 요청 수락 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('친구 요청 수락 예외:', error)
     return null
   }
 }
@@ -399,13 +367,11 @@ export async function rejectFriendRequest(requestId: string): Promise<boolean> {
       .eq('id', requestId)
 
     if (error) {
-      console.error('친구 요청 거절 오류:', error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error('친구 요청 거절 예외:', error)
     return false
   }
 }
@@ -422,13 +388,11 @@ export async function getUserFriends(userId: string): Promise<Friendships[]> {
       .eq('status', 'accepted')
 
     if (error) {
-      console.error('사용자 친구 조회 오류:', error)
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error('사용자 친구 조회 예외:', error)
     return []
   }
 }
@@ -447,13 +411,11 @@ export async function recordVisit(visitorId: string, visitedUserId: string): Pro
       .single()
 
     if (error) {
-      console.error('방문 기록 생성 오류:', error)
       return null
     }
 
     return data
   } catch (error) {
-    console.error('방문 기록 생성 예외:', error)
     return null
   }
 }
@@ -470,13 +432,11 @@ export async function getUserVisits(userId: string): Promise<Visits[]> {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('사용자 방문 기록 조회 오류:', error)
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error('사용자 방문 기록 조회 예외:', error)
     return []
   }
 }
@@ -497,7 +457,6 @@ export async function loadFloorTileSettings(userId: string): Promise<any> {
       .maybeSingle() // single() 대신 maybeSingle() 사용
 
     if (error) {
-      console.error('바닥 타일 설정 로드 오류:', error)
       // 에러 시 기본값 반환
       return {
         type: 'default',
@@ -532,7 +491,6 @@ export async function loadFloorTileSettings(userId: string): Promise<any> {
       imageUrl: data.custom_image_url
     }
   } catch (error) {
-    console.error('바닥 타일 설정 로드 실패:', error)
     // 에러 시 기본값 반환
     return {
       type: 'default',
@@ -570,10 +528,8 @@ export async function saveFloorTileSettings(userId: string, config: any): Promis
       throw error
     }
 
-    console.log('💾 바닥 타일 설정 저장 완료:', config)
     return true
   } catch (error) {
-    console.error('바닥 타일 설정 저장 실패:', error)
     return false
   }
 }

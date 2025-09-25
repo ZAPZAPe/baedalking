@@ -13,7 +13,6 @@ export async function PUT(
     const { earningId } = await params
     const body = await request.json()
 
-    console.log('수입 기록 업데이트 요청:', { earningId, body })
 
     if (!earningId) {
       return NextResponse.json(
@@ -58,7 +57,6 @@ export async function PUT(
     updateData.updated_at = new Date().toISOString()
 
     // 데이터베이스 업데이트
-    console.log('데이터베이스 업데이트 시도:', { earningId, updateData })
     
     const { data: updatedRecord, error: updateError } = await supabase
       .from('earnings')
@@ -68,14 +66,12 @@ export async function PUT(
       .single()
 
     if (updateError || !updatedRecord) {
-      console.error('수입 기록 업데이트 오류:', updateError)
       return NextResponse.json(
         { error: `수입 기록 업데이트에 실패했습니다: ${updateError?.message || '알 수 없는 오류'}` },
         { status: 500 }
       )
     }
     
-    console.log('수입 기록 업데이트 성공:', updatedRecord)
 
     return NextResponse.json({ 
       message: '수입 기록이 성공적으로 업데이트되었습니다.',
@@ -83,7 +79,6 @@ export async function PUT(
     })
 
   } catch (error) {
-    console.error('수입 기록 업데이트 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -127,7 +122,6 @@ export async function DELETE(
       .eq('id', earningId)
 
     if (deleteError) {
-      console.error('수입 기록 삭제 오류:', deleteError)
       return NextResponse.json(
         { error: '수입 기록 삭제에 실패했습니다.' },
         { status: 500 }
@@ -155,7 +149,6 @@ export async function DELETE(
     })
 
   } catch (error) {
-    console.error('수입 기록 삭제 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

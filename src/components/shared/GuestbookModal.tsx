@@ -11,7 +11,6 @@ interface GuestbookMessage {
   visitor: {
     id: string
     nickname: string
-    avatar_config: any
   }
 }
 
@@ -52,20 +51,16 @@ export default function GuestbookModal({
 
     setIsLoading(true)
     try {
-      console.log('🔍 방명록 모달 데이터 로딩 시작:', targetUserId)
       
       const response = await fetch(`/api/guestbook?userId=${targetUserId}`)
       const data = await response.json()
 
       if (response.ok) {
-        console.log('✅ 방명록 모달 데이터 로드 성공:', data.messages?.length || 0, '개')
         setMessages(data.messages || [])
       } else {
-        console.error('❌ 방명록 모달 불러오기 실패:', data.error)
         setMessages([])
       }
     } catch (error) {
-      console.error('❌ 방명록 모달 API 오류:', error)
       setMessages([])
     } finally {
       setIsLoading(false)
@@ -99,11 +94,9 @@ export default function GuestbookModal({
       setCurrentPage(1) // 첫 번째 페이지로 이동
       fetchMessages() // 새로고침
       } else {
-        console.error('방명록 작성 실패:', data.error)
         alert(data.error || '방명록 작성에 실패했습니다.')
       }
     } catch (error) {
-      console.error('방명록 작성 오류:', error)
       alert('방명록 작성 중 오류가 발생했습니다.')
     } finally {
       setIsSubmitting(false)
@@ -124,10 +117,8 @@ export default function GuestbookModal({
         setSelectedUserProfile(data.user)
         setShowUserProfile(true)
       } else {
-        console.error('사용자 프로필 로딩 실패:', data.error)
       }
     } catch (error) {
-      console.error('사용자 프로필 로딩 오류:', error)
     }
   }
 
@@ -308,7 +299,6 @@ export default function GuestbookModal({
                       <button
                         onClick={() => {
                           // TODO: 모달에서 수정 기능 구현
-                          console.log('방명록 수정:', message.id)
                         }}
                         className="bg-[#ffd93d]/20 hover:bg-[#ffd93d]/30 border border-[#ffd93d]/50 hover:border-[#ffd93d] text-[#ffd93d] px-2 py-1 rounded text-xs font-mono transition-all duration-200"
                         style={{borderRadius: '4px'}}
@@ -345,7 +335,6 @@ export default function GuestbookModal({
                               alert(data.error || '방명록 삭제에 실패했습니다.')
                             }
                           } catch (error) {
-                            console.error('방명록 삭제 오류:', error)
                             alert('방명록 삭제 중 오류가 발생했습니다.')
                           }
                         }}

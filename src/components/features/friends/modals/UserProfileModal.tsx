@@ -153,20 +153,13 @@ export default function UserProfileModal({
                       <div className="relative w-12 h-12 sm:w-16 sm:h-16">
                         {/* 기본 캐릭터 베이스 (가장 아래 레이어) */}
                         <img 
-                          src="/assets/character/default-character.png"
+                          src="/Garage/Character/배민/S_1.png"
                           alt="기본 캐릭터" 
                           className="absolute w-full h-full object-contain"
                           style={{ imageRendering: 'pixelated' }}
                         />
                         
-                        {/* 감정 이모티콘 - 캐릭터 상단에 표시 */}
-                        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
-                          <div className="bg-white border border-gray-300 px-1 py-0.5 rounded relative shadow-sm">
-                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-white"></div>
-                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 translate-y-px w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-gray-300"></div>
-                            <div className="text-xs">😊</div>
-                          </div>
-                        </div>
+                        {/* 감정표현은 상점에서 구매한 경우에만 표시 */}
                       </div>
                     </div>
                   </div>
@@ -295,15 +288,11 @@ export default function UserProfileModal({
               <button
                 onClick={() => {
                   // 미니홈피 방문 로직
-                  console.log('UserProfileModal Visit 버튼 클릭:', user.id)
                   try {
                     router.push(`/garage/${user.id}`)
-                    console.log('UserProfileModal 라우터 푸시 완료')
                     onClose() // 모달 닫기
                   } catch (error) {
-                    console.error('UserProfileModal 라우터 푸시 에러:', error)
                     // 폴백: window.location.href 사용
-                    console.log('UserProfileModal 폴백 방법 사용: window.location.href')
                     window.location.href = `/garage/${user.id}`
                     onClose() // 모달 닫기
                   }

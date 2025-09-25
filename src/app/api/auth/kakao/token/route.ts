@@ -19,14 +19,12 @@ export async function POST(request: NextRequest) {
     const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI
     
     if (!clientId || !redirectUri) {
-      console.error('카카오 환경변수 누락:', { clientId: !!clientId, redirectUri: !!redirectUri })
       return NextResponse.json(
         { error: '카카오 설정이 올바르지 않습니다.' },
         { status: 500 }
       )
     }
 
-    console.log('카카오 토큰 요청:', { clientId, redirectUri, code: code.substring(0, 10) + '...' })
 
     // 카카오 액세스 토큰 획득
     const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
@@ -44,7 +42,6 @@ export async function POST(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text()
-      console.error('카카오 토큰 응답 오류:', errorData)
       return NextResponse.json(
         { error: `카카오 토큰 획득에 실패했습니다. 상세: ${errorData}` },
         { status: 400 }
@@ -60,7 +57,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('카카오 토큰 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

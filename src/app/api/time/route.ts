@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    console.log('⏰ 서버 시간 API 호출됨')
     
     // 현재 시간을 한국 시간대로 직접 계산
     const now = new Date()
@@ -28,11 +27,9 @@ export async function GET() {
       timestamp: now.getTime()
     }
     
-    console.log('✅ 서버 시간 응답:', result)
     
     return NextResponse.json(result)
   } catch (error) {
-    console.error('❌ 서버 시간 API 오류:', error)
     
     return NextResponse.json({
       success: false,

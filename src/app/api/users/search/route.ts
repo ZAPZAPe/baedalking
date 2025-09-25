@@ -29,14 +29,13 @@ export async function GET(request: NextRequest) {
     // 사용자 검색 (닉네임 또는 지역으로 검색)
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, nickname, region, avatar_config, created_at')
+      .select('id, nickname, region, created_at')
       .or(`nickname.ilike.%${query}%,region.ilike.%${query}%`)
       .neq('id', currentUserId) // 본인 제외
       .limit(limit)
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('사용자 검색 오류:', error)
       return NextResponse.json(
         { error: '사용자 검색에 실패했습니다.' },
         { status: 500 }
@@ -85,7 +84,6 @@ export async function GET(request: NextRequest) {
         id: user.id,
         nickname: user.nickname,
         region: user.region,
-        avatar_config: user.avatar_config,
         friendStatus,
         memberSince: user.created_at
       }
@@ -97,7 +95,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('사용자 검색 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

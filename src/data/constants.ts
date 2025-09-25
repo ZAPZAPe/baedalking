@@ -1,11 +1,6 @@
 // 게임 데이터 상수들
 
-export const emotions = [
-  { id: 'happy', label: '행복', icon: '😊', color: '#FFD93D' },
-  { id: 'tired', label: '피곤', icon: '😴', color: '#6CBEED' },
-  { id: 'angry', label: '화남', icon: '😡', color: '#FF6B6B' },
-  { id: 'base', label: '기본', icon: '😐', color: '#95E1D3' },
-]
+// 기본 감정표현은 더 이상 사용하지 않음 - 모든 감정표현은 상점에서 구매
 
 export const characterItems = [
   { id: 'basic', name: '기본', icon: '👤', price: 0 },

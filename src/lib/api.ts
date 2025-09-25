@@ -39,7 +39,6 @@ export async function apiRequest(url: string, options: ApiOptions = {}) {
     
     return { data, error: null }
   } catch (error) {
-    console.error('API 요청 오류:', error)
     return { data: null, error: error instanceof Error ? error.message : '알 수 없는 오류' }
   }
 }

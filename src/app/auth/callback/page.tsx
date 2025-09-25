@@ -61,7 +61,6 @@ function AuthCallbackContent() {
 
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text()
-        console.error('토큰 획득 실패:', { status: tokenResponse.status, error: errorText })
         throw new Error(`토큰 획득 실패: ${tokenResponse.status}`)
       }
 
@@ -91,7 +90,6 @@ function AuthCallbackContent() {
 
       // 실제 데이터베이스 오류만 처리 (사용자 없음은 정상)
       if (fetchError) {
-        console.error('사용자 조회 중 오류:', fetchError)
         throw new Error(`사용자 조회 실패: ${fetchError.message}`)
       }
 
@@ -119,17 +117,11 @@ function AuthCallbackContent() {
         nickname: kakaoUser.properties?.nickname || kakaoUser.kakao_account?.profile?.nickname || '배달킹',
         kakao_id: kakaoUser.id.toString(),
         region: '서울특별시', // 기본값을 더 구체적으로 설정
-        avatar_config: profileImageUrl ? { profileImageUrl } : {},
-        garage_config: {},
+        garage_intro: '열심히 달리는 배달킹입니다! 🛵💨',
         status_message: null,
         is_income_private: false,
-        platforms: [
-          { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', isActive: true, type: 'default' },
-          { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', isActive: true, type: 'default' }
-        ],
         goals: { daily: 50000, weekly: 350000, monthly: 1500000 },
-        total_visitors: 0,
-        daily_visitors: 0
+        total_visitors: 0
       }
 
       
@@ -141,12 +133,6 @@ function AuthCallbackContent() {
         .single()
 
       if (insertError) {
-        console.error('사용자 정보 저장 오류:', {
-          code: insertError.code,
-          message: insertError.message,
-          details: insertError.details,
-          hint: insertError.hint
-        })
         throw new Error(`사용자 생성 실패: ${insertError.message}`)
       }
 
@@ -164,7 +150,6 @@ function AuthCallbackContent() {
       }, 1500) // 1.5초 후 이동
 
     } catch (error) {
-      console.error('인증 콜백 처리 오류:', error)
       setStatus('error')
       setMessage('로그인 처리 중 오류가 발생했습니다.')
       setTimeout(() => router.push('/login'), 3000)

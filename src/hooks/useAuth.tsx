@@ -99,7 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } catch (error) {
-        console.error('❌ Auth 초기화 오류:', error)
       } finally {
         setIsLoading(false)
       }
@@ -117,27 +116,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
       
       if (error && error.code !== 'PGRST116') {
-        console.error('❌ 사용자 데이터 로드 오류:', error)
         return
       }
 
       if (dbUser) {
-        console.log('✅ 사용자 데이터 로드 완료:', dbUser.nickname)
         setUser(dbUser)
       } else {
-        console.log('⚠️ 사용자 데이터 없음 - 프로필 설정 필요')
         // 인증은 됐지만 프로필이 없는 경우
         setUser(null)
       }
     } catch (error) {
-      console.error('❌ 사용자 데이터 로드 실패:', error)
     }
   }
 
   // 🔥 카카오 로그인 처리 - 직접 사용자 데이터 관리 (Auth 없이)
   const handleKakaoLogin = async (kakaoUser: any): Promise<boolean> => {
     try {
-      console.log('🔄 카카오 로그인 처리 시작:', kakaoUser)
       
       // 1. 사용자 데이터 준비
       const userData = {
@@ -145,20 +139,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: kakaoUser.email || `${kakaoUser.kakao_id || kakaoUser.id}@kakao.com`,
         nickname: kakaoUser.nickname || '배달킹',
         region: kakaoUser.region || '서울',
-        avatar_config: kakaoUser.avatar_config || {},
-        garage_config: kakaoUser.garage_config || {},
+        garage_intro: '열심히 달리는 배달킹입니다! 🛵💨',
         status_message: kakaoUser.status_message || null,
         is_income_private: kakaoUser.is_income_private || false,
-        platforms: kakaoUser.platforms || [
-          { id: 'baemin', name: '배민', icon: '/baemin-logo.svg', color: '#00C851', bgColor: '#00C851', isActive: true, type: 'default' },
-          { id: 'coupang', name: '쿠팡', icon: '/coupang-logo.svg', color: '#E4002B', bgColor: '#E4002B', isActive: true, type: 'default' }
-        ],
         goals: kakaoUser.goals || { daily: 50000, weekly: 350000, monthly: 1500000 },
-        total_visitors: 0,
-        daily_visitors: 0
+        total_visitors: 0
       }
 
-      console.log('📊 생성할 사용자 데이터:', userData)
 
       // 2. 기존 사용자 확인
       const { data: existingUser, error: checkError } = await supabase
@@ -170,15 +157,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let finalUser: User
 
       if (checkError) {
-        console.error('❌ 사용자 조회 오류:', checkError)
         return false
       }
 
       if (existingUser) {
-        console.log('✅ 기존 사용자 발견:', existingUser)
         finalUser = existingUser
       } else {
-        console.log('🆕 새 사용자 생성')
         
         // 3. 새 사용자 생성
         const { data: newUser, error: createError } = await supabase
@@ -188,20 +172,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .single()
 
         if (createError) {
-          console.error('❌ 사용자 생성 오류:', createError)
           return false
         }
 
         finalUser = newUser
       }
 
-      console.log('✅ 최종 사용자 정보:', finalUser)
       setUser(finalUser)
 
       // localStorage에 사용자 정보 저장 (페이지 새로고침 시 복원용)
       if (typeof window !== 'undefined') {
         localStorage.setItem('kakaoUser', JSON.stringify(finalUser))
-        console.log('💾 사용자 정보를 localStorage에 저장했습니다')
       }
 
       // 4. Supabase에 업데이트 시간만 업데이트 (last_login 컬럼이 없으므로 제거)
@@ -214,12 +195,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .eq('id', finalUser.id)
         
         if (updateError) {
-          console.error('❌ 업데이트 시간 업데이트 실패:', updateError)
         } else {
-          console.log('💾 Supabase에 업데이트 시간 업데이트됨')
         }
       } catch (updateError) {
-        console.error('❌ 업데이트 시간 업데이트 중 오류:', updateError)
       }
 
       // 5. 세션 상태 설정
@@ -241,11 +219,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
 
-      console.log('🎉 카카오 로그인 처리 완료!')
       return true
       
     } catch (error) {
-      console.error('❌ 카카오 로그인 처리 실패:', error)
       return false
     }
   }
@@ -263,12 +239,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .eq('id', user.id)
           
           if (updateError) {
-            console.error('❌ 로그아웃 시간 업데이트 실패:', updateError)
           } else {
-            console.log('💾 Supabase에서 로그아웃 처리됨')
           }
         } catch (updateError) {
-          console.error('❌ 로그아웃 시간 업데이트 중 오류:', updateError)
         }
       }
       
@@ -280,12 +253,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('kakaoUser')
         localStorage.removeItem('profileSetupCompleted')
-        console.log('🗑️ localStorage에서 사용자 정보 및 프로필 설정 플래그 제거됨')
       }
       
-      console.log('✅ 로그아웃 완료 - 모든 세션 데이터 정리됨')
     } catch (error) {
-      console.error('❌ 로그아웃 오류:', error)
     }
   }
 
@@ -297,31 +267,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI
         
         if (!clientId || !redirectUri) {
-          console.error('❌ 카카오 환경변수 누락:', { clientId: !!clientId, redirectUri: !!redirectUri })
           return { data: null, error: new Error('카카오 로그인 설정이 누락되었습니다.') }
         }
         
         const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`
         
-        console.log('🔗 카카오 로그인 URL:', kakaoAuthUrl)
         window.location.href = kakaoAuthUrl
         return { data: { user: null, session: null }, error: null }
       } catch (error) {
-        console.error('❌ 카카오 로그인 오류:', error)
         return { data: null, error }
       }
     }
-    console.log('ℹ️ signIn called but not implemented for:', email)
     return { data: { user: null, session: null }, error: null }
   }
 
   const signUp = async (email: string, password: string, nickname: string) => {
-    console.log('ℹ️ signUp called but not implemented')
     return { data: { user: null, session: null }, error: null }
   }
 
   const resetPassword = async (email: string) => {
-    console.log('ℹ️ resetPassword called but not implemented')
     return { data: null, error: null }
   }
 

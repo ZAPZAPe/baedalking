@@ -3,7 +3,10 @@
 import PixelButton from '@/components/ui/PixelButton'
 import { useServerTime } from '@/hooks/useServerTime'
 import KakaoAd from '@/components/ui/KakaoAd'
-import DecorationRenderer from '@/components/decoration/DecorationRenderer'
+import MiniGarageCanvas from '@/components/minigame'
+import { ModalType } from '@/hooks/useAppState'
+import InventoryUI from './InventoryUI'
+import { useState, useEffect } from 'react'
 
 interface HomeTabProps {
   currentBackground: string
@@ -20,7 +23,11 @@ interface HomeTabProps {
   setShowVehicleItemPanel: (show: boolean) => void
   setShowCharacterItemPanel: (show: boolean) => void
   setShowIncomeInputPanel: (show: boolean) => void
+  showInventoryUI: boolean
+  setShowInventoryUI: (show: boolean) => void
   setActiveTab: (tab: string) => void
+  // 상점 모달 관련
+  openModal?: (modalType: ModalType) => void
 }
 
 export default function HomeTab({
@@ -38,10 +45,15 @@ export default function HomeTab({
   setShowVehicleItemPanel,
   setShowCharacterItemPanel,
   setShowIncomeInputPanel,
-  setActiveTab
+  showInventoryUI,
+  setShowInventoryUI,
+  setActiveTab,
+  openModal
 }: HomeTabProps) {
   // 서버 시간 사용
   const { serverTime } = useServerTime()
+  
+  // 레퍼런스 기반 완전 재작성 - resizeTo: window로 자동 조정되므로 고정 크기 사용
   
   // 서버 시간 기준으로 오늘 날짜 계산
   const today = serverTime ? new Date(serverTime.koreaDate) : new Date()
@@ -52,26 +64,27 @@ export default function HomeTab({
   
   return (
     <div className="space-y-3 sm:space-y-4">
-      {/* 3D 차고 뷰 모드 카드 */}
-      <div className="bg-gradient-to-br from-[#1a4a2e]/90 to-[#1a1a2e]/90 backdrop-blur-lg rounded-2xl p-2 sm:p-3 lg:p-4 border border-[#00ff88]/20 shadow-2xl">
-        {/* 3D 차고 캔버스 */}
-        <div className="relative bg-gradient-to-b from-[#2d3748] to-[#1a202c] rounded-xl p-3 sm:p-4 lg:p-5 mb-2 sm:mb-3 lg:mb-4 border border-[#00ff88]/30 shadow-inner">
-          <div className="w-full aspect-[4/3] bg-gray-900 rounded-lg overflow-hidden relative">
-            <DecorationRenderer userId={userId} isOwner={true} viewOnly={true} />
-          </div>
-          
-          {/* 꾸미기 공간 테두리 효과 */}
-          <div className="absolute inset-0 rounded-xl border-2 border-[#00ff88]/20 pointer-events-none"></div>
-          
-          {/* 코너 장식 */}
-          <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-[#00ff88]/60 rounded-tl-lg"></div>
-          <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-[#00ff88]/60 rounded-tr-lg"></div>
-          <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-[#00ff88]/60 rounded-bl-lg"></div>
-          <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-[#00ff88]/60 rounded-br-lg"></div>
+      {/* 캔버스 + 차고 소개를 하나의 컨테이너로 결합 */}
+      <div className="relative rounded-xl border border-[#00ff88]/30 shadow-inner bg-gradient-to-br from-[#1a1a2e]/50 to-[#16213e]/50 p-3 sm:p-4 lg:p-5">
+        <div className="w-full" style={{
+          aspectRatio: '4 / 3',
+          overflow: 'hidden',
+          position: 'relative'
+        }}>
+          <MiniGarageCanvas 
+            width={800}
+            height={600}
+            mode="minigarage"
+            userId={userId}
+            onTileClick={(x, y, z) => {
+            }}
+            onObjectClick={(object) => {
+            }}
+          />
         </div>
 
-        {/* 차고 소개 */}
-        <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 border border-[#00ff88]/20">
+        {/* 차고 소개 (같은 카드 내부) */}
+        <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 border border-[#00ff88]/20 mt-3">
           <div className="text-center">
             <p className="text-white text-sm font-medium leading-relaxed">{garageIntro}</p>
           </div>
@@ -239,6 +252,12 @@ true
       {/* 하단 여백 - 상단과 동일하게 */}
       <div className="mb-2 sm:mb-3 lg:mb-4"></div>
 
+      {/* HTML/CSS 기반 반응형 인벤토리 UI */}
+      <InventoryUI 
+        isVisible={showInventoryUI}
+        onClose={() => setShowInventoryUI(false)}
+        userId={userId}
+      />
 
     </div>
   )

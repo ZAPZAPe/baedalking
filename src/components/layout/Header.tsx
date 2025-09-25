@@ -5,19 +5,12 @@ import { useRouter } from 'next/navigation'
 interface HeaderProps {
   userNickname: string
   totalBoxes: number
-  emotions: Array<{
-    id: string
-    label: string
-    icon: string
-    color: string
-  }>
   onShowHeaderCharacterPanel: () => void
 }
 
 export default function Header({
   userNickname,
   totalBoxes,
-  emotions,
   onShowHeaderCharacterPanel
 }: HeaderProps) {
   const router = useRouter()
@@ -56,7 +49,6 @@ export default function Header({
             style={{borderRadius: '6px'}}
           >
             <div className="flex items-center gap-2">
-              <span className="text-[#00d4ff]">😊</span>
               <span className="text-[#00d4ff] text-[10px] leading-none font-bold" style={{textShadow: '0 0 6px rgba(0, 212, 255, 0.5)'}}>CHARACTER</span>
             </div>
 
@@ -65,21 +57,15 @@ export default function Header({
                  style={{borderRadius: '6px'}}></div>
           </button>
           
-          {/* 우측 - 박스 디스플레이 (클릭 가능) */}
-          <button
-            onClick={() => router.push('/shop')}
-            className="h-10 px-3 flex items-center justify-center text-xs bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#ffd93d]/40 hover:border-[#ffd93d]/70 transition-all duration-300 hover:scale-105 hover:shadow-lg relative group backdrop-blur-sm"
+          {/* 우측 - 박스 디스플레이 (클릭 불가) */}
+          <div className="h-10 px-3 flex items-center justify-center text-xs bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 border-2 border-[#ffd93d]/40 backdrop-blur-sm"
             style={{borderRadius: '6px'}}
           >
             <div className="flex items-center gap-2">
               <span className="text-[#ffd93d]">📦</span>
               <span className="text-[#ffd93d] text-[10px] leading-none font-bold" style={{textShadow: '0 0 6px rgba(255, 217, 61, 0.5)'}}>{totalBoxes.toLocaleString()}</span>
             </div>
-
-            {/* 호버 글로우 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#ffd93d]/0 via-[#ffd93d]/10 to-[#ffd93d]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
-                 style={{borderRadius: '6px'}}></div>
-          </button>
+          </div>
         </div>
 
         {/* 장식용 사이드 라인들 */}

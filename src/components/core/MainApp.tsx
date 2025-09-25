@@ -1,7 +1,6 @@
 'use client'
 
 import { useAppState } from '@/hooks/useAppState'
-import { emotions } from '@/data/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -15,7 +14,7 @@ import { RankingTab } from '@/components/features/ranking'
 import { FriendsTab } from '@/components/features/friends'
 import { ProfileTab } from '@/components/features/profile'
 import { ModalManager } from '@/components/core'
-import { User, CharacterData } from '@/types'
+import { User } from '@/types'
 
 interface MainAppProps {
   user: User
@@ -36,6 +35,7 @@ export default function MainApp({ user }: MainAppProps) {
     showCharacterItemPanel, setShowCharacterItemPanel,
     showVehicleItemPanel, setShowVehicleItemPanel,
     showBackgroundItemPanel, setShowBackgroundItemPanel,
+    showInventoryUI, setShowInventoryUI,
     currentCharacterItem, setCurrentCharacterItem,
     currentVehicle, setCurrentVehicle,
     currentBackground, setCurrentBackground,
@@ -64,9 +64,7 @@ export default function MainApp({ user }: MainAppProps) {
     friendRequests,
     setFriendRequests,
     errorMessage,
-    showErrorModal,
-    selectedShopItem,
-    setSelectedShopItem
+    showErrorModal
   } = useAppState()
 
   // 수입 입력 날짜 상태 (서버 시간 기준)
@@ -80,28 +78,7 @@ export default function MainApp({ user }: MainAppProps) {
            String(today.getDate()).padStart(2, '0')
   })
 
-  // 캐릭터 데이터 상태
-  const [currentCharacterData, setCurrentCharacterData] = useState<CharacterData | null>(null)
-
-  // 캐릭터 데이터 로드 함수
-  const loadCharacterData = async () => {
-    try {
-      const response = await fetch(`/api/character?userId=${user.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setCurrentCharacterData(data)
-        console.log('캐릭터 데이터 로드됨:', data)
-      }
-    } catch (error) {
-      console.error('캐릭터 데이터 로딩 실패:', error)
-    }
-  }
-
-  // 캐릭터 업데이트 함수
-  const handleCharacterUpdate = (characterData: CharacterData) => {
-    setCurrentCharacterData(characterData)
-    console.log('캐릭터 데이터 업데이트됨:', characterData)
-  }
+  // 구 감정표현 시스템 제거됨 - 새로운 상점 기반 감정표현 시스템 사용
 
   // 선택된 날짜 상태 (수입 상세 모달용)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -112,12 +89,10 @@ export default function MainApp({ user }: MainAppProps) {
   // 수입 기록 수정 함수
   const onEditIncomeRecord = async (date: string, updatedRecords: any[]) => {
     try {
-      console.log('수입 기록 수정 시작:', { date, selectedRecords, updatedRecords })
       
       // 기존 기록 삭제
       for (const record of selectedRecords) {
         if (record.id) {
-          console.log('기존 기록 삭제:', record.id)
           await deleteIncomeRecord(record.id)
         }
       }
@@ -133,21 +108,17 @@ export default function MainApp({ user }: MainAppProps) {
           user_id: user.id
         }
         
-        console.log('새 기록 추가:', newRecord)
         await saveIncomeRecord(newRecord)
       }
       
       // 잠시 대기 후 데이터 다시 로드
       setTimeout(async () => {
-        console.log('수입 기록 데이터 다시 로드 중...')
         await loadIncomeRecords()
-        console.log('수입 기록 데이터 로드 완료')
       }, 500)
       
       alert('수입 기록이 수정되었습니다!')
       setForceUpdateKey(prev => prev + 1) // 강제 리렌더링
     } catch (error) {
-      console.error('수입 기록 수정 실패:', error)
       alert('수입 기록 수정에 실패했습니다.')
     }
   }
@@ -169,12 +140,7 @@ export default function MainApp({ user }: MainAppProps) {
     setCurrentWeather({ temp: 22, condition: 'sunny' })
   }, [])
 
-  // 캐릭터 데이터 로드
-  useEffect(() => {
-    if (user?.id) {
-      loadCharacterData()
-    }
-  }, [user?.id])
+
 
   // 사용자 데이터 로딩
   useEffect(() => {
@@ -194,7 +160,6 @@ export default function MainApp({ user }: MainAppProps) {
         setTotalBoxes(boxesData.totalBoxes || 0)
       }
     } catch (error) {
-      console.error('❌ 사용자 데이터 로딩 오류:', error)
     }
   }
 
@@ -297,9 +262,9 @@ export default function MainApp({ user }: MainAppProps) {
     <div className="w-full min-h-[100dvh] bg-[#1a1a2e] flex flex-col relative"
       style={{ minHeight: '100dvh' }}>
       
-      {/* 전체 도트 패턴 오버레이 */}
+      {/* 전체 도트 패턴 오버레이 - z-index 낮춤 */}
       <div 
-        className="absolute inset-0 z-[1] opacity-[0.03]"
+        className="absolute inset-0 z-[-1] opacity-[0.03]"
         style={{
           backgroundImage: `radial-gradient(circle, #ffffff 1px, transparent 1px)`,
           backgroundSize: '20px 20px'
@@ -310,35 +275,37 @@ export default function MainApp({ user }: MainAppProps) {
       <Header
         userNickname={user?.nickname || '배달킹'}
         totalBoxes={totalBoxes}
-        emotions={emotions}
         onShowHeaderCharacterPanel={() => setShowHeaderCharacterPanel(true)}
       />
 
       {/* 메인 컨텐츠 영역 */}
       <div className="flex-1 relative z-10 flex flex-col">
-        <div className="flex-1 relative bg-gradient-to-b from-[#0f0f23] to-[#1a1a2e] scroll-container">
+        <div className="flex-1 relative scroll-container">
           <div className="p-2 sm:p-3 lg:p-4 pb-24">
             <div className="max-w-md mx-auto w-full space-y-2 sm:space-y-3 lg:space-y-4">
             
               {/* HOME 탭 */}
               {activeTab === 'home' && (
-                <HomeTab
-                  currentBackground={currentBackground}
-                  currentVehicle={currentVehicle}
-                  garageIntro={garageIntro}
-                  todayVisitors={todayVisitors}
-                  currentWeather={currentWeather}
-                  getWeatherIcon={getWeatherIcon}
-                  incomeRecords={incomeRecords}
-                  totalIncome={totalIncome}
-                  isClient={isClient}
-                  userId={user?.id || ''}
-                  setShowBackgroundItemPanel={setShowBackgroundItemPanel}
-                  setShowVehicleItemPanel={setShowVehicleItemPanel}
-                  setShowCharacterItemPanel={setShowCharacterItemPanel}
-                  setShowIncomeInputPanel={setShowIncomeInputPanel}
-                  setActiveTab={setActiveTab}
-                />
+        <HomeTab
+          currentBackground={currentBackground}
+          currentVehicle={currentVehicle}
+          garageIntro={garageIntro}
+          todayVisitors={todayVisitors}
+          currentWeather={currentWeather}
+          getWeatherIcon={getWeatherIcon}
+          incomeRecords={incomeRecords}
+          totalIncome={totalIncome}
+          isClient={isClient}
+          userId={user?.id || ''}
+          setShowBackgroundItemPanel={setShowBackgroundItemPanel}
+          setShowVehicleItemPanel={setShowVehicleItemPanel}
+          setShowCharacterItemPanel={setShowCharacterItemPanel}
+          setShowIncomeInputPanel={setShowIncomeInputPanel}
+          showInventoryUI={showInventoryUI}
+          setShowInventoryUI={setShowInventoryUI}
+          setActiveTab={setActiveTab}
+          openModal={openModal}
+        />
               )}
 
               {/* INCOME 탭 */}
@@ -419,7 +386,6 @@ export default function MainApp({ user }: MainAppProps) {
                 <ProfileTab 
                   userNickname={user?.nickname || '배달킹'}
                   userLocation={user?.region || '서울'}
-                  emotions={emotions}
                   isIncomePrivate={user?.is_income_private || false}
                   setIsIncomePrivate={(isPrivate: boolean) => {
                     if (user) {
@@ -436,13 +402,10 @@ export default function MainApp({ user }: MainAppProps) {
                         .eq('id', user.id)
                         .then(({ error }) => {
                           if (error) {
-                            console.error('수익 비공개 설정 저장 실패:', error)
                             // 실패 시 원래 값으로 되돌리기
                             const revertedUser = { ...user, is_income_private: !isPrivate }
                             setAppUser(revertedUser)
                             alert('설정 저장에 실패했습니다. 다시 시도해주세요.')
-                          } else {
-                            console.log('✅ 수익 비공개 설정이 저장되었습니다:', isPrivate)
                           }
                         })
                     }
@@ -458,7 +421,6 @@ export default function MainApp({ user }: MainAppProps) {
                   onUpdateProfile={async (field: string, value: string) => {
                     try {
                       if (!user?.id) {
-                        console.error('사용자 ID가 없습니다.')
                         return false
                       }
 
@@ -487,12 +449,10 @@ export default function MainApp({ user }: MainAppProps) {
                         }
                         return true
                       } else {
-                        console.error('프로필 업데이트 실패:', data.error)
                         showErrorModal(data.error || '프로필 업데이트에 실패했습니다.')
                         return false
                       }
                     } catch (error) {
-                      console.error('프로필 업데이트 오류:', error)
                       return false
                     }
                   }}
@@ -542,8 +502,6 @@ export default function MainApp({ user }: MainAppProps) {
         setShowHeaderCharacterPanel={setShowHeaderCharacterPanel}
         garageIntro={garageIntro}
         setGarageIntro={setGarageIntro}
-        currentCharacterData={currentCharacterData}
-        onCharacterUpdate={handleCharacterUpdate}
         // 아이템 선택 상태
         showCharacterItemPanel={showCharacterItemPanel}
         setShowCharacterItemPanel={setShowCharacterItemPanel}
@@ -579,14 +537,8 @@ export default function MainApp({ user }: MainAppProps) {
         selectedRecords={selectedRecords}
         setSelectedRecords={setSelectedRecords}
         onEditIncomeRecord={onEditIncomeRecord}
-        // 상점 아이템 모달 상태
-        selectedShopItem={selectedShopItem}
-        setSelectedShopItem={setSelectedShopItem}
-        userMoney={totalBoxes}
-        userInventory={[]}
-        placedItems={[]}
-        onPurchase={() => {}}
       />
+
     </div>
   )
 }

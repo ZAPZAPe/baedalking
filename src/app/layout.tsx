@@ -18,17 +18,13 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/favicon.ico',
+        url: '/baedalking-logo.png',
         sizes: 'any',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
       },
     ],
     apple: [
       {
-        url: '/favicon.ico',
+        url: '/baedalking-logo.png',
         sizes: 'any',
       },
     ],

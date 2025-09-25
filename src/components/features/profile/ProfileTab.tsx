@@ -1,18 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CharacterData } from '@/types'
 import DeleteAccountModal from './modals/DeleteAccountModal'
 
 interface ProfileTabProps {
   userNickname: string
   userLocation: string
-  emotions: Array<{
-    id: string
-    label: string
-    icon: string
-    color: string
-  }>
   isIncomePrivate: boolean
   setIsIncomePrivate: (isPrivate: boolean) => void
   setShowPrivacyPolicy: (show: boolean) => void
@@ -27,7 +20,6 @@ interface ProfileTabProps {
 export default function ProfileTab({
   userNickname,
   userLocation,
-  emotions,
   isIncomePrivate,
   setIsIncomePrivate,
   setShowPrivacyPolicy,
@@ -38,6 +30,18 @@ export default function ProfileTab({
   onUpdateProfile,
   userId
 }: ProfileTabProps) {
+  
+  // 둥둥 떠다니는 애니메이션 스타일
+  const floatingStyle = `
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-3px);
+      }
+    }
+  `
   
   // 편집 상태 관리
   const [isEditingNickname, setIsEditingNickname] = useState(false)
@@ -53,24 +57,19 @@ export default function ProfileTab({
     setLocalIsIncomePrivate(isIncomePrivate)
   }, [isIncomePrivate])
   
-  // 캐릭터 데이터 상태
-  const [characterData, setCharacterData] = useState<CharacterData | null>(null)
+  // 캐릭터 데이터 상태 (실제 장착된 캐릭터/감정표현)
+  const [characterData, setCharacterData] = useState<any>(null)
   
-  // 캐릭터 데이터 로드
+  // 현재 장착된 캐릭터 데이터 로드
   useEffect(() => {
     const loadCharacterData = async () => {
       try {
-        console.log('프로필에서 캐릭터 데이터 로드 시작:', userId)
-        const response = await fetch(`/api/character?userId=${userId}`)
+        const response = await fetch(`/api/user-current-character?userId=${userId}`)
         if (response.ok) {
           const data = await response.json()
-          console.log('프로필에서 받은 캐릭터 데이터:', data)
           setCharacterData(data)
-        } else {
-          console.error('캐릭터 데이터 응답 실패:', response.status)
         }
       } catch (error) {
-        console.error('캐릭터 데이터 로딩 실패:', error)
       }
     }
     
@@ -193,7 +192,6 @@ export default function ProfileTab({
         })
       }
     } catch (error) {
-      console.error('닉네임 체크 오류:', error)
       setNicknameValidation({ 
         isValid: false, 
         message: '닉네임 확인 중 오류가 발생했습니다.', 
@@ -244,7 +242,6 @@ export default function ProfileTab({
         alert('닉네임 변경에 실패했습니다. 다시 시도해주세요.')
       }
     } catch (error) {
-      console.error('닉네임 저장 오류:', error)
       alert('오류가 발생했습니다. 다시 시도해주세요.')
     }
   }
@@ -265,7 +262,6 @@ export default function ProfileTab({
         alert('지역 변경에 실패했습니다. 다시 시도해주세요.')
       }
     } catch (error) {
-      console.error('지역 저장 오류:', error)
       alert('오류가 발생했습니다. 다시 시도해주세요.')
     }
   }
@@ -289,7 +285,9 @@ export default function ProfileTab({
 
 
   return (
-    <div className="space-y-2 sm:space-y-3">
+    <>
+      <style>{floatingStyle}</style>
+      <div className="space-y-2 sm:space-y-3">
       {/* 프로필 헤더 */}
       <div className="bg-gradient-to-br from-[#2d3748] to-[#1a202c] rounded-xl p-4 border border-[#9c88ff]/30 shadow-inner mb-1 sm:mb-2 flex-shrink-0 relative">
         {/* 픽셀 도트들 */}
@@ -324,77 +322,61 @@ export default function ProfileTab({
 
         {/* 프로필 카드 */}
         <div className="bg-[#1a202c]/60 border-2 border-[#9c88ff]/30 p-4 relative" style={{borderRadius: '4px'}}>
-          <div className="text-center mb-2">
-            {/* 캐릭터 아바타 */}
-            <div className="w-20 h-20 mx-auto mb-2 relative">
-              <div className="w-full h-full flex items-center justify-center rounded-lg border-2 border-[#9c88ff]/50 bg-gradient-to-br from-[#00d4ff]/20 to-[#9c88ff]/20">
-                {characterData ? (
-                  <div className="relative w-16 h-16">
-                    {/* 기본 캐릭터 베이스 (가장 아래 레이어) */}
-                    <img 
-                      src="/assets/character/default-character.png"
-                      alt="기본 캐릭터" 
-                      className="absolute w-full h-full object-contain"
-                      style={{ imageRendering: 'pixelated' }}
-                      onError={(e) => console.error('기본 캐릭터 이미지 로드 실패:', e)}
-                      onLoad={() => console.log('기본 캐릭터 이미지 로드 성공')}
-                    />
-                    {/* 하의 레이어 - "없음"이 아닐 때만 표시 */}
-                    {characterData.parts.bottom !== 'none.png' && (
-                      <img 
-                        src={characterData.equippedItems?.find(item => item.item.id === characterData.parts.bottom)?.item.image_url || `/assets/character/${characterData.parts.bottom}`}
-                        alt="하의" 
-                        className="absolute w-full h-full object-contain"
-                        style={{ imageRendering: 'pixelated' }}
-                        onError={(e) => console.error('하의 이미지 로드 실패:', e)}
+          <div className="text-center">
+            {/* CHARACTER EDIT와 동일한 프리뷰 레이아웃 */}
+            <div className="flex flex-col items-center justify-center mb-4">
+              <div className="relative">
+                {/* 통합 프리뷰 프레임 - 가로 60px, 세로 96px */}
+                <div className="w-15 h-24 bg-gradient-to-br from-[#00d4ff]/20 to-[#9c88ff]/20 border-2 border-[#00ff88]/50 flex flex-col items-center justify-center overflow-hidden relative"
+                     style={{borderRadius: '6px', width: '60px', height: '96px'}}>
+                  
+                  {/* 감정표현 영역 - 상단 36px */}
+                  <div className="w-full h-9 flex items-end justify-center relative"
+                       style={{height: '36px', paddingBottom: '2px'}}>
+                    {characterData?.emotion && (
+                      <img
+                        src={characterData.emotion.image_url}
+                        alt={characterData.emotion.name}
+                        className="w-6 h-6 object-contain animate-bounce"
+                        style={{ 
+                          imageRendering: 'pixelated',
+                          animation: 'float 2s ease-in-out infinite'
+                        }}
                       />
                     )}
-                    {/* 상의 레이어 - "없음"이 아닐 때만 표시 */}
-                    {characterData.parts.top !== 'none.png' && (
-                      <img 
-                        src={characterData.equippedItems?.find(item => item.item.id === characterData.parts.top)?.item.image_url || `/assets/character/${characterData.parts.top}`}
-                        alt="상의" 
-                        className="absolute w-full h-full object-contain"
-                        style={{ imageRendering: 'pixelated' }}
-                        onError={(e) => console.error('상의 이미지 로드 실패:', e)}
-                      />
-                    )}
-                    {/* 헤어 레이어 (가장 위) - "없음"이 아닐 때만 표시 */}
-                    {characterData.parts.hair !== 'none.png' && (
-                      <img 
-                        src={characterData.equippedItems?.find(item => item.item.id === characterData.parts.hair)?.item.image_url || `/assets/character/${characterData.parts.hair}`}
-                        alt="헤어" 
-                        className="absolute w-full h-full object-contain"
-                        style={{ imageRendering: 'pixelated' }}
-                        onError={(e) => console.error('헤어 이미지 로드 실패:', e)}
-                      />
-                    )}
-                    
-                    {/* 감정 이모티콘 - 캐릭터 상단에 표시 */}
-                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
-                      <div className="bg-white border border-gray-300 px-1 py-0.5 rounded relative shadow-sm">
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-white"></div>
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 translate-y-px w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-gray-300"></div>
-                        <div className="text-xs">
-                          {characterData.parts.emotion === 'happy.png' ? '😊' :
-                           characterData.parts.emotion === 'angry.png' ? '😠' :
-                           characterData.parts.emotion === 'tired.png' ? '😴' :
-                           characterData.parts.emotion === 'heart.png' ? '❤️' : '😊'}
-                        </div>
-                      </div>
-                    </div>
                   </div>
-                ) : (
-                  <div className="text-3xl">😊</div>
-                )}
+                  
+                  {/* 캐릭터 영역 - 하단 60px */}
+                  <div className="w-full h-15 flex items-center justify-center relative"
+                       style={{height: '60px'}}>
+                    <img 
+                      src={characterData?.character?.image_url?.replace('S_1.png', 'S_2.png') || "/Garage/Character/배민/S_2.png"}
+                      alt={characterData?.character?.name || "배민커넥터"} 
+                      className="w-12 h-12 object-contain"
+                      style={{ imageRendering: 'pixelated' }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = "/Garage/Character/배민/S_2.png"
+                      }}
+                    />
+                  </div>
+                  
+                  {/* 프레임 모서리 픽셀 도트 */}
+                  <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-0.5 left-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-0.5 right-0.5 w-1 h-1 bg-[#00ff88]" style={{borderRadius: '1px'}}></div>
+                </div>
               </div>
             </div>
             
             {/* 기본 정보 */}
-            <h3 className="text-white font-bold text-xl mb-0 font-mono">{userNickname}</h3>
-            <p className="text-gray-300 text-sm font-mono">
-              {userLocation ? `${userLocation.split(' ').slice(0, 2).join(' ')}` : '지역 미설정'}
-            </p>
+            <div className="space-y-1">
+              <h3 className="text-white font-bold text-xl font-mono">{userNickname}</h3>
+              <p className="text-gray-300 text-sm font-mono">
+                {userLocation ? `${userLocation.split(' ').slice(0, 2).join(' ')}` : '지역 미설정'}
+              </p>
+            </div>
           </div>
           
           {/* 픽셀 도트들 */}
@@ -578,7 +560,6 @@ export default function ProfileTab({
                         alert('지역 변경에 실패했습니다. 다시 시도해주세요.')
                       }
                     } catch (error) {
-                      console.error('지역 저장 오류:', error)
                       alert('지역 저장 중 오류가 발생했습니다.')
                     }
                   }}
@@ -627,7 +608,6 @@ export default function ProfileTab({
                 <div 
                   onClick={() => {
                     const newValue = !localIsIncomePrivate
-                    console.log('토글 클릭! 현재값:', localIsIncomePrivate, '새값:', newValue)
                     
                     // 즉시 로컬 상태 업데이트 (즉시 반응)
                     setLocalIsIncomePrivate(newValue)
@@ -811,7 +791,6 @@ export default function ProfileTab({
               alert(`계정 삭제 실패: ${data.error}`)
             }
           } catch (error) {
-            console.error('계정 삭제 오류:', error)
             alert('계정 삭제 중 오류가 발생했습니다.')
           } finally {
             setShowDeleteAccount(false)
@@ -821,5 +800,6 @@ export default function ProfileTab({
       />
 
     </div>
+    </>
   )
 }

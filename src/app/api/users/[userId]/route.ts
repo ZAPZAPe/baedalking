@@ -21,7 +21,6 @@ export async function GET(
 
     // URL 디코딩 처리
     const decodedUserId = decodeURIComponent(userId)
-    console.log('🔍 사용자 조회 요청:', decodedUserId)
 
     let userProfile = null
     let userError = null
@@ -31,10 +30,9 @@ export async function GET(
     
     if (isUUID) {
       // UUID로 검색
-      console.log('🆔 UUID로 사용자 검색:', decodedUserId)
       const result = await supabase
         .from('users')
-        .select('id, email, nickname, region, avatar_config, garage_config, is_income_private, platforms, created_at')
+        .select('id, email, nickname, region, garage_intro, is_income_private, goals, created_at')
         .eq('id', decodedUserId)
         .single()
       
@@ -42,10 +40,9 @@ export async function GET(
       userError = result.error
     } else {
       // 닉네임으로 검색
-      console.log('👤 닉네임으로 사용자 검색:', decodedUserId)
       const result = await supabase
         .from('users')
-        .select('id, email, nickname, region, avatar_config, garage_config, is_income_private, platforms, created_at')
+        .select('id, email, nickname, region, garage_intro, is_income_private, goals, created_at')
         .eq('nickname', decodedUserId)
         .single()
       
@@ -54,14 +51,12 @@ export async function GET(
     }
 
     if (userError || !userProfile) {
-      console.error('❌ 사용자 조회 실패:', userError)
       return NextResponse.json(
         { error: '사용자를 찾을 수 없습니다.' },
         { status: 404 }
       )
     }
 
-    console.log('✅ 사용자 조회 성공:', userProfile.nickname)
 
     // 이번달 수익 계산 (사용자 실제 ID 사용)
     const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM 형식
@@ -73,7 +68,6 @@ export async function GET(
       .lt('date', `${currentMonth}-31`)
 
     if (earningsError) {
-      console.error('수익 조회 오류:', earningsError)
     }
 
     const totalIncome = earnings?.reduce((sum, earning) => sum + earning.total_amount, 0) || 0
@@ -87,7 +81,6 @@ export async function GET(
       .lt('date', `${currentMonth}-31`)
 
     if (countError) {
-      console.error('건수 조회 오류:', countError)
     }
 
     // 등급 계산 (수익 기준)
@@ -129,10 +122,8 @@ export async function GET(
       if (rank === 0) rank = sortedIncomes.length + 1
     }
 
-    // 사용자 플랫폼 정보 (users 테이블의 platforms 필드 우선 사용)
-    const userPlatforms = userProfile.platforms && Array.isArray(userProfile.platforms) 
-      ? userProfile.platforms.map((p: any) => p.name || p.id || p).filter(Boolean)
-      : platforms
+    // 사용자 플랫폼 정보 (earnings 테이블에서 추출한 플랫폼 사용)
+    const userPlatforms = platforms
 
     const profileData = {
       id: userProfile.id,
@@ -144,15 +135,12 @@ export async function GET(
       rank,
       grade,
       isIncomePrivate: userProfile.is_income_private || false,
-      avatar_config: userProfile.avatar_config,
-      garage_config: userProfile.garage_config,
       memberSince: userProfile.created_at
     }
 
     return NextResponse.json({ user: profileData })
 
   } catch (error) {
-    console.error('사용자 프로필 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -178,7 +166,6 @@ export async function PUT(
 
     // URL 디코딩 처리 및 실제 사용자 ID 추출
     const decodedUserId = decodeURIComponent(userId)
-    console.log('🔍 사용자 업데이트 요청:', decodedUserId)
 
     // UUID 형식인지 확인
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decodedUserId)
@@ -204,7 +191,7 @@ export async function PUT(
     }
 
     // 업데이트할 필드 확인 및 필터링
-    const allowedFields = ['nickname', 'region', 'status_message', 'avatar_config', 'garage_config', 'is_income_private']
+    const allowedFields = ['nickname', 'region', 'status_message', 'garage_intro', 'is_income_private']
     const updateData: any = {}
 
     allowedFields.forEach(field => {
@@ -286,7 +273,6 @@ export async function PUT(
         .single()
 
       if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = No rows found (정상)
-        console.error('닉네임 중복 체크 오류:', checkError)
         return NextResponse.json(
           { error: '닉네임 중복 체크 중 오류가 발생했습니다.' },
           { status: 500 }
@@ -312,11 +298,10 @@ export async function PUT(
       .from('users')
       .update(updateData)
       .eq('id', actualUserId)
-      .select('id, email, nickname, region, status_message, avatar_config, garage_config, updated_at')
+      .select('id, email, nickname, region, status_message, garage_intro, updated_at')
       .single()
 
     if (updateError || !updatedUser) {
-      console.error('사용자 정보 업데이트 오류:', updateError)
       return NextResponse.json(
         { error: '사용자 정보 업데이트에 실패했습니다.' },
         { status: 500 }
@@ -329,7 +314,6 @@ export async function PUT(
     })
 
   } catch (error) {
-    console.error('사용자 정보 업데이트 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

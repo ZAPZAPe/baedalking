@@ -59,7 +59,6 @@ export default function FriendsModal({
         setFriends([])
       }
     } catch (error) {
-      console.error('친구 목록 로딩 오류:', error)
       setFriends([])
     } finally {
       setIsLoading(false)
@@ -70,15 +69,12 @@ export default function FriendsModal({
   const offlineFriends = friends.filter(f => f.status === 'offline')
 
   const handleShowUserDetail = (friend: Friend) => {
-    console.log('Show user detail:', friend)
   }
 
   const handleAddFriend = () => {
-    console.log('Add friend clicked')
   }
 
   const handleRemoveFriend = (friendId: string) => {
-    console.log('Remove friend:', friendId)
   }
 
   if (!isOpen) return null

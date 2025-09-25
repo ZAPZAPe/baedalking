@@ -1,13 +1,14 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-// 환경 변수에서 설정 가져오기 (로컬 개발 시 기본값 사용)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+// 환경 변수에서 설정 가져오기 (.env.local에서 실제 Supabase 설정 사용)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dumdqkfzwhdegfbonfhd.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1bWRxa2Z6d2hkZWdmYm9uZmhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NzczODgsImV4cCI6MjA3MjA1MzM4OH0.7KUvjleLOyMpAs6cB8iiFgORUEJAelg2kVf1rvk8-E8'
+
 
 // 환경 변수 확인
 
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       'Accept': 'application/json',
@@ -18,7 +19,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // 서버 사이드 Supabase 클라이언트 생성 함수
 export function createServerSupabaseClient() {
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    },
+  })
+}
+
+// API Route에서 사용할 클라이언트 생성 함수 (export 이름 변경)
+export const createClient = () => {
+  return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
         'Accept': 'application/json',
@@ -33,13 +46,11 @@ export async function testSupabaseConnection() {
   try {
     const { data, error } = await supabase.from('users').select('count', { count: 'exact', head: true })
     if (error) {
-      console.error('❌ Supabase 연결 실패:', error.message)
       return false
     }
 
     return true
   } catch (err) {
-    console.error('❌ Supabase 연결 오류:', err)
     return false
   }
 }
@@ -56,17 +67,15 @@ export interface Database {
           email: string
           nickname: string
           region: string
-          avatar_config: any
-          garage_config: any
-          platforms: any
-          goals: any
+          garage_intro: string
           status_message: string
           is_income_private: boolean
+          goals: any
           total_visitors: number
-          daily_visitors: number
+          equipped_character_id: string | null
+          equipped_emotion_id: string | null
           created_at: string
           updated_at: string
-          last_login: string | null
         }
         Insert: {
           id?: string
@@ -74,17 +83,14 @@ export interface Database {
           email: string
           nickname: string
           region?: string
-          avatar_config?: any
-          garage_config?: any
-          platforms?: any
-          goals?: any
+          garage_intro?: string
           status_message?: string
           is_income_private?: boolean
+          goals?: any
           total_visitors?: number
-          daily_visitors?: number
+          current_emotion?: string
           created_at?: string
           updated_at?: string
-          last_login?: string | null
         }
         Update: {
           id?: string
@@ -92,17 +98,14 @@ export interface Database {
           email?: string
           nickname?: string
           region?: string
-          avatar_config?: any
-          garage_config?: any
-          platforms?: any
-          goals?: any
+          garage_intro?: string
           status_message?: string
           is_income_private?: boolean
+          goals?: any
           total_visitors?: number
-          daily_visitors?: number
+          current_emotion?: string
           created_at?: string
           updated_at?: string
-          last_login?: string | null
         }
       }
       
@@ -234,7 +237,7 @@ export interface Database {
       }
       
       // 사용자 인벤토리 테이블
-      user_inventory: {
+        user_items: {
         Row: {
           id: string
           user_id: string
@@ -410,39 +413,6 @@ export interface Database {
         }
       }
       
-      // 캐릭터 데이터 테이블
-      character_data: {
-        Row: {
-          id: string
-          user_id: string
-          parts: any
-          position: any
-          is_visible: boolean
-          image_url: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          parts?: any
-          position?: any
-          is_visible?: boolean
-          image_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          parts?: any
-          position?: any
-          is_visible?: boolean
-          image_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
     }
     
     // 뷰 타입 정의

@@ -9,7 +9,6 @@ interface GuestbookMessage {
   visitor: {
     id: string
     nickname: string
-    avatar_config: any
   }
 }
 
@@ -59,13 +58,11 @@ export default function GuestbookPreview({
         setTotalMessages(data.total || 0)
         setTotalPages(Math.ceil((data.total || 0) / messagesPerPage))
       } else {
-        console.error('❌ 방명록 미리보기 불러오기 실패:', data.error)
         setRecentMessages([])
         setTotalMessages(0)
         setTotalPages(1)
       }
     } catch (error) {
-      console.error('❌ 방명록 미리보기 API 오류:', error)
       setRecentMessages([])
       setTotalMessages(0)
       setTotalPages(1)
@@ -110,11 +107,9 @@ export default function GuestbookPreview({
         setCurrentPage(1)
         fetchRecentMessages(1)
       } else {
-        console.error('❌ 방명록 작성 실패:', data.error)
         alert(data.error || '방명록 작성에 실패했습니다.')
       }
     } catch (error) {
-      console.error('❌ 방명록 작성 API 오류:', error)
       alert('방명록 작성 중 오류가 발생했습니다.')
     } finally {
       setIsSubmitting(false)
@@ -155,11 +150,9 @@ export default function GuestbookPreview({
 
         fetchRecentMessages() // 목록 새로고침
       } else {
-        console.error('❌ 방명록 삭제 실패:', data.error)
         alert(data.error || '방명록 삭제에 실패했습니다.')
       }
     } catch (error) {
-      console.error('❌ 방명록 삭제 API 오류:', error)
       alert('방명록 삭제 중 오류가 발생했습니다.')
     }
   }
@@ -206,12 +199,9 @@ export default function GuestbookPreview({
         handleCancelEdit()
         fetchRecentMessages() // 목록 새로고침
       } else {
-        console.error('❌ 방명록 수정 실패:', response.status, response.statusText)
-        console.error('❌ 응답 데이터:', data)
         alert(data.error || '방명록 수정에 실패했습니다.')
       }
     } catch (error) {
-      console.error('❌ 방명록 수정 API 오류:', error)
       alert('방명록 수정 중 오류가 발생했습니다.')
     }
   }
@@ -221,7 +211,6 @@ export default function GuestbookPreview({
     if (onShowUserProfile) {
       onShowUserProfile(visitorId, nickname)
     } else {
-      console.error('❌ onShowUserProfile 함수가 없습니다!')
     }
   }
 

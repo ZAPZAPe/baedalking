@@ -37,7 +37,6 @@ export async function PUT(
         .single()
 
       if (error) {
-        console.error('친구 요청 수락 오류:', error)
         return NextResponse.json(
           { error: '친구 요청 수락에 실패했습니다.' },
           { status: 500 }
@@ -56,7 +55,6 @@ export async function PUT(
         .eq('id', friendshipId)
 
       if (error) {
-        console.error('친구 요청 거절 오류:', error)
         return NextResponse.json(
           { error: '친구 요청 거절에 실패했습니다.' },
           { status: 500 }
@@ -69,7 +67,6 @@ export async function PUT(
     }
 
   } catch (error) {
-    console.error('친구 요청 처리 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -98,7 +95,6 @@ export async function DELETE(
       .eq('id', friendshipId)
 
     if (error) {
-      console.error('친구 삭제 오류:', error)
       return NextResponse.json(
         { error: '친구 삭제에 실패했습니다.' },
         { status: 500 }
@@ -110,7 +106,6 @@ export async function DELETE(
     })
 
   } catch (error) {
-    console.error('친구 삭제 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

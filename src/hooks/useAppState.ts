@@ -29,7 +29,10 @@ export type ModalType =
   | 'guestbook'
   | 'deleteAccount'
   | 'error'
-  | 'shopItemDetail'
+  | 'interiorShop'
+  | 'characterShop'
+  | 'gameShop'
+  | 'inventory'
 
 export interface AppState {
   // 사용자 정보
@@ -57,6 +60,8 @@ export interface AppState {
   setShowVehicleItemPanel: (show: boolean) => void
   showBackgroundItemPanel: boolean
   setShowBackgroundItemPanel: (show: boolean) => void
+  showInventoryUI: boolean
+  setShowInventoryUI: (show: boolean) => void
   currentCharacterItem: string
   setCurrentCharacterItem: (item: string) => void
   currentVehicle: string
@@ -66,9 +71,6 @@ export interface AppState {
   activeTab: string
   setActiveTab: (tab: string) => void
   
-  // 상점 아이템 모달 상태
-  selectedShopItem: any | null
-  setSelectedShopItem: (item: any | null) => void
   
   // 수입 입력 상태
   incomeCount: string
@@ -155,13 +157,11 @@ export function useAppState(): AppState {
   const [showCharacterItemPanel, setShowCharacterItemPanel] = useState(false)
   const [showVehicleItemPanel, setShowVehicleItemPanel] = useState(false)
   const [showBackgroundItemPanel, setShowBackgroundItemPanel] = useState(false)
+  const [showInventoryUI, setShowInventoryUI] = useState(false)
   const [currentCharacterItem, setCurrentCharacterItem] = useState('basic')
   const [currentVehicle, setCurrentVehicle] = useState('scooter')
   const [currentBackground, setCurrentBackground] = useState('background')
   const [activeTab, setActiveTab] = useState('home')
-  
-  // 상점 아이템 모달 상태
-  const [selectedShopItem, setSelectedShopItem] = useState<any | null>(null)
   
   // 수입 입력 상태
   const [incomeCount, setIncomeCount] = useState('')
@@ -212,7 +212,6 @@ export function useAppState(): AppState {
         .order('created_at', { ascending: false })
       
       if (error) {
-        console.error('수입 기록 로드 오류:', error)
         return
       }
       
@@ -231,12 +230,8 @@ export function useAppState(): AppState {
       }))
       
       setIncomeRecords(formattedRecords)
-      console.log('✅ 수입 기록 로드 완료:', formattedRecords.length, '건')
-      console.log('📊 로드된 수입 기록:', formattedRecords)
-      console.log('💰 총 수입:', formattedRecords.reduce((sum, r) => sum + r.total_amount, 0))
       
     } catch (error) {
-      console.error('❌ 수입 기록 로드 실패:', error)
       // localStorage 캐싱 제거 - Supabase만 사용
     }
   }
@@ -244,7 +239,6 @@ export function useAppState(): AppState {
   // 🔥 핵심 변경: Supabase 함수를 사용한 수입 기록 저장
   const saveIncomeRecord = async (record: Omit<IncomeRecord, 'id' | 'created_at' | 'total_amount'>): Promise<boolean> => {
     if (!user?.id) {
-      console.error('사용자 정보가 없습니다.')
       return false
     }
     
@@ -260,12 +254,10 @@ export function useAppState(): AppState {
       })
       
       if (error) {
-        console.error('수입 기록 저장 오류:', error)
         return false
       }
       
       if (data?.success) {
-        console.log('✅ 수입 기록 저장 완료:', data)
         
         // 수입 기록 다시 로드
         await loadIncomeRecords()
@@ -278,12 +270,10 @@ export function useAppState(): AppState {
         
         return true
       } else {
-        console.error('수입 기록 저장 실패:', data?.error)
         return false
       }
       
     } catch (error) {
-      console.error('수입 기록 저장 실패:', error)
       return false
     }
   }
@@ -291,7 +281,6 @@ export function useAppState(): AppState {
   // 🗑️ 수입 기록 삭제
   const deleteIncomeRecord = async (recordId: string): Promise<boolean> => {
     if (!user?.id) {
-      console.error('사용자 정보가 없습니다.')
       return false
     }
     
@@ -303,11 +292,9 @@ export function useAppState(): AppState {
         .eq('user_id', user.id) // 보안: 본인 데이터만 삭제 가능
       
       if (error) {
-        console.error('수입 기록 삭제 오류:', error)
         return false
       }
       
-      console.log('✅ 수입 기록 삭제 완료:', recordId)
       
       // 수입 기록 다시 로드
       await loadIncomeRecords()
@@ -315,7 +302,6 @@ export function useAppState(): AppState {
       return true
       
     } catch (error) {
-      console.error('수입 기록 삭제 실패:', error)
       return false
     }
   }
@@ -337,7 +323,6 @@ export function useAppState(): AppState {
       // 사용자별 설정 로드
       if (user.platforms && Array.isArray(user.platforms)) {
         setPlatforms(user.platforms)
-        console.log('✅ 사용자 플랫폼 설정 로드:', user.platforms)
       }
       if (user.goals) {
         setDailyGoal(user.goals.daily)
@@ -348,7 +333,6 @@ export function useAppState(): AppState {
       // Garage intro 로드
       if (user.garage_config?.intro) {
         setGarageIntro(user.garage_config.intro)
-        console.log('✅ 사용자 Garage intro 로드:', user.garage_config.intro)
       }
     }
   }, [user?.id])
@@ -358,20 +342,24 @@ export function useAppState(): AppState {
     if (!user?.id) return
     
     try {
-      const { data, error } = await supabase.rpc('get_user_boxes', {
-        p_user_id: user.id
-      })
+      // 직접 SQL 쿼리로 박스 잔액 계산
+      const { data, error } = await supabase
+        .from('box_transactions')
+        .select('amount, type')
+        .eq('user_id', user.id)
       
       if (error) {
-        console.error('박스 잔액 로드 오류:', error)
         return
       }
       
-      setTotalBoxes(data || 0)
-      console.log('✅ 박스 잔액 로드 완료:', data)
+      // 박스 잔액 계산 (earn은 +, spend는 -)
+      const totalBoxes = data?.reduce((sum, transaction) => {
+        return sum + (transaction.type === 'earn' ? transaction.amount : -transaction.amount)
+      }, 0) || 0
+      
+      setTotalBoxes(Math.max(0, totalBoxes)) // 음수 방지
       
     } catch (error) {
-      console.error('박스 잔액 로드 실패:', error)
     }
   }
 
@@ -396,10 +384,7 @@ export function useAppState(): AppState {
         .eq('id', user.id)
 
       if (error) {
-        console.error('플랫폼 설정 저장 실패:', error)
       } else {
-        console.log('✅ 플랫폼 설정이 서버에 저장되었습니다!')
-        
         // 사용자 데이터도 즉시 업데이트
         setUser(prev => prev ? {
           ...prev,
@@ -408,7 +393,6 @@ export function useAppState(): AppState {
         } : null)
       }
     } catch (error) {
-      console.error('플랫폼 설정 저장 중 오류:', error)
     }
   }
 
@@ -456,10 +440,7 @@ export function useAppState(): AppState {
         .eq('id', user.id)
 
       if (error) {
-        console.error('플랫폼 추가 저장 실패:', error)
       } else {
-        console.log('✅ 플랫폼이 서버에 저장되었습니다!')
-        
         // 사용자 데이터도 즉시 업데이트
         setUser(prev => prev ? {
           ...prev,
@@ -468,7 +449,6 @@ export function useAppState(): AppState {
         } : null)
       }
     } catch (error) {
-      console.error('플랫폼 추가 저장 중 오류:', error)
     }
   }
 
@@ -489,10 +469,7 @@ export function useAppState(): AppState {
         .eq('id', user.id)
 
       if (error) {
-        console.error('플랫폼 삭제 저장 실패:', error)
       } else {
-        console.log('✅ 플랫폼 삭제가 서버에 저장되었습니다!')
-        
         // 사용자 데이터도 즉시 업데이트
         setUser(prev => prev ? {
           ...prev,
@@ -501,14 +478,12 @@ export function useAppState(): AppState {
         } : null)
       }
     } catch (error) {
-      console.error('플랫폼 삭제 저장 중 오류:', error)
     }
   }
 
   // 목표 설정
   const updateGoals = async (goals: { daily: number; weekly: number; monthly: number }) => {
     if (!user?.id) {
-      console.error('사용자 ID가 없어서 목표를 저장할 수 없습니다.')
       return false
     }
 
@@ -523,7 +498,6 @@ export function useAppState(): AppState {
         .eq('id', user.id)
 
       if (error) {
-        console.error('목표 저장 실패:', error)
         return false
       }
 
@@ -538,10 +512,8 @@ export function useAppState(): AppState {
         goals: goals
       } : null)
 
-      console.log('✅ 목표 설정이 서버에 저장되었습니다!')
       return true
     } catch (error) {
-      console.error('목표 저장 중 오류:', error)
       return false
     }
   }
@@ -573,15 +545,12 @@ export function useAppState(): AppState {
         })
       
       if (error) {
-        console.error('박스 추가 오류:', error)
         return
       }
       
       setTotalBoxes(prev => prev + amount)
-      console.log(`📦 +${amount} 박스 획득! ${reason}`)
       
     } catch (error) {
-      console.error('박스 추가 실패:', error)
     }
   }
 
@@ -595,12 +564,10 @@ export function useAppState(): AppState {
       })
       
       if (boxesError) {
-        console.error('박스 잔액 확인 오류:', boxesError)
         return false
       }
       
       if (currentBoxes < amount) {
-        console.log(`📦 박스가 부족합니다! (필요: ${amount}, 보유: ${currentBoxes})`)
         return false
       }
       
@@ -615,16 +582,13 @@ export function useAppState(): AppState {
         })
       
       if (error) {
-        console.error('박스 사용 오류:', error)
         return false
       }
       
       setTotalBoxes(prev => prev - amount)
-      console.log(`📦 -${amount} 박스 사용! ${item}`)
       return true
       
     } catch (error) {
-      console.error('박스 사용 실패:', error)
       return false
     }
   }
@@ -633,8 +597,6 @@ export function useAppState(): AppState {
 
   // 🆕 중앙화된 모달 관리 함수들
   const openModal = (modal: ModalType) => {
-    console.log(`🔄 openModal 호출됨: ${activeModal} → ${modal}`)
-    
     // 같은 모달을 다시 열려고 할 때도 강제로 업데이트
     setActiveModal(modal)
     
@@ -646,8 +608,6 @@ export function useAppState(): AppState {
     setShowCharacterItemPanel(modal === 'characterItem')
     setShowVehicleItemPanel(modal === 'vehicleItem')
     setShowBackgroundItemPanel(modal === 'backgroundItem')
-    
-    console.log(`🔄 모달 전환 완료: ${activeModal} → ${modal}`)
   }
 
   const closeModal = () => {
@@ -661,8 +621,6 @@ export function useAppState(): AppState {
     setShowCharacterItemPanel(false)
     setShowVehicleItemPanel(false)
     setShowBackgroundItemPanel(false)
-    
-    console.log('❌ 모든 모달 닫음')
   }
 
   // 기존 setter들을 openModal과 연동 (하위 호환성)
@@ -744,13 +702,11 @@ export function useAppState(): AppState {
     showCharacterItemPanel, setShowCharacterItemPanel: enhancedSetShowCharacterItemPanel,
     showVehicleItemPanel, setShowVehicleItemPanel: enhancedSetShowVehicleItemPanel,
     showBackgroundItemPanel, setShowBackgroundItemPanel: enhancedSetShowBackgroundItemPanel,
+    showInventoryUI, setShowInventoryUI,
     currentCharacterItem, setCurrentCharacterItem,
     currentVehicle, setCurrentVehicle,
     currentBackground, setCurrentBackground,
     activeTab, setActiveTab,
-    
-    // 상점 아이템 모달 상태
-    selectedShopItem, setSelectedShopItem,
     
     // 수입 입력
     incomeCount, setIncomeCount,

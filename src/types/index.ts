@@ -10,24 +10,23 @@ export interface User {
   id: string
   email: string
   nickname: string
-  avatar_url?: string
   kakao_id?: string
   region?: string
-  avatar_config?: Record<string, any>
-  garage_config?: Record<string, any>
+  garage_intro?: string
   created_at?: string
   updated_at?: string
-  last_login?: string | null
   is_income_private?: boolean
-  platforms?: Platform[]
   goals?: {
     daily: number
     weekly: number
     monthly: number
   }
   total_visitors?: number
-  daily_visitors?: number
   status_message?: string
+  equipped_character_id?: string | null
+  equipped_emotion_id?: string | null
+  platforms?: Platform[]
+  garage_config?: any
 }
 
 export interface UserProfile {
@@ -39,7 +38,6 @@ export interface UserProfile {
   platforms: string[]
   rank?: number
   grade?: string
-  avatar_config?: Record<string, any>
   status_message?: string
 }
 
@@ -127,7 +125,6 @@ export interface Friend {
   friendId: string
   nickname: string
   region: string
-  avatar_config: any
   status: 'pending' | 'accepted' | 'rejected'
   created_at: string
   isRequester: boolean
@@ -137,119 +134,20 @@ export interface SearchUser {
   id: string
   nickname: string
   region: string
-  avatar_config: any
   friendStatus: 'none' | 'pending_sent' | 'pending_received' | 'accepted'
   memberSince: string
 }
 
 // ============================================================================
-// 🛍️ 통합 상점 시스템 타입
+// 🏠 방명록 및 미니홈피 관련 타입
 // ============================================================================
 
-export interface ShopItem {
-  id: string
-  name: string
-  description: string
-  main_category: 'character' | 'garage'
-  sub_category: string
-  image_url: string
-  price: number
-  anchor: { x: number; y: number }
-  grid_data: {
-    width: number
-    height: number
-    depth: number
-  }
-  pixel_data?: any
-  is_admin_only: boolean
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  created_by?: string
-  userQuantity?: number // 사용자 보유 수량
-}
-
-export interface UserInventoryItem {
-  id: string
-  userId: string
-  itemId: string
-  quantity: number
-  purchasedAt: string
-  item?: ShopItem
-}
-
-export interface PlacedItem {
-  id: string
-  userId: string
-  itemId: string
-  position_x: number
-  position_y: number
-  position_z: number
-  placed_at: string
-  updated_at: string
-  item?: ShopItem
-  // 편의를 위한 추가 속성
-  gridPosition?: Position3D
-}
-
 // ============================================================================
-// 🎨 캐릭터 시스템 타입
+// 🎨 간단한 캐릭터 시스템
 // ============================================================================
 
-export interface CharacterParts {
-  hair: string
-  top: string
-  bottom: string
-  emotion: string
-}
+// 기본 감정표현 시스템 제거됨 - 모든 감정표현은 상점에서 구매하여 사용
 
-export interface CharacterData {
-  id?: string
-  userId: string
-  parts: CharacterParts
-  position: { x: number; y: number }
-  isVisible?: boolean
-  imageUrl?: string
-  equippedItems?: Array<{
-    id: string
-    quantity: number
-    purchased_at: string
-    item: {
-      id: string
-      name: string
-      description: string
-      main_category: string
-      sub_category: string
-      image_url: string
-      price: number
-    }
-  }>
-  created_at?: string
-  updated_at?: string
-}
-
-// ============================================================================
-// 🏠 차고 및 꾸미기 시스템 타입
-// ============================================================================
-
-export interface FloorTileConfig {
-  type: 'default' | 'custom'
-  imageUrl?: string
-  pattern: 'checkerboard' | 'solid' | 'custom'
-  lightColor?: number
-  darkColor?: number
-  opacity?: number
-  scale?: number
-}
-
-export interface GridConfig {
-  rows: number
-  cols: number
-  tileWidth: number
-  tileHeight: number
-  maxHeight: number
-  floorTile?: FloorTileConfig
-}
 
 // ============================================================================
 // 🏠 방명록 및 미니홈피 관련 타입
@@ -263,7 +161,6 @@ export interface GuestbookMessage {
   visitor: {
     id: string
     nickname: string
-    avatar_config: any
   }
 }
 
@@ -358,11 +255,6 @@ export interface AppState {
   openModal: (modalName: string) => void
   closeModal: () => void
   
-  // 기본 상태들
-  currentEmotion: string
-  setCurrentEmotion: (emotion: string) => void
-  speechText: string
-  setSpeechText: (text: string) => void
 
   // 패널 상태들
   showCustomizePanel: boolean
@@ -443,9 +335,6 @@ export interface AppState {
   errorMessage: string
   showErrorModal: boolean
   
-  // 상점 관련 상태
-  selectedShopItem: ShopItem | null
-  setSelectedShopItem: (item: ShopItem | null) => void
 }
 
 // ============================================================================
@@ -461,7 +350,6 @@ export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
 export type InputVariant = 'default' | 'success' | 'warning' | 'danger'
 export type CardVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
-export type DecorationMode = 'view' | 'edit' | 'shop' | 'inventory'
 
 // ============================================================================
 // 🎯 모달 관련 타입들
@@ -512,7 +400,6 @@ export interface FriendsTabProps {
 
 export interface ProfileTabProps {
   userNickname: string
-  currentEmotion: string
   userLocation: string
   emotions: Emotion[]
   isIncomePrivate: boolean
@@ -525,14 +412,15 @@ export interface ProfileTabProps {
 
 export interface HomeTabProps {
   currentBackground: string
-  currentEmotion: string
-  speechText: string
   currentVehicle: string
   garageIntro: string
   todayVisitors: number
   currentWeather: { temp: number; condition: string }
+  getWeatherIcon: (condition: string) => string
   incomeRecords: IncomeRecord[]
+  totalIncome: number
   isClient: boolean
+  userId: string
   setShowBackgroundItemPanel: (show: boolean) => void
   setShowVehicleItemPanel: (show: boolean) => void
   setShowCharacterItemPanel: (show: boolean) => void
@@ -543,7 +431,6 @@ export interface HomeTabProps {
 export interface HeaderProps {
   userNickname: string
   totalBoxes: number
-  currentEmotion: string
   emotions: Emotion[]
   onShowHeaderCharacterPanel: () => void
 }
@@ -553,23 +440,6 @@ export interface BottomNavigationProps {
   onTabChange: (tab: string) => void
 }
 
-// ============================================================================
-// 🎮 게임 시스템 관련 타입
-// ============================================================================
-
-export interface CharacterItem {
-  id: string
-  name: string
-  description: string
-  category: 'hair' | 'top' | 'bottom' | 'emotion' | 'accessory'
-  imageUrl: string
-  price: number
-  isActive: boolean
-  isAdminOnly: boolean
-  createdAt?: string
-  updatedAt?: string
-  userQuantity?: number
-}
 
 export interface ItemSelectionPanelsProps {
   // Character Item Panel
@@ -646,134 +516,6 @@ export interface PixelCardProps {
   hoverable?: boolean
 }
 
-// ============================================================================
-// 🏠 꾸미기 시스템 관련 타입 (Decoration System)
-// ============================================================================
-
-// 기본 좌표 타입
-export interface Position2D {
-  x: number
-  y: number
-}
-
-export interface Position3D extends Position2D {
-  z: number
-}
-
-// 3D 그리드 셀 타입
-export interface GridCell3D {
-  x: number
-  y: number
-  z: number
-  occupied: boolean
-}
-
-// 아이템 관련 타입
-export interface ItemAnchor {
-  x: number
-  y: number
-}
-
-export interface DecorationItem {
-  id: string
-  name: string
-  imageUrl: string
-  anchor: ItemAnchor
-  price?: number
-  description?: string
-  category?: string
-  isAdminOnly?: boolean
-  createdAt?: Date
-  // ShopItem과의 호환성을 위한 추가 속성들
-  main_category?: 'character' | 'garage'
-  sub_category?: string
-  image_url?: string
-  grid_data?: {
-    width: number
-    height: number
-    depth: number
-  }
-  pixel_data?: any
-  is_active?: boolean
-  created_at?: string
-  updated_at?: string
-  created_by?: string
-  userQuantity?: number
-  gridData?: {
-    cells: GridCell3D[]
-    width: number
-    height: number
-    depth: number
-    centerX: number
-    centerY: number
-    totalCells: number
-    imageOffsetX?: number
-    imageOffsetY?: number
-    pixelScale?: number
-  }
-}
-
-export interface InventoryItem {
-  id: string
-  itemId: string
-  quantity: number
-  purchasedAt?: Date
-  item?: DecorationItem
-}
-
-// 사용자 꾸미기 데이터 타입
-export interface UserGarageData {
-  userId: string
-  placedItems: PlacedItem[]
-  floorTileConfig: FloorTileConfig
-  lastUpdated?: Date
-}
-
-// 편집기 관련 타입
-export interface EditorState {
-  selectedTool: 'select' | 'place' | 'delete'
-  selectedItem: DecorationItem | null
-  hoveredGrid: Position3D | null
-  previewMode: boolean
-}
-
-// 렌더 상태 타입
-export interface RenderState {
-  currentMode: 'view' | 'edit' | 'shop' | 'inventory'
-  selectedItem: DecorationItem | null
-  hoveredGrid: Position3D | null
-  showGrid: boolean
-}
-
-// PixiJS 관련 타입
-export interface PixiContainers {
-  main: any // PIXI.Container
-  grid: any // PIXI.Container
-  items: any // PIXI.Container
-  character: any // PIXI.Container - 캐릭터 컨테이너
-  preview: any // PIXI.Container
-  ui: any // PIXI.Container
-}
-
-// 이벤트 타입
-export interface GridInteractionEvent {
-  gridPosition: Position3D
-  worldPosition: Position2D
-  item?: PlacedItem
-}
-
-export interface ItemInteractionEvent {
-  item: PlacedItem
-  action: 'select' | 'move' | 'delete'
-  gridPosition: Position3D
-}
-
-// 컴포넌트 Props 타입들
-export interface DecorationSpaceProps {
-  userId: string
-  isOwner: boolean
-  className?: string
-}
 
 // ============================================================================
 // 🎯 모달 관련 상세 타입들
@@ -808,10 +550,6 @@ export interface IncomeInputPanelProps {
 export interface CharacterEditPanelProps {
   showHeaderCharacterPanel: boolean
   setShowHeaderCharacterPanel: (show: boolean) => void
-  currentEmotion: string
-  setCurrentEmotion: (emotion: string) => void
-  speechText: string
-  setSpeechText: (text: string) => void
   garageIntro: string
   setGarageIntro: (intro: string) => void
 }
@@ -902,29 +640,6 @@ export interface DeleteAccountModalProps {
   onConfirm: () => void
 }
 
-export interface ShopItemDetailModalProps {
-  isOpen: boolean
-  onClose: () => void
-  item: ShopItem
-  userMoney: number
-  userInventory: UserInventoryItem[]
-  placedItems: PlacedItem[]
-  onPurchase: (itemId: string, quantity: number) => void
-}
-
-export interface CharacterItemInventoryModalProps {
-  isOpen: boolean
-  onClose: () => void
-  userId: string
-  onEquipItem: (itemId: string) => void
-}
-
-export interface CharacterItemShopModalProps {
-  isOpen: boolean
-  onClose: () => void
-  userId: string
-  onPurchaseItem: (itemId: string) => void
-}
 
 // ============================================================================
 // 🎨 에디터 시스템 타입 (관리자용)
@@ -957,12 +672,3 @@ export interface EditorItemData {
   footprints: LayerFootprint
 }
 
-export interface UserInventory {
-  userId: string
-  items: UserInventoryItem[]
-}
-
-export interface UserPlacements {
-  userId: string
-  placements: PlacedItem[]
-}

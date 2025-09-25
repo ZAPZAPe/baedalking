@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
         break
     }
 
-    console.log(`📅 랭킹 계산: ${period} 기간, 시작일: ${startDate} (KST)`)
 
     // 사용자별 수익 합계 계산 (수익 비공개 사용자 제외)
     const { data: earnings, error } = await supabase
@@ -44,7 +43,6 @@ export async function GET(request: NextRequest) {
           id,
           nickname,
           region,
-          avatar_config,
           is_income_private
         )
       `)
@@ -52,7 +50,6 @@ export async function GET(request: NextRequest) {
       .order('total_amount', { ascending: false })
 
     if (error) {
-      console.error('랭킹 조회 오류:', error)
       return NextResponse.json(
         { error: '랭킹을 불러오는데 실패했습니다.' },
         { status: 500 }
@@ -90,7 +87,6 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log(`📊 랭킹 계산: 총 ${earnings?.length || 0}건, 비공개 사용자 ${excludedPrivateUsers}명 제외, 최종 ${userIncomes.size}명`)
 
     // 랭킹 생성
     const rankings = Array.from(userIncomes.entries())
@@ -110,7 +106,6 @@ export async function GET(request: NextRequest) {
         user_id: item.user_id,
         nickname: item.user?.nickname || '알 수 없음',
         region: item.user?.region || '',
-        avatar_config: item.user?.avatar_config || {},
         income: item.income,
         count: item.count,
         platforms: item.platforms,
@@ -129,7 +124,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('랭킹 API 오류:', error)
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

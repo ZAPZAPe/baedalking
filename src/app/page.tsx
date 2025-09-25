@@ -30,7 +30,6 @@ export default function Home() {
       const profileSetupCompleted = localStorage.getItem('profileSetupCompleted')
       
       if (!isProfileComplete && !profileSetupCompleted) {
-        console.log('프로필 미완성, 설정 페이지로 이동:', { nickname: user.nickname, region: user.region })
         router.push('/auth/setup')
       }
     }

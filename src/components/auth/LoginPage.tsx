@@ -31,11 +31,6 @@ export default function LoginPage() {
       const redirectUri = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI
       
       if (!clientId || clientId === 'your_kakao_client_id_here' || !redirectUri) {
-        console.error('카카오 환경변수 누락:', { 
-          clientId: !!clientId, 
-          redirectUri: !!redirectUri,
-          env: process.env.NODE_ENV
-        })
         alert('카카오 로그인 설정이 필요합니다. 개발자 콘솔에서 앱을 등록하고 JavaScript 키를 설정해주세요.')
         setIsLoading(false)
         return
@@ -43,12 +38,9 @@ export default function LoginPage() {
       
       const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`
       
-      console.log('카카오 로그인 시도:', { clientId, redirectUri })
-      console.log('카카오 로그인 URL:', kakaoAuthUrl)
       
       window.location.href = kakaoAuthUrl
     } catch (error) {
-      console.error('카카오 로그인 오류:', error)
       alert('로그인 중 오류가 발생했습니다. 다시 시도해주세요.')
       setIsLoading(false)
     }
