@@ -454,9 +454,9 @@ export default function CharacterShopAdminPage() {
                                       className="w-8 h-8 object-contain bg-white/5 rounded border border-white/20 mx-auto"
                                     />
                                   )}
-                                  {editingItem && 'animation_images' in editingItem && editingItem.animation_images[key] && !previewAnimationUrls[key] && (
+                                  {editingItem && 'animation_images' in editingItem && (editingItem.animation_images as Character['animation_images'])[key as keyof Character['animation_images']] && !previewAnimationUrls[key] && (
                                     <img
-                                      src={editingItem.animation_images[key]}
+                                      src={(editingItem.animation_images as Character['animation_images'])[key as keyof Character['animation_images']]}
                                       alt={`${direction} ${frame}`}
                                       className="w-8 h-8 object-contain bg-white/5 rounded border border-white/20 mx-auto"
                                     />

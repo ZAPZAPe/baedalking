@@ -94,6 +94,26 @@ export class MiniGameEngine {
     // 생성자는 비어있음
   }
 
+  // 외부에서 새로운 게임 오브젝트를 등록하기 위한 간단한 퍼블릭 API
+  // 현재는 엔진 내부 렌더 파이프라인과 최소한으로 연동하여 컨테이너만 생성합니다.
+  public addObject(object: GameObject): void {
+    // 상태 저장
+    this.gameObjects.set(object.id, object)
+
+    // 스프라이트/컨테이너 생성 및 등록 (간단한 placeholder 컨테이너)
+    if (this.objectContainer && !this.sprites.has(object.id)) {
+      const container = new PIXI.Container()
+      container.name = object.id
+      container.eventMode = 'static'
+      container.cursor = object.isInteractable ? 'pointer' : 'default'
+      // 초기 위치 설정 (아이소 좌표 변환은 추후 렌더 파이프라인에서 처리)
+      container.x = 0
+      container.y = 0
+      this.objectContainer.addChild(container)
+      this.sprites.set(object.id, container)
+    }
+  }
+
   public async initialize(container: HTMLElement, width: number, height: number, userId?: string) {
     // 사용자 ID 저장 (UI 매니저에서 사용)
     (this as any)._userId = userId
