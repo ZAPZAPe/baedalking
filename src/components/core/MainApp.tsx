@@ -352,8 +352,7 @@ export default function MainApp({ user }: MainAppProps) {
               )}
 
               {/* RANKING 탭 */}
-              {console.log('🔍 현재 활성 탭:', activeTab, '랭킹 탭 조건:', activeTab === 'ranking', '전체 탭들:', { activeTab, todayIncome, dailyGoal })}
-              {activeTab === 'ranking' && console.log('🏆 랭킹 탭 조건 통과! RankingTab 렌더링 시작')}
+              
               {activeTab === 'ranking' && (
                 <RankingTab 
                   isVerified={true}

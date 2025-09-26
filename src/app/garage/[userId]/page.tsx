@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
 import GuestbookPreview from '@/components/garage/GuestbookPreview'
-import { UserProfileModal } from '@/components/features/friends'
+import ProfileModal from '@/components/features/shared/ProfileModal'
 import { UserProfile } from '@/types'
 import { useAppState } from '@/hooks/useAppState'
 import KakaoAd from '@/components/ui/KakaoAd'
@@ -362,7 +362,7 @@ export default function MinihompyPage() {
 
       {/* 사용자 프로필 모달 */}
       {showUserProfile && selectedUserProfile && (
-        <UserProfileModal
+        <ProfileModal
           isOpen={showUserProfile}
           user={selectedUserProfile}
           platforms={platforms}
@@ -440,6 +440,11 @@ export default function MinihompyPage() {
         selectedRecords={[]}
         setSelectedRecords={() => {}}
         onEditIncomeRecord={() => {}}
+        // 랭킹/프로필 관련 기본값 전달 (방문자 페이지 호환)
+        selectedGrade={null}
+        userRankInfo={{ rank: null, total: 0 }}
+        topRankers={[]}
+        selectedTopRanker={null}
       />
     </div>
   )
