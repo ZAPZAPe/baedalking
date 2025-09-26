@@ -289,48 +289,36 @@ export default function DailyView({
           </div>
 
           {/* 픽셀 장식 요소들 - 네온그린 고정 */}
-          <div className="absolute top-1 left-1 w-2 h-2 bg-[#00ff88] transition-all duration-300" style={{borderRadius: '1px'}}></div>
-          <div className="absolute top-1 right-1 w-2 h-2 bg-[#00ff88] transition-all duration-300" style={{borderRadius: '1px'}}></div>
-          <div className="absolute bottom-1 left-1 w-2 h-2 bg-[#00ff88] transition-all duration-300" style={{borderRadius: '1px'}}></div>
-          <div className="absolute bottom-1 right-1 w-2 h-2 bg-[#00ff88] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          <div className="absolute top-1 left-1 w-1 h-1 bg-[#00ff88] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          <div className="absolute top-1 right-1 w-1 h-1 bg-[#00ff88] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00ff88] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00ff88] transition-all duration-300" style={{borderRadius: '1px'}}></div>
         </div>
 
         {/* 픽셀 통계 카드들 */}
         <div className="grid grid-cols-3 gap-2">
           {/* 건수 */}
-          <div className="bg-[#1a202c] border-2 border-[#00d4ff]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-1">건수</p>
             <p className="text-white font-bold text-sm font-mono">
               {todayCount}건
             </p>
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
           </div>
 
           {/* 배달금액 */}
-          <div className="bg-[#1a202c] border-2 border-[#00ff88]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-1">배달금액</p>
             <p className="text-white font-bold text-sm font-mono">
               ₩{(selectedRecords.reduce((sum, record) => sum + (record.amount || 0), 0) || 0).toLocaleString()}
             </p>
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
           </div>
 
           {/* 미션비 */}
-          <div className="bg-[#1a202c] border-2 border-[#9c88ff]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-1">미션비</p>
             <p className="text-white font-bold text-sm font-mono">
               ₩{(selectedRecords.reduce((sum, record) => sum + (record.missionAmount || 0), 0) || 0).toLocaleString()}
             </p>
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
           </div>
         </div>
       </div>
@@ -386,7 +374,7 @@ export default function DailyView({
             id: key,
             name: key === 'baemin' ? '배민' : key === 'coupang' ? '쿠팡' : key,
             isActive: value as boolean,
-            color: key === 'baemin' ? '#00C851' : key === 'coupang' ? '#E4002B' : '#9c88ff'
+            color: key === 'baemin' ? '#0CEFD3' : key === 'coupang' ? '#e84821' : '#9c88ff'
           }))
           
           // 활성화된 플랫폼만 필터링
@@ -402,14 +390,14 @@ export default function DailyView({
                       return { 
                         name: '배민',
                         icon: '/baemin-logo.svg', 
-                        color: '#00C851',
+                        color: '#0CEFD3',
                         showLogo: true 
                       }
                     } else if (platformId === 'coupang') {
                       return { 
                         name: '쿠팡',
                         icon: '/coupang-logo.svg', 
-                        color: '#E4002B',
+                        color: '#e84821',
                         showLogo: true 
                       }
                     } else {
@@ -477,11 +465,10 @@ export default function DailyView({
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="px-3 py-1 rounded-lg border font-bold text-sm font-mono"
+                            <div className="px-3 py-1 rounded-lg border font-bold text-sm font-mono text-white"
                                  style={{
                                    backgroundColor: `${config.color}20`,
                                    borderColor: `${config.color}60`,
-                                   color: config.color
                                  }}>
                               ₩{((record.amount || 0) + (record.missionAmount || 0)).toLocaleString()}
                             </div>
@@ -507,8 +494,7 @@ export default function DailyView({
                           <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                                style={{borderColor: `${config.color}30`}}>
                             <div className="text-white text-xs font-mono font-bold mb-0.5">건수</div>
-                            <div className="text-sm font-bold font-mono"
-                                 style={{color: config.color}}>
+                            <div className="text-sm font-bold font-mono text-white">
                               {record.count}건
                             </div>
                           </div>
@@ -526,8 +512,7 @@ export default function DailyView({
                           <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                                style={{borderColor: `${config.color}30`}}>
                             <div className="text-white text-xs font-mono font-bold mb-0.5">미션비</div>
-                            <div className="text-sm font-bold font-mono"
-                                 style={{color: config.color}}>
+                            <div className="text-sm font-bold font-mono text-white">
                               ₩{(record.missionAmount || 0).toLocaleString()}
                             </div>
                           </div>

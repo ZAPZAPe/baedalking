@@ -71,7 +71,7 @@ export default function IncomeDetailModal({
             <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                  style={{borderColor: '#9c88ff30', borderRadius: '4px'}}>
               <div className="text-white text-xs font-mono font-bold mb-1">건수</div>
-              <div className="text-xs font-bold font-mono text-[#9c88ff]">
+              <div className="text-xs font-bold font-mono text-white">
                 {dayCount}건
               </div>
             </div>
@@ -80,7 +80,7 @@ export default function IncomeDetailModal({
             <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                  style={{borderColor: '#00ff8830', borderRadius: '4px'}}>
               <div className="text-white text-xs font-mono font-bold mb-1">배달비</div>
-              <div className="text-xs font-bold font-mono text-[#00ff88]">
+              <div className="text-xs font-bold font-mono text-white">
                 ₩{dayDelivery.toLocaleString()}
               </div>
             </div>
@@ -89,7 +89,7 @@ export default function IncomeDetailModal({
             <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                  style={{borderColor: '#ffd93d30', borderRadius: '4px'}}>
               <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
-              <div className="text-xs font-bold font-mono text-[#ffd93d]">
+              <div className="text-xs font-bold font-mono text-white">
                 ₩{dayMission.toLocaleString()}
               </div>
             </div>
@@ -104,8 +104,13 @@ export default function IncomeDetailModal({
             {dayRecords.length > 0 ? (
               dayRecords.map((record, index) => {
                 const platform = platforms.find(p => p.id === record.platform)
-                const platformName = platform?.name || record.platform
-                const platformColor = platform?.color || '#9c88ff'
+                const platformId = platform?.id || record.platform
+                const platformName = platformId === 'baemin' ? '배민' : platformId === 'coupang' ? '쿠팡' : (platform?.name || record.platform)
+                const platformColor = platformId === 'baemin' 
+                  ? '#0CEFD3' 
+                  : platformId === 'coupang' 
+                    ? '#e84821' 
+                    : '#9c88ff'
                 
                 return (
                   <div 
@@ -117,27 +122,34 @@ export default function IncomeDetailModal({
                       <div className="flex items-center gap-2">
                         {/* 플랫폼 아이콘/로고 */}
                         <div className="flex items-center gap-2">
-                          {platform?.id === 'baemin' ? (
-                            <img 
-                              src="/baemin-logo.svg" 
-                              alt="배민" 
-                              className="w-5 h-5 object-contain"
-                            />
-                          ) : platform?.id === 'coupang' ? (
-                            <img 
-                              src="/coupang-logo.svg" 
-                              alt="쿠팡" 
-                              className="w-5 h-5 object-contain"
-                            />
-                          ) : (
-                            <div 
-                              className="w-5 h-5 rounded-sm border-2"
-                              style={{
-                                backgroundColor: platformColor,
-                                borderColor: platformColor
-                              }}
-                            />
-                          )}
+                          <div 
+                            className="w-8 h-8 rounded-lg flex items-center justify-center border-2 overflow-hidden"
+                            style={{
+                              backgroundColor: `${platformColor}20`,
+                              borderColor: `${platformColor}60`
+                            }}
+                          >
+                            {platform?.id === 'baemin' ? (
+                              <img 
+                                src="/baemin-logo.svg" 
+                                alt="배민" 
+                                className="w-5 h-5 object-contain"
+                              />
+                            ) : platform?.id === 'coupang' ? (
+                              <img 
+                                src="/coupang-logo.svg" 
+                                alt="쿠팡" 
+                                className="w-5 h-5 object-contain"
+                              />
+                            ) : (
+                              <div 
+                                className="w-4 h-4 rounded-sm"
+                                style={{
+                                  backgroundColor: platformColor
+                                }}
+                              />
+                            )}
+                          </div>
                           <div 
                             className={`px-2 py-1 rounded text-xs font-mono font-bold`}
                             style={{
@@ -151,7 +163,13 @@ export default function IncomeDetailModal({
                           </div>
                         </div>
                       </div>
-                      <div className="text-white text-sm font-bold font-mono">
+                      <div 
+                        className="px-3 py-1 rounded-lg border font-bold text-sm font-mono text-white"
+                        style={{
+                          backgroundColor: `${platformColor}20`,
+                          borderColor: `${platformColor}60`
+                        }}
+                      >
                         ₩{((record.amount || 0) + (record.missionAmount || 0)).toLocaleString()}
                       </div>
                     </div>
@@ -161,8 +179,7 @@ export default function IncomeDetailModal({
                       <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                            style={{borderColor: `${platformColor}30`}}>
                         <div className="text-white text-xs font-mono font-bold mb-1">건수</div>
-                        <div className="text-xs font-bold font-mono"
-                             style={{color: platformColor}}>
+                        <div className="text-xs font-bold font-mono text-white">
                           {record.count}건
                         </div>
                       </div>
@@ -180,8 +197,7 @@ export default function IncomeDetailModal({
                       <div className="bg-[#1a202c]/50 p-2 rounded-lg text-center border"
                            style={{borderColor: `${platformColor}30`}}>
                         <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
-                        <div className="text-xs font-bold font-mono"
-                             style={{color: platformColor}}>
+                        <div className="text-xs font-bold font-mono text-white">
                           ₩{(record.missionAmount || 0).toLocaleString()}
                         </div>
                       </div>
@@ -206,16 +222,34 @@ export default function IncomeDetailModal({
             variant="secondary"
             fullWidth
             onClick={() => onEdit(selectedDate, dayRecords)}
+            className="relative"
           >
-            EDIT
+            <span className="inline-flex items-center justify-center gap-1.5 sm:gap-2">
+              <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#00d4ff] border border-white" style={{borderRadius: '1px'}}></span>
+              <span>EDIT</span>
+              <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#00d4ff] border border-white" style={{borderRadius: '1px'}}></span>
+            </span>
+            <div className="absolute top-1 left-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
+            <div className="absolute top-1 right-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
+            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
+            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00d4ff]" style={{borderRadius: '1px'}}></div>
           </PixelButton>
         )}
         <PixelButton
           variant="primary"
           fullWidth
           onClick={onClose}
+          className="relative"
         >
-          CLOSE
+          <span className="inline-flex items-center justify-center gap-1.5 sm:gap-2">
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#ffd93d] border border-white" style={{borderRadius: '1px'}}></span>
+            <span>CLOSE</span>
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#ffd93d] border border-white" style={{borderRadius: '1px'}}></span>
+          </span>
+          <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+          <div className="absolute top-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+          <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
+          <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ffd93d]" style={{borderRadius: '1px'}}></div>
         </PixelButton>
       </div>
       </div>

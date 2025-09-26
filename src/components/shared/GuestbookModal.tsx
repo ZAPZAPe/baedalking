@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAppState } from '@/hooks/useAppState'
-import { UserProfileModal } from '@/components/features/friends'
+import ProfileModal from '@/components/features/shared/ProfileModal'
 
 interface GuestbookMessage {
   id: string
@@ -147,7 +147,7 @@ export default function GuestbookModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-[#1a4a2e]/95 to-[#1a1a2e]/95 backdrop-blur-lg rounded-2xl border-2 border-[#00ff88]/30 shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+      <div className="bg-gradient-to-br from-[#1a4a2e]/95 to-[#1a1a2e]/95 backdrop-blur-lg rounded-2xl border-2 border-[#00ff88]/30 shadow-2xl w-full max-w-lg max-height-[90vh] overflow-hidden">
         
         {/* 헤더 */}
         <div className="bg-gradient-to-r from-[#00ff88]/20 to-[#00cc6a]/20 border-b border-[#00ff88]/30 p-4">
@@ -277,7 +277,7 @@ export default function GuestbookModal({
                       {formatDate(message.created_at)}
                     </span>
                   </div>
-                            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-xs">
+                          <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-xs">
             {message.is_private && user?.id !== targetUserId && user?.id !== message.visitor.id
               ? "🔒 비공개 메시지입니다."
               : message.message
@@ -421,7 +421,7 @@ export default function GuestbookModal({
                         <div className="absolute top-0.5 left-0.5 w-0.5 h-0.5 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
                         <div className="absolute top-0.5 right-0.5 w-0.5 h-0.5 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
                         <div className="absolute bottom-0.5 left-0.5 w-0.5 h-0.5 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-                        <div className="absolute bottom-0.5 right-0.5 w-0.5 h-0.5 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
+                        <div className="absolute bottom-0.5 right-0.5 w-0.5 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
                       </>
                     )}
                   </button>
@@ -434,14 +434,17 @@ export default function GuestbookModal({
 
       {/* 사용자 프로필 모달 */}
       {showUserProfile && selectedUserProfile && (
-        <UserProfileModal
+        <ProfileModal
           isOpen={showUserProfile}
-          user={selectedUserProfile}
-          platforms={platforms}
           onClose={() => {
             setShowUserProfile(false)
             setSelectedUserProfile(null)
           }}
+          user={selectedUserProfile}
+          platforms={platforms}
+          title="USER PROFILE"
+          showVisitButton={true}
+          visitUserId={selectedUserProfile?.id}
         />
       )}
     </div>

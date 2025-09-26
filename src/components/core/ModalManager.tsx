@@ -18,12 +18,11 @@ import {
 
 import {
   FriendDetailModal,
-  FriendsModal,
-  UserProfileModal
+  FriendsModal
 } from '@/components/features/friends'
+import ProfileModal from '@/components/features/shared/ProfileModal'
 
 import {
-  TopRankerProfileModal,
   GradeDetailModal,
   RankingDetailModal
 } from '@/components/features/ranking'
@@ -212,6 +211,27 @@ export default function ModalManager({
     return false
   }
 
+  // 미리 계산된 모달 사용자 객체들 (정적 플래그 문제 회피를 위해 JSX 밖에서 생성)
+  const topRankerProfileUser = selectedTopRanker || {
+    id: '',
+    nickname: '사용자',
+    region: '지역 없음',
+    income: 0,
+    count: 0,
+    platforms: [] as string[]
+  }
+
+  const userProfileUser = {
+    id: user?.id || '',
+    nickname: user?.nickname || '사용자',
+    region: user?.region || '지역 없음',
+    income: todayIncome,
+    count: 0,
+    platforms: [] as string[]
+  }
+
+  const showTopRankerVisit = !!selectedTopRanker
+
   return (
     <>
       {/* 수입 입력 패널 */}
@@ -329,20 +349,17 @@ export default function ModalManager({
         }}
       />
 
-      {/* 상위 랭커 프로필 모달 */}
-      <TopRankerProfileModal 
+      {/* 상위 랭커 프로필 모달 - 공통 컴포넌트 */}
+      <ProfileModal 
         isOpen={activeModal === 'topRankerProfile'}
         onClose={closeModal}
-        user={selectedTopRanker || {
-          id: '',
-          nickname: '사용자',
-          region: '지역 없음',
-          income: 0,
-          count: 0,
-          platforms: [],
-          rank: 0,
-          grade: ''
-        }}
+        user={topRankerProfileUser}
+        platforms={platforms}
+        title="USER PROFILE"
+        showVisitButton={showTopRankerVisit}
+        visitUserId={selectedTopRanker?.id}
+        isIncomePrivate={false}
+        currentUserId={user?.id}
       />
 
       {/* 등급 상세 모달 */}
@@ -394,23 +411,17 @@ export default function ModalManager({
         currentUserId={user?.id || ''}
       />
 
-      {/* 사용자 프로필 모달 */}
-      <UserProfileModal
+      {/* 사용자 프로필 모달 - 공통 컴포넌트 */}
+      <ProfileModal
         isOpen={activeModal === 'userProfile'}
         onClose={closeModal}
-        user={{
-          id: '',
-          nickname: '',
-          region: '',
-          income: 0,
-          count: 0,
-          platforms: [],
-          rank: 0,
-          grade: '',
-          isIncomePrivate: false
-        }}
+        user={userProfileUser}
         platforms={platforms}
         title="USER PROFILE"
+        showVisitButton={true}
+        visitUserId={user?.id}
+        isIncomePrivate={!!(user as any)?.isIncomePrivate}
+        currentUserId={user?.id}
       />
 
       {/* 계정 삭제 모달 */}

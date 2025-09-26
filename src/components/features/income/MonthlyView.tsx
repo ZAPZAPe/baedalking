@@ -343,49 +343,37 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
             </div>
           </div>
 
-          {/* 픽셀 장식 요소들 - 노랑 고정 */}
-          <div className="absolute top-1 left-1 w-2 h-2 bg-[#ffd93d] transition-all duration-300" style={{borderRadius: '1px'}}></div>
-          <div className="absolute top-1 right-1 w-2 h-2 bg-[#ffd93d] transition-all duration-300" style={{borderRadius: '1px'}}></div>
-          <div className="absolute bottom-1 left-1 w-2 h-2 bg-[#ffd93d] transition-all duration-300" style={{borderRadius: '1px'}}></div>
-          <div className="absolute bottom-1 right-1 w-2 h-2 bg-[#ffd93d] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          {/* 픽셀 장식 요소들 - 노랑 고정 (크기 통일) */}
+          <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          <div className="absolute top-1 right-1 w-1 h-1 bg-[#ffd93d] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ffd93d] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ffd93d] transition-all duration-300" style={{borderRadius: '1px'}}></div>
         </div>
 
         {/* 픽셀 통계 카드들 */}
         <div className="grid grid-cols-3 gap-2">
           {/* 건수 */}
-          <div className="bg-[#1a202c] border-2 border-[#00d4ff]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-1">건수</p>
             <p className="text-white font-bold text-sm font-mono">
               {monthCount}건
             </p>
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
           </div>
 
           {/* 배달금액 */}
-          <div className="bg-[#1a202c] border-2 border-[#00ff88]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-white text-xs font-mono font-bold mb-1">배달금액</p>
             <p className="text-white font-bold text-sm font-mono">
               ₩{monthAmount.toLocaleString()}
             </p>
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
           </div>
 
           {/* 미션비 */}
-          <div className="bg-[#1a202c] border-2 border-[#9c88ff]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-white text-xs font-mono font-bold mb-1">미션비</p>
             <p className="text-white font-bold text-sm font-mono">
               ₩{monthMissionAmount.toLocaleString()}
             </p>
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
           </div>
         </div>
       </div>
@@ -452,11 +440,7 @@ export default function MonthlyView({ allRecords, monthlyGoal, dailyGoal, setSho
                   </div>
                 )}
                 
-                {/* 픽셀 장식 요소들 - 통일된 색상 */}
-                <div className="absolute top-1 left-1 w-1 h-1 bg-[#ffd93d]/50" style={{borderRadius: '1px'}}></div>
-                <div className="absolute top-1 right-1 w-1 h-1 bg-[#ffd93d]/50" style={{borderRadius: '1px'}}></div>
-                <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ffd93d]/50" style={{borderRadius: '1px'}}></div>
-                <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ffd93d]/50" style={{borderRadius: '1px'}}></div>
+                {/* 픽셀 장식 요소 제거 */}
               </div>
             )
           })}

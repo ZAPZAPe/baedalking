@@ -378,49 +378,37 @@ export default function WeeklyView({
             </div>
           </div>
 
-          {/* 픽셀 장식 요소들 - 빨강 고정 */}
-          <div className="absolute top-1 left-1 w-2 h-2 bg-[#ff6b6b] transition-all duration-300" style={{borderRadius: '1px'}}></div>
-          <div className="absolute top-1 right-1 w-2 h-2 bg-[#ff6b6b] transition-all duration-300" style={{borderRadius: '1px'}}></div>
-          <div className="absolute bottom-1 left-1 w-2 h-2 bg-[#ff6b6b] transition-all duration-300" style={{borderRadius: '1px'}}></div>
-          <div className="absolute bottom-1 right-1 w-2 h-2 bg-[#ff6b6b] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          {/* 픽셀 장식 요소들 - 빨강 고정 (크기 통일) */}
+          <div className="absolute top-1 left-1 w-1 h-1 bg-[#ff6b6b] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          <div className="absolute top-1 right-1 w-1 h-1 bg-[#ff6b6b] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ff6b6b] transition-all duration-300" style={{borderRadius: '1px'}}></div>
+          <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ff6b6b] transition-all duration-300" style={{borderRadius: '1px'}}></div>
         </div>
 
         {/* 픽셀 통계 카드들 */}
         <div className="grid grid-cols-3 gap-2">
           {/* 건수 */}
-          <div className="bg-[#1a202c] border-2 border-[#00d4ff]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-1">건수</p>
             <p className="text-white font-bold text-sm font-mono">
               {weekCount}건
             </p>
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00d4ff]/50" style={{borderRadius: '1px'}}></div>
           </div>
 
           {/* 배달금액 */}
-          <div className="bg-[#1a202c] border-2 border-[#00ff88]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-1">배달금액</p>
             <p className="text-white font-bold text-sm font-mono">
               ₩{weekAmount.toLocaleString()}
             </p>
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#00ff88]/50" style={{borderRadius: '1px'}}></div>
           </div>
 
           {/* 미션비 */}
-          <div className="bg-[#1a202c] border-2 border-[#9c88ff]/30 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-1">미션비</p>
             <p className="text-white font-bold text-sm font-mono">
               ₩{weekMissionAmount.toLocaleString()}
             </p>
-            <div className="absolute top-1 left-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#9c88ff]/50" style={{borderRadius: '1px'}}></div>
           </div>
         </div>
       </div>
@@ -451,11 +439,7 @@ export default function WeeklyView({
             >
               <div className="flex">
                 {/* 왼쪽: 요일/날짜 카드 */}
-                <div className={`p-3 flex flex-col items-center justify-center min-w-[70px] border-r-2 ${
-                  day.isToday 
-                    ? 'border-r-[#ff6b6b]' 
-                    : 'bg-[#2d3748]/50 border-r-gray-600/30'
-                }`}>
+                <div className={`p-3 flex flex-col items-center justify-center min-w-[70px] bg-[#2d3748]/50`}>
                   <div className="text-xs text-gray-400 font-mono mb-1">{day.dayName}</div>
                   <div className={`text-base font-bold font-mono ${
                     day.dayOfWeek === 0 ? 'text-red-400' : // 일요일: 빨간색
@@ -485,8 +469,8 @@ export default function WeeklyView({
                     <div className="grid grid-cols-3 gap-2">
                       {/* 건수 */}
                       <div className="bg-[#2d3748]/50 p-2 text-center" style={{borderRadius: '4px'}}>
-                        <div className="text-xs text-gray-400 font-mono mb-1">건수</div>
-                        <div className="text-xs font-bold font-mono text-[#ff6b6b]">
+                        <div className="text-white text-xs font-mono font-bold mb-1">건수</div>
+                        <div className="text-xs font-bold font-mono text-white">
                           {day.count}건
                         </div>
                       </div>
@@ -502,7 +486,7 @@ export default function WeeklyView({
                       {/* 미션비 */}
                       <div className="bg-[#2d3748]/50 p-2 text-center" style={{borderRadius: '4px'}}>
                         <div className="text-white text-xs font-mono font-bold mb-1">미션비</div>
-                        <div className="text-xs font-bold font-mono text-[#00d4ff]">
+                        <div className="text-xs font-bold font-mono text-white">
                           ₩{day.missionAmount.toLocaleString()}
                         </div>
                       </div>
@@ -517,11 +501,7 @@ export default function WeeklyView({
                 </div>
               </div>
               
-              {/* 픽셀 장식 요소들 */}
-              <div className="absolute top-1 left-1 w-1 h-1 bg-[#ff6b6b]/50" style={{borderRadius: '1px'}}></div>
-              <div className="absolute top-1 right-1 w-1 h-1 bg-[#ff6b6b]/50" style={{borderRadius: '1px'}}></div>
-              <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ff6b6b]/50" style={{borderRadius: '1px'}}></div>
-              <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ff6b6b]/50" style={{borderRadius: '1px'}}></div>
+              {/* 픽셀 장식 요소 제거 */}
             </div>
           ))}
         </div>

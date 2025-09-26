@@ -169,70 +169,55 @@ true
 
           {/* 픽셀 장식 요소들 - 인증 상태에 따른 색상 */}
           <div 
-            className={`absolute top-1 left-1 w-2 h-2 transition-all duration-300 ${
+            className={`absolute top-1 left-1 w-1 h-1 transition-all duration-300 ${
   true ? 'bg-[#00ff88]' : 'bg-gray-600/50'
             }`} 
             style={{borderRadius: '1px'}}
           ></div>
           <div 
-            className={`absolute top-1 right-1 w-2 h-2 transition-all duration-300 ${
+            className={`absolute top-1 right-1 w-1 h-1 transition-all duration-300 ${
   true ? 'bg-[#00ff88]' : 'bg-gray-600/50'
             }`} 
             style={{borderRadius: '1px'}}></div>
           <div 
-            className={`absolute bottom-1 left-1 w-2 h-2 transition-all duration-300 ${
+            className={`absolute bottom-1 left-1 w-1 h-1 transition-all duration-300 ${
   true ? 'bg-[#00ff88]' : 'bg-gray-600/50'
             }`} 
             style={{borderRadius: '1px'}}></div>
           <div 
-            className={`absolute bottom-1 right-1 w-2 h-2 transition-all duration-300 ${
+            className={`absolute bottom-1 right-1 w-1 h-1 transition-all duration-300 ${
   true ? 'bg-[#00ff88]' : 'bg-gray-600/50'
             }`} 
             style={{borderRadius: '1px'}}></div>
         </div>
 
-        {/* 픽셀 통계 카드들 */}
+          {/* 픽셀 통계 카드들 */}
         <div className="grid grid-cols-3 gap-2">
           {/* 건수 */}
-          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-2">건수</p>
             <p className="text-white font-bold text-sm font-mono">
               {incomeRecords.filter(record => record.date === todayStr)
                 .reduce((sum, record) => sum + record.delivery_count, 0)}건
             </p>
-            {/* 픽셀 도트들 */}
-            <div className="absolute top-1 left-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
           </div>
 
           {/* 배달금액 */}
-          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-2">배달금액</p>
             <p className="text-white font-bold text-sm font-mono">
               ₩{incomeRecords.filter(record => record.date === todayStr)
                 .reduce((sum, record) => sum + (record.delivery_amount || 0), 0).toLocaleString()}
             </p>
-            {/* 픽셀 도트들 */}
-            <div className="absolute top-1 left-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
           </div>
 
           {/* 미션비 */}
-          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center relative" style={{borderRadius: '4px'}}>
+          <div className="bg-[#1a202c] border-2 border-gray-600/50 p-3 text-center" style={{borderRadius: '4px'}}>
             <p className="text-gray-300 text-xs font-mono mb-2">미션비</p>
             <p className="text-white font-bold text-sm font-mono">
               ₩{incomeRecords.filter(record => record.date === todayStr)
                 .reduce((sum, record) => sum + (record.mission_amount || 0), 0).toLocaleString()}
             </p>
-            {/* 픽셀 도트들 */}
-            <div className="absolute top-1 left-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute top-1 right-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 left-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
-            <div className="absolute bottom-1 right-1 w-1 h-1 bg-gray-600/50" style={{borderRadius: '1px'}}></div>
           </div>
         </div>
       </div>

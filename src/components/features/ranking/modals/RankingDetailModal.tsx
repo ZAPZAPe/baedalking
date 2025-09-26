@@ -45,36 +45,21 @@ export default function RankingDetailModal({
 
   // 플랫폼별 설정을 위한 헬퍼 함수
   const getPlatformConfig = (platformId: string) => {
-    if (platformId === 'baemin') {
-      return { 
-        name: '배민',
-        color: '#00C851',
-        bgColor: '#00C851'
-      }
-    } else if (platformId === 'coupang') {
-      return { 
-        name: '쿠팡',
-        color: '#E4002B',
-        bgColor: '#E4002B'
-      }
-    } else {
-      // 커스텀 플랫폼은 platforms 배열에서 찾기
-      const customPlatform = platforms.find(p => p.id === platformId)
-      if (customPlatform) {
-        return { 
-          name: customPlatform.name,
-          color: customPlatform.color,
-          bgColor: customPlatform.color
-        }
-      } else {
-        // 플랫폼을 찾을 수 없는 경우 기본값
-        return { 
-          name: platformId,
-          color: '#9c88ff',
-          bgColor: '#9c88ff'
-        }
-      }
+    const key = (platformId || '').toString().trim().toLowerCase()
+    if (key === 'baemin' || key === '배민') {
+      return { name: '배민', color: '#0CEFD3', bgColor: '#0CEFD3' }
     }
+    if (key === 'coupang' || key === '쿠팡') {
+      return { name: '쿠팡', color: '#e84821', bgColor: '#e84821' }
+    }
+    const customPlatform = platforms.find(p => (
+      (p.id || '').toString().trim().toLowerCase() === key ||
+      (p.name || '').toString().trim().toLowerCase() === key
+    ))
+    if (customPlatform) {
+      return { name: customPlatform.name, color: customPlatform.color, bgColor: customPlatform.color }
+    }
+    return { name: platformId, color: '#9c88ff', bgColor: '#9c88ff' }
   }
 
   // 내 위아래 2명씩 포함해서 총 5명의 랭킹 생성 (데이터가 없을 때만 사용)
