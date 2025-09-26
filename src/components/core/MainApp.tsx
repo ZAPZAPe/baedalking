@@ -86,6 +86,12 @@ export default function MainApp({ user }: MainAppProps) {
   // 선택된 기록 상태 (수입 수정 모달용)
   const [selectedRecords, setSelectedRecords] = useState<any[]>([])
 
+  // 등급 상세 모달용 상태
+  const [selectedGrade, setSelectedGrade] = useState<any>(null)
+  const [userRankInfo, setUserRankInfo] = useState<{rank: number | null, total: number}>({rank: null, total: 0})
+  const [topRankers, setTopRankers] = useState<any[]>([])
+  const [selectedTopRanker, setSelectedTopRanker] = useState<any>(null)
+
   // 수입 기록 수정 함수
   const onEditIncomeRecord = async (date: string, updatedRecords: any[]) => {
     try {
@@ -346,6 +352,8 @@ export default function MainApp({ user }: MainAppProps) {
               )}
 
               {/* RANKING 탭 */}
+              {console.log('🔍 현재 활성 탭:', activeTab, '랭킹 탭 조건:', activeTab === 'ranking', '전체 탭들:', { activeTab, todayIncome, dailyGoal })}
+              {activeTab === 'ranking' && console.log('🏆 랭킹 탭 조건 통과! RankingTab 렌더링 시작')}
               {activeTab === 'ranking' && (
                 <RankingTab 
                   isVerified={true}
@@ -353,17 +361,23 @@ export default function MainApp({ user }: MainAppProps) {
                   dailyGoal={dailyGoal}
                   isIncomePrivate={user?.is_income_private || false}
                   onShowGradeDetail={(grade: any) => {
+                    setSelectedGrade(grade)
                     openModal('gradeDetail')
                   }}
                   onShowTopRankerProfile={(ranker) => {
+                    setSelectedTopRanker(ranker)
                     openModal('topRankerProfile')
                   }}
                   onShowRankingDetail={() => openModal('rankingDetail')}
-                  onTopRankersUpdate={() => {}}
+                  onTopRankersUpdate={(rankers) => {
+                    setTopRankers(rankers)
+                  }}
                   onShowUserProfile={(userProfile) => {
                     openModal('userProfile')
                   }}
-                  onMyRankUpdate={(rank: number | null, total: number) => {}}
+                  onMyRankUpdate={(rank: number | null, total: number) => {
+                    setUserRankInfo({rank, total})
+                  }}
                 />
               )}
 
@@ -467,7 +481,10 @@ export default function MainApp({ user }: MainAppProps) {
       {/* 하단 네비게이션 */}
       <BottomNavigation
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          console.log('🔄 탭 변경:', tab, '이전 탭:', activeTab)
+          setActiveTab(tab)
+        }}
       />
 
       {/* 모달 관리자 */}
@@ -537,6 +554,11 @@ export default function MainApp({ user }: MainAppProps) {
         selectedRecords={selectedRecords}
         setSelectedRecords={setSelectedRecords}
         onEditIncomeRecord={onEditIncomeRecord}
+        // 등급 상세 모달 상태
+        selectedGrade={selectedGrade}
+        userRankInfo={userRankInfo}
+        topRankers={topRankers}
+        selectedTopRanker={selectedTopRanker}
       />
 
     </div>

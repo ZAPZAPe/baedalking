@@ -37,6 +37,13 @@ interface TopRanker {
 }
 
 export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, onShowGradeDetail, onShowTopRankerProfile, onShowRankingDetail, onTopRankersUpdate, onShowUserProfile, onMyRankUpdate }: RankingTabProps) {
+  console.log('🏆 RankingTab 컴포넌트 마운트됨!', { 
+    todayIncome, 
+    dailyGoal, 
+    isIncomePrivate,
+    props: { todayIncome, dailyGoal, isIncomePrivate }
+  })
+  
   // 홈에서 계산된 오늘 수입을 직접 사용
   const myIncome = todayIncome
 
@@ -72,23 +79,27 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
         const response = await fetch('/api/rankings?period=daily&limit=100') // 전체 랭킹을 가져와서 내순위 계산
         const data = await response.json()
         
+        console.log('랭킹 API 응답:', data)
         
         if (response.ok && data.rankings && Array.isArray(data.rankings) && data.rankings.length > 0) {
-          
-          const formattedRankers = data.rankings.map((ranking: any, index: number) => ({
-              original: ranking,
-              formatted: {
-                id: ranking.user_id || ranking.id,
-                rank: ranking.rank || index + 1,
-                income: ranking.income || ranking.total_amount || 0,
-                count: ranking.count || ranking.delivery_count || 0,
-                platform: ranking.platform || '배민',
-                nickname: ranking.nickname || '알 수 없음',
-                region: ranking.region || '서울',
-                platforms: ranking.platforms || [ranking.platform || '배민']
-              }
-            }))
-          
+
+          const formattedRankers: TopRanker[] = data.rankings.map((ranking: any, index: number) => {
+            const ranker: TopRanker = {
+              id: ranking.user_id || ranking.id || `user_${index}`,
+              rank: ranking.rank || (index + 1),
+              income: Number(ranking.income || ranking.total_amount || 0),
+              count: Number(ranking.count || ranking.delivery_count || 0),
+              platform: ranking.platform || '배민',
+              nickname: ranking.nickname || `배달러${index + 1}호`,
+              region: ranking.region || '서울',
+              platforms: Array.isArray(ranking.platforms) ? ranking.platforms : [ranking.platform || '배민']
+            }
+            console.log(`가공된 랭커 ${index + 1}:`, ranker)
+            return ranker
+          })
+
+          console.log('가공된 랭킹 데이터:', formattedRankers)
+
           // 상위 5명만 표시
           setTopRankers(formattedRankers.slice(0, 5))
           
@@ -147,18 +158,8 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
 
   // TOP 랭커 프로필 모달 표시
   const handleShowTopRankerProfile = (ranker: TopRanker) => {
-    // UserProfileModal을 위한 사용자 프로필 데이터 생성
-    const userProfile = {
-      id: ranker.id,
-      nickname: ranker.nickname,
-      region: ranker.region,
-      income: ranker.income,
-      count: ranker.count,
-      platforms: ranker.platforms,
-      minihomeId: ranker.id
-    }
-    
-    onShowUserProfile(userProfile)
+    console.log('랭커 프로필 모달 데이터:', ranker)
+    onShowTopRankerProfile(ranker)
   }
 
 
@@ -199,6 +200,8 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
     )
   }
 
+  console.log('🎨 RankingTab 렌더링 시작:', { myIncome, myGrade, topRankers, isLoadingRanking })
+  
   return (
     <div className="space-y-3 sm:space-y-4">
       {/* 내 일간 등급 섹션 */}
@@ -314,47 +317,71 @@ export default function RankingTab({ todayIncome, dailyGoal, isIncomePrivate, on
           <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ff6b6b]/60" style={{borderRadius: '1px'}}></div>
         </div>
         
-        {topRankers.length === 0 ? (
+        {isLoadingRanking ? (
+          <div className="text-center py-6 text-gray-400 font-mono bg-[#1a202c]/30 rounded-lg border border-[#ff6b6b]/20">
+            <p className="text-sm">랭킹을 불러오는 중...</p>
+          </div>
+        ) : topRankers.length === 0 ? (
           <div className="text-center py-6 text-gray-400 font-mono bg-[#1a202c]/30 rounded-lg border border-[#ff6b6b]/20">
             <p className="text-sm">아직 랭킹 데이터가 없습니다</p>
             <p className="text-xs mt-2">수입을 기록한 사용자가 나타나면 표시됩니다</p>
           </div>
         ) : (
           <div className="space-y-2 sm:space-y-3">
-            {topRankers.slice(0, 5).map((ranker, index) => (
-            <div key={index} className="bg-[#1a202c]/60 border-2 border-[#ff6b6b]/30 p-3 sm:p-4 relative">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 sm:w-10 sm:h-10 border-2 flex items-center justify-center font-bold text-sm sm:text-base font-mono rounded-full ${
-                    ranker.rank === 1 ? 'bg-[#ffd93d] text-black border-[#ffd93d]' :
-                    ranker.rank === 2 ? 'bg-[#c0c0c0] text-black border-[#c0c0c0]' :
-                    ranker.rank === 3 ? 'bg-[#cd7f32] text-white border-[#cd7f32]' :
-                    'bg-[#4a5568] text-white border-[#4a5568]'
-                  }`}>
-                    {ranker.rank}
-                  </div>
-                  <div>
-                    <button
-                      onClick={() => handleShowTopRankerProfile(ranker)}
-                      className="text-white font-bold text-sm sm:text-base font-mono hover:text-[#00d4ff] transition-colors duration-200 cursor-pointer"
-                    >
-                      {ranker.nickname || `배달러 ${ranker.rank}호`}
-                    </button>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[#ffd93d] font-bold text-sm sm:text-base font-mono">₩{(ranker.income || 0).toLocaleString()}</div>
-                  <div className="text-gray-400 text-xs sm:text-sm font-mono">{ranker.count}건</div>
-                </div>
-              </div>
+            {topRankers.map((ranker, index) => {
+              // 안전한 데이터 추출
+              const safeRanker = {
+                id: ranker?.id || `user_${index}`,
+                rank: ranker?.rank || (index + 1),
+                income: Number(ranker?.income || 0),
+                count: Number(ranker?.count || 0),
+                nickname: ranker?.nickname || `배달러${index + 1}호`,
+                region: ranker?.region || '서울',
+                platform: ranker?.platform || '배민',
+                platforms: ranker?.platforms || ['배민']
+              }
               
-              {/* 픽셀 도트들 */}
-              <div className="absolute top-1 left-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
-              <div className="absolute top-1 right-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
-              <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
-              <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
-              </div>
-            ))}
+              console.log(`UI 렌더링 랭커 ${index + 1}:`, safeRanker)
+              
+              return (
+                <div key={safeRanker.id} className="bg-[#1a202c]/60 border-2 border-[#ff6b6b]/30 p-3 sm:p-4 relative">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 border-2 flex items-center justify-center font-bold text-sm sm:text-base font-mono rounded-full ${
+                        safeRanker.rank === 1 ? 'bg-[#ffd93d] text-black border-[#ffd93d]' :
+                        safeRanker.rank === 2 ? 'bg-[#c0c0c0] text-black border-[#c0c0c0]' :
+                        safeRanker.rank === 3 ? 'bg-[#cd7f32] text-white border-[#cd7f32]' :
+                        'bg-[#4a5568] text-white border-[#4a5568]'
+                      }`}>
+                        {safeRanker.rank}
+                      </div>
+                      <div>
+                        <button
+                          onClick={() => handleShowTopRankerProfile(safeRanker)}
+                          className="text-white font-bold text-sm sm:text-base font-mono hover:text-[#00d4ff] transition-colors duration-200 cursor-pointer"
+                        >
+                          {safeRanker.nickname}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[#ffd93d] font-bold text-sm sm:text-base font-mono">
+                        ₩{safeRanker.income.toLocaleString()}
+                      </div>
+                      <div className="text-gray-400 text-xs sm:text-sm font-mono">
+                        {safeRanker.count}건
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 픽셀 도트들 */}
+                  <div className="absolute top-1 left-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute top-1 right-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-1 left-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
+                  <div className="absolute bottom-1 right-1 w-1 h-1 bg-[#ff6b6b]" style={{borderRadius: '1px'}}></div>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

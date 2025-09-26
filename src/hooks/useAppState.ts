@@ -163,6 +163,12 @@ export function useAppState(): AppState {
   const [currentBackground, setCurrentBackground] = useState('background')
   const [activeTab, setActiveTab] = useState('home')
   
+  // activeTab 변경 로그 추가
+  const enhancedSetActiveTab = (tab: string) => {
+    console.log('🔄 activeTab 변경:', tab, '이전:', activeTab)
+    setActiveTab(tab)
+  }
+  
   // 수입 입력 상태
   const [incomeCount, setIncomeCount] = useState('')
   const [incomeAmount, setIncomeAmount] = useState('')
@@ -706,7 +712,7 @@ export function useAppState(): AppState {
     currentCharacterItem, setCurrentCharacterItem,
     currentVehicle, setCurrentVehicle,
     currentBackground, setCurrentBackground,
-    activeTab, setActiveTab,
+    activeTab, setActiveTab: enhancedSetActiveTab,
     
     // 수입 입력
     incomeCount, setIncomeCount,

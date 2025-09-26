@@ -11,24 +11,50 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || 'monthly' // daily, weekly, monthly
     const limit = parseInt(searchParams.get('limit') || '10')
 
-    // 기간별 날짜 계산 (한국 시간 기준)
-    const koreaTime = new Date().getTime() + (9 * 60 * 60 * 1000) // UTC + 9시간
-    const now = new Date(koreaTime)
+    // 기간별 날짜 계산 (한국 시간 기준, [startDate, endDate) 범위)
+    const toSeoulDate = (date: Date) => new Date(
+      new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Seoul' })).getTime()
+    )
+    const formatYmd = (date: Date) => {
+      const y = date.getFullYear()
+      const m = String(date.getMonth() + 1).padStart(2, '0')
+      const d = String(date.getDate()).padStart(2, '0')
+      return `${y}-${m}-${d}`
+    }
+
+    const now = toSeoulDate(new Date())
     let startDate: string
+    let endDate: string
 
     switch (period) {
-      case 'daily':
-        startDate = now.toISOString().split('T')[0]
+      case 'daily': {
+        const start = new Date(now)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(start)
+        end.setDate(start.getDate() + 1)
+        startDate = formatYmd(start)
+        endDate = formatYmd(end)
         break
-      case 'weekly':
-        const weekStart = new Date(now)
-        weekStart.setDate(now.getDate() - now.getDay()) // 일요일부터 시작
-        startDate = weekStart.toISOString().split('T')[0]
+      }
+      case 'weekly': {
+        const start = new Date(now)
+        const day = start.getDay() // 0 (Sun) ~ 6 (Sat)
+        start.setDate(start.getDate() - day)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(start)
+        end.setDate(start.getDate() + 7)
+        startDate = formatYmd(start)
+        endDate = formatYmd(end)
         break
+      }
       case 'monthly':
-      default:
-        startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+      default: {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1)
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+        startDate = formatYmd(start)
+        endDate = formatYmd(end)
         break
+      }
     }
 
 
@@ -47,7 +73,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .gte('date', startDate)
-      .order('total_amount', { ascending: false })
+      .lt('date', endDate)
 
     if (error) {
       return NextResponse.json(

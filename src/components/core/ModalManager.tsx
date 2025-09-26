@@ -116,6 +116,12 @@ interface ModalManagerProps {
   setSelectedRecords: (records: any[]) => void
   onEditIncomeRecord: (date: string, updatedRecords: any[]) => void
   
+  // 등급 상세 모달 상태
+  selectedGrade: any
+  userRankInfo: {rank: number | null, total: number}
+  topRankers: any[]
+  selectedTopRanker: any
+  
 }
 
 export default function ModalManager({
@@ -183,6 +189,11 @@ export default function ModalManager({
   selectedRecords,
   setSelectedRecords,
   onEditIncomeRecord,
+  // 등급 상세 모달 상태
+  selectedGrade,
+  userRankInfo,
+  topRankers,
+  selectedTopRanker,
   // 에러 상태
   errorMessage
 }: ModalManagerProps) {
@@ -322,10 +333,10 @@ export default function ModalManager({
       <TopRankerProfileModal 
         isOpen={activeModal === 'topRankerProfile'}
         onClose={closeModal}
-        user={{
+        user={selectedTopRanker || {
           id: '',
-          nickname: '',
-          region: '',
+          nickname: '사용자',
+          region: '지역 없음',
           income: 0,
           count: 0,
           platforms: [],
@@ -338,26 +349,26 @@ export default function ModalManager({
       <GradeDetailModal 
         isOpen={activeModal === 'gradeDetail'}
         onClose={closeModal}
-        grade={{
-          name: '',
+        grade={selectedGrade || {
+          name: '등급 없음',
           minIncome: 0,
           maxIncome: 0,
           color: '#ffffff',
-          description: ''
+          description: '수입을 기록해주세요'
         }}
         userIncome={todayIncome}
-        userRank={0}
-        totalUsers={0}
+        userRank={userRankInfo?.rank || 0}
+        totalUsers={userRankInfo?.total || 0}
       />
 
       {/* 랭킹 상세 모달 */}
       <RankingDetailModal 
         isOpen={activeModal === 'rankingDetail'}
         onClose={closeModal}
-        userRank={0}
+        userRank={userRankInfo?.rank || 0}
         userIncome={todayIncome}
-        totalUsers={0}
-        topRankers={[]}
+        totalUsers={userRankInfo?.total || 0}
+        topRankers={topRankers}
         platforms={platforms}
         onShowUserDetail={(ranker) => {
           openModal('topRankerProfile')

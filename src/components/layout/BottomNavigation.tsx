@@ -85,7 +85,10 @@ export default function BottomNavigation({
 
           {/* 랭킹 */}
           <button
-            onClick={() => onTabChange('ranking')}
+            onClick={() => {
+          console.log('🏆 랭킹 탭 버튼 클릭됨!')
+          onTabChange('ranking')
+        }}
             className={`py-2 px-2 border-2 transition-all duration-200 relative ${
               activeTab === 'ranking'
                 ? 'bg-gradient-to-r from-[#2d3748] to-[#1a202c] border-[#ffd93d]/60 text-[#ffd93d]'

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const { count: totalVisits, error: totalError } = await supabase
       .from('visits')
       .select('*', { count: 'exact', head: true })
-      .eq('visited_user_id', userId)
+      .eq('user_id', userId)
 
     if (totalError) {
       return NextResponse.json(
@@ -46,9 +46,8 @@ export async function GET(request: NextRequest) {
     const { count: todayVisits, error: todayError } = await supabase
       .from('visits')
       .select('*', { count: 'exact', head: true })
-      .eq('visited_user_id', userId)
-      .gte('created_at', `${today}T00:00:00`)
-      .lt('created_at', `${today}T23:59:59`)
+      .eq('user_id', userId)
+      .gte('visit_date', today)
 
     if (todayError) {
       return NextResponse.json(
@@ -95,10 +94,9 @@ export async function POST(request: NextRequest) {
     const { data: existingVisit, error: checkError } = await supabase
       .from('visits')
       .select('id')
-      .eq('visited_user_id', visitedUserId)
-      .eq('user_id', visitorId)
-      .gte('created_at', `${today}T00:00:00`)
-      .lt('created_at', `${today}T23:59:59`)
+      .eq('user_id', visitedUserId)
+      .eq('visitor_id', visitorId)
+      .eq('visit_date', today)
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') {
@@ -120,8 +118,8 @@ export async function POST(request: NextRequest) {
       .from('visits')
       .insert([
         {
-          user_id: visitorId,
-          visited_user_id: visitedUserId
+          user_id: visitedUserId,
+          visitor_id: visitorId
         }
       ])
 
